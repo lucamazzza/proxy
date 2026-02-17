@@ -1,0 +1,316 @@
+\documentclass[a4paper, 11pt, twoside]{report}
+
+% Language and Encoding
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+
+% Fonts
+\usepackage{microtype} % Improves text spacing
+\usepackage{fontspec}
+\setmainfont{Helvetica}
+\setmonofont{IBM Plex Mono}
+\newfontfamily\titlefont{Times New Roman}
+
+%Page Layout & Margins
+\usepackage[
+    a4paper,
+    top=3.0cm,
+    bottom=3.0cm,
+    inner=2.5cm,  % Big margin for binding (Left on Odd, Right on Even)
+    outer=2.5cm,  % Standard margin for edge (Right on Odd, Left on Even)
+    bindingoffset=1cm,% Extra 1cm added purely for the binding side
+    headheight=15pt
+]{geometry}
+
+
+% --- Headers and Footers ---
+\setlength{\headheight}{15pt} % Fix warning about header height
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{} % Clear all defaults
+\newif\ifshowlogo
+\showlogotrue
+\newcommand{\blankpage}{
+    \clearpage
+    \thispagestyle{empty} % No headers/footers
+    \showlogofalse        % No Logo <--- TURN OFF
+    \hbox{}               % Invisible content
+    \newpage
+    \showlogotrue         % Resume Logo <--- TURN ON
+}
+
+% Line thickness
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+
+% Style for Chapter pages (plain style usually suppresses headers, we override it)
+\fancyhead[LE]{\includegraphics[height=0.3cm]{header_small_logo.png}} % Left on Odd
+\fancyhead[RE]{\thepage}                                               % Right on Odd
+\fancyhead[LO]{\thepage}                                               % Left on Even
+\fancyhead[RO]{\nouppercase{\leftmark}}
+\fancyfoot[LO, RE]{\footnotesize \textit{Proxy basato su Appwrite}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancypagestyle{plain}{
+    \fancyhf{} % Clear defaults
+    \fancyhead[LO]{\includegraphics[height=0.3cm]{header_small_logo.png}} 
+    \fancyhead[RO]{\thepage}
+    \fancyhead[LE]{\thepage}
+    \fancyhead[RE]{\nouppercase{\leftmark}} 
+    \fancyfoot[LO, RE]{\footnotesize \textit{Proxy basato su Appwrite}}
+    \renewcommand{\headrulewidth}{0.4pt}
+    \renewcommand{\footrulewidth}{0.4pt}
+}
+
+% Chapter/Section Titles Styling
+\usepackage{titlesec}
+\usepackage{color}
+
+% Chapter Format
+\titleformat{\chapter}[display]
+{\normalfont\huge\bfseries} % Format
+{\chaptertitlename\ \thechapter} % Label (e.g., Capitolo 1)
+{20pt} % Separation
+{\Huge} % Title size
+
+% Section Format
+\titleformat{\section}
+{\normalfont\Large\bfseries}
+{\thesection}
+{1em}
+{}
+
+% Graphics & Tables
+\usepackage{graphicx}
+\usepackage[most]{tcolorbox}
+\usepackage{booktabs}
+\usepackage{array}
+
+% Code Snippets
+\usepackage{minted}
+\usepackage{xcolor}
+\usemintedstyle{xcode}
+\setminted{
+bgcolor=lightgray!20,
+framesep=2mm,
+xleftmargin=10pt,
+fontsize=\small,
+}
+
+% Hyperlinks
+\usepackage[hidelinks]{hyperref}
+
+% Absolute Positioning Package
+\usepackage{eso-pic}
+\AddToShipoutPictureBG{%
+   \ifshowlogo
+   \ifodd\value{page}%
+     \AtPageLowerLeft{%
+       \put(\LenToUnit{\dimexpr\paperwidth-1.5cm\relax}, \LenToUnit{2cm}){%
+          \includegraphics[height=5cm, keepaspectratio]{supsistudent_logo.png}%
+       }%
+     }%
+   \else
+     \AtPageLowerLeft{%
+       \put(\LenToUnit{1.0cm}, \LenToUnit{2cm}){%
+          \includegraphics[height=5cm, keepaspectratio]{supsistudent_logo.png}%
+       }%
+     }%
+   \fi
+   \fi
+}
+
+
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\begin{document}
+
+% Custom Title Page 
+\begin{titlepage}
+\pagenumbering{alph}
+\newgeometry{top=2cm, bottom=2cm, left=2.5cm, right=2.5cm}
+
+% Top Header Region
+\noindent
+\includegraphics[height=2.5cm, keepaspectratio]{header_logo.png}
+\hfill
+
+\vspace{0.1cm}
+
+% Title Region
+\begin{flushleft}
+\titlefont 
+    {\Huge Proxy basato su Appwrite} \\[1cm]
+\end{flushleft}
+\vspace{1.2cm}
+
+\hrule height 1pt
+\vspace{8pt}
+
+\newcommand{\field}[2]{%
+    \noindent{\footnotesize #1}\\[8pt] % Label (Small)
+    {\Large \textbf{#2}}\par           % Content (Large & Bold)
+}
+
+\noindent
+\begin{minipage}[t]{0.48\textwidth} 
+    \vspace{0pt} % Ensures alignment at the top
+    \field{Studente/i}{Mazza Luca\\Mondini Manuela}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+    \vspace{0pt}
+    \field{Relatore}{Brocco Amos}
+    \vspace{35pt}\hrule height 1pt\vspace{8pt} % Line separator
+    \field{Correlatore}{-}
+    \vspace{35pt}\hrule height 1pt\vspace{8pt} % Line separator
+    \field{Committente}{Brocco Amos}
+\end{minipage}
+
+\vspace{40pt}
+
+\hrule height 1pt
+\vspace{8pt}
+
+\noindent
+\begin{minipage}[t]{0.525\textwidth}
+    \vspace{0pt}
+    \field{Corso di laurea}{Ingegneria informatica \\ (Informatica TP)}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.6\textwidth}
+    \vspace{0pt}
+    \field{Modulo}{C11160}
+\end{minipage}
+
+\vspace{35pt}
+\hrule height 1pt % Thicker main divider line
+\vspace{8pt}
+
+\noindent
+\field{Anno}{2025 / 2026}
+\vspace{5cm} % Space at the very bottom
+\hrule height 1pt width 0.5\textwidth % Thicker main divider line
+\vspace{8pt}
+\noindent
+\begin{minipage}[t]{\textwidth}
+    \vspace{0pt}
+    \field{Data}{\today}
+\end{minipage}
+\end{titlepage}
+\restoregeometry
+
+\blankpage
+
+% Front Matter
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+
+% List of Figures/Tables (Optional)
+\listoffigures
+\listoftables
+\newpage
+
+\blankpage
+
+\pagenumbering{arabic}
+\chapter{Abstract}
+
+Le policy di sicurezza di rete moderne spesso isolano sia client che server rendendo
+impraticabili le connessioni dirette senza l'utilizzo di complesse configurazioni.
+Questo progetto espone il design e lo sviluppo di un'\textbf{architettura client-server}, pensata per superare le limitazioni
+imposte da firewall e NAT nelle reti private.
+Il meccanismo centrale \textbf{sostituisce} le tradizionali \textbf{connessioni socket} con un approccio basato su 
+\textbf{REST + WebSocket}, utilizzando Appwrite\footnote{\url{https://appwrite.io}} come Proxy.
+Il sistema crea un \textbf{canale} di comunicazione \textbf{sicuro} su cui client e server interagiscono asincronamente 
+tramite eventi di creazione di documenti nel database di Appwrite.
+
+Viene quindi sviluppata una \textbf{libreria modulare} in C++ (con QT) per astrarre l'API di Appwrite, implementando 
+funzionalità come la gestione delle \textbf{sessioni}, l'identificazione dei canali basata su \textbf{UUID} e la 
+serializzazione dei payload in \textbf{JSON}. L'implementazione di tale libreria viene validata attraverso lo sviluppo 
+di una semplice applicazione \textbf{Proof of Concept} (PoC), un \textbf{frontend}, realizzato con Qt/QML e compilato 
+con WebAssembly per l'esecuzione in browser, e un servizio \textbf{backend} nativo in C++.
+
+\vspace{0.5cm}
+\noindent\rule{\textwidth}{0.5pt}
+\vspace{0.5cm}
+
+\noindent Modern security policies often restrict direct client-server communication, especially in private networks.
+This project details the design and development of a \textbf{client-server architecture}, designed to overcome the
+limitations of firewalls and NAT in private networks.
+The core mechanism \textbf{replaces} the traditional client-server \textbf{socket connections} with a
+\textbf{REST + WebSocket} based approach, using Appwrite as a Proxy.
+The system creates a \textbf{secure} communication \textbf{channel} on which clients and servers interact 
+asynchronously via document creation events in the Appwrite-hosted database.
+
+A modular C++ (with QT) \textbf{library} is developed to abstract the Appwrite API, implementing features such as 
+\textbf{session} management, \textbf{UUID}-based channel identification and \textbf{JSON} payload serialization. 
+The implementation of said library is validated through the development of a simple \textbf{Proof of Concept} (PoC) 
+application, a \textbf{frontend}, built with Qt/QML and compiled with WebAssembly for browser-based execution, and a 
+native C++ \textbf{backend} service.
+
+\chapter{Introduzione}
+
+Lo scopo del progetto è lo sviluppo di una libreria in C++ che consenta a client e server di comunicare in modo
+asincrono attraverso Appwrite ed un Proof of Concept che ne dimostri l'efficacia e l'utilità.
+
+\section{Pianificazione}
+
+\begin{enumerate}
+\item \textbf{Analisi:}
+\item \textbf{Applicazione demo:} 
+\item \textbf{Definire struttura API:}
+\end{enumerate}
+
+\section{Requisiti}
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lp{8cm}l@{}}
+\toprule
+\textbf{ID} & \textbf{Descrizione} & \textbf{Note} \\ \midrule
+R-01 & \textit{Proxy} deve supportare l'API di Appwrite & -\\
+R-02 & X & \\
+R-03 & X & \\
+R-04 & X & \\
+R-05 & X & \\
+R-06 & X & \\
+R-07 & X & \\
+R-08 & X & \\
+R-09 & X & \\ 
+\bottomrule
+\end{tabular}
+\caption{Requisiti del progetto}
+\end{table}
+
+\chapter{Stato dell'arte}
+
+\chapter{Design e implementazione}
+\section{API}
+Di seguito è riportato un esempio di codice per l'inizializzazione.
+
+\begin{minted}{cpp}
+// Esempio di inizializzazione
+float x = 0.5f;
+std::vector<float> input = {x, x, x}; // Input per il modello
+// Altri parametri...
+\end{minted}
+
+\chapter{Test e validazione}
+
+\section{Risultati}
+
+\chapter{Risultati}
+
+\section{Manuale d'uso}
+
+\chapter{Conclusioni}
+
+\section{Sviluppi futuri}
+
+\end{document}
