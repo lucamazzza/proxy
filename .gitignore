@@ -81,10 +81,24 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 
+# LaTeX generated files
 *.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.glg
+*.glo
+*.gls
+*.ist
 *.lof
 *.log
 *.lot
 *.out
+*.pyg
+*.run.xml
+*.synctex.gz
 *.toc
+*.xdv
 _*

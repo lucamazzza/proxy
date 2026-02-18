@@ -122,11 +122,20 @@ fontsize=\small,
    \fi
 }
 
-
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{geometry}
 \geometry{margin=2.5cm}
+
+% Bibliography
+\usepackage{csquotes}
+\usepackage[backend=biber, style=numeric, sorting=none]{biblatex}
+\addbibresource{bibliography.bib}
+
+% Glossary
+\usepackage[toc]{glossaries}
+\makeglossaries
+\loadglsentries{glossary.tex}
 
 \begin{document}
 
@@ -225,17 +234,17 @@ fontsize=\small,
 Le policy di sicurezza di rete moderne spesso isolano sia client che server rendendo
 impraticabili le connessioni dirette senza l'utilizzo di complesse configurazioni.
 Questo progetto espone il design e lo sviluppo di un'\textbf{architettura client-server}, pensata per superare le limitazioni
-imposte da firewall e NAT nelle reti private.
+imposte da firewall e \gls{NAT} nelle reti private.
 Il meccanismo centrale \textbf{sostituisce} le tradizionali \textbf{connessioni socket} con un approccio basato su 
-\textbf{REST + WebSocket}, utilizzando Appwrite\footnote{\url{https://appwrite.io}} come Proxy.
+\textbf{REST + WebSocket}, utilizzando Appwrite\footnote{\url{https://appwrite.io}} \cite{appwrite_docs} come \gls{proxy}.
 Il sistema crea un \textbf{canale} di comunicazione \textbf{sicuro} su cui client e server interagiscono asincronamente 
 tramite eventi di creazione di documenti nel database di Appwrite.
 
-Viene quindi sviluppata una \textbf{libreria modulare} in C++ (con QT) per astrarre l'API di Appwrite, implementando 
-funzionalità come la gestione delle \textbf{sessioni}, l'identificazione dei canali basata su \textbf{UUID} e la 
-serializzazione dei payload in \textbf{JSON}. L'implementazione di tale libreria viene validata attraverso lo sviluppo 
+Viene quindi sviluppata una \textbf{libreria modulare} in C++ (con QT \cite{qt_docs}) per astrarre l'\gls{API} di Appwrite, implementando 
+funzionalità come la gestione delle \textbf{sessioni}, l'identificazione dei canali basata su \textbf{\gls{UUID}} e la 
+serializzazione dei payload in \textbf{\gls{JSON}}. L'implementazione di tale libreria viene validata attraverso lo sviluppo 
 di una semplice applicazione \textbf{Proof of Concept} (PoC), un \textbf{frontend}, realizzato con Qt/QML e compilato 
-con WebAssembly per l'esecuzione in browser, e un servizio \textbf{backend} nativo in C++.
+con \gls{WebAssembly} \cite{wasm_spec} per l'esecuzione in browser, e un servizio \textbf{backend} nativo in C++.
 
 \vspace{0.5cm}
 \noindent\rule{\textwidth}{0.5pt}
@@ -312,5 +321,12 @@ std::vector<float> input = {x, x, x}; // Input per il modello
 \chapter{Conclusioni}
 
 \section{Sviluppi futuri}
+
+\blankpage
+\pagenumbering{Roman}
+\printglossary[title=Glossario, toctitle=Glossario]
+
+\blankpage
+\printbibliography[heading=bibintoc, title=Bibliografia]
 
 \end{document}
