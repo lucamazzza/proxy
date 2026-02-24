@@ -6,7 +6,5 @@
 
 # TODO List
 
-- [x] Define requirements (& user stories eventually)
+- [ ] Add User Story and Features for Admin CRUD
 - [ ] Write README
-- [x] Document on Appwrite & Qt messaging system
-- [ ] ...
