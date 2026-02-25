@@ -6,7 +6,6 @@
 
 # TODO List
 
-- [ ] Define requirements (& user stories eventually)
+- [ ] Add User Story and Features for Admin CRUD
+- [ ] Remove Channel's Admin Story/Features
 - [ ] Write README
-- [ ] Document on Appwrite & Qt messaging system
-- [ ] ...
