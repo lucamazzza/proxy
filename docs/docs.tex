@@ -12,23 +12,23 @@
 \setmonofont{IBM Plex Mono}
 \newfontfamily\titlefont{Times New Roman}
 
-%Page Layout & Margins
+% Page Layout & Margins
 \usepackage[
     a4paper,
     top=3.0cm,
     bottom=3.0cm,
-    inner=2.5cm,  % Big margin for binding (Left on Odd, Right on Even)
-    outer=2.5cm,  % Standard margin for edge (Right on Odd, Left on Even)
+    inner=2.5cm,      % Big margin for binding (Left on Odd, Right on Even)
+    outer=2.5cm,      % Standard margin for edge (Right on Odd, Left on Even)
     bindingoffset=1cm,% Extra 1cm added purely for the binding side
     headheight=15pt
 ]{geometry}
 
 
-% --- Headers and Footers ---
+% Headers and Footers
 \setlength{\headheight}{15pt} % Fix warning about header height
 \usepackage{fancyhdr}
 \pagestyle{fancy}
-\fancyhf{} % Clear all defaults
+\fancyhf{}                % Clear all defaults
 \newif\ifshowlogo
 \showlogotrue
 \newcommand{\blankpage}{
@@ -46,18 +46,16 @@
 \renewcommand{\chaptermark}[1]{\markboth{#1}{}}
 
 % Style for Chapter pages (plain style usually suppresses headers, we override it)
-\fancyhead[LE]{\includegraphics[height=0.3cm]{header_small_logo.png}} % Left on Odd
-\fancyhead[RE]{\thepage}                                               % Right on Odd
-\fancyhead[LO]{\thepage}                                               % Left on Even
-\fancyhead[RO]{\nouppercase{\leftmark}}
+\fancyhead[LO]{\includegraphics[height=0.3cm]{header_small_logo.png}} % Left on Odd
+\fancyhead[RO, LE]{\thepage}                                               % Right on Odd
+\fancyhead[RE]{\nouppercase{\leftmark}}
 \fancyfoot[LO, RE]{\footnotesize \textit{Proxy basato su Appwrite}}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
 \fancypagestyle{plain}{
     \fancyhf{} % Clear defaults
     \fancyhead[LO]{\includegraphics[height=0.3cm]{header_small_logo.png}} 
-    \fancyhead[RO]{\thepage}
-    \fancyhead[LE]{\thepage}
+    \fancyhead[RO, LE]{\thepage}
     \fancyhead[RE]{\nouppercase{\leftmark}} 
     \fancyfoot[LO, RE]{\footnotesize \textit{Proxy basato su Appwrite}}
     \renewcommand{\headrulewidth}{0.4pt}
@@ -233,42 +231,82 @@ fontsize=\small,
 
 Le policy di sicurezza di rete moderne spesso isolano sia client che server rendendo
 impraticabili le connessioni dirette senza l'utilizzo di complesse configurazioni.
-Questo progetto espone il design e lo sviluppo di un'\textbf{architettura client-server}, pensata per superare le limitazioni
+Questo progetto espone il design e lo sviluppo di un'architettura client-server, pensata per superare le limitazioni
 imposte da firewall e \gls{NAT} nelle reti private.
-Il meccanismo centrale \textbf{sostituisce} le tradizionali \textbf{connessioni socket} con un approccio basato su 
-\textbf{REST + WebSocket}, utilizzando Appwrite\footnote{\url{https://appwrite.io}} \cite{appwrite_docs} come \gls{proxy}.
-Il sistema crea un \textbf{canale} di comunicazione \textbf{sicuro} su cui client e server interagiscono asincronamente 
+Il meccanismo centrale sostituisce le tradizionali connessioni socket con un approccio basato su 
+REST + WebSocket, utilizzando Appwrite\footnote{\url{https://appwrite.io}} \cite{appwrite_docs} come \gls{proxy}.
+Il sistema crea un canale di comunicazione sicuro su cui client e server interagiscono asincronamente 
 tramite eventi di creazione di documenti nel database di Appwrite.
 
-Viene quindi sviluppata una \textbf{libreria modulare} in C++ (con QT \cite{qt_docs}) per astrarre l'\gls{API} di Appwrite, implementando 
-funzionalità come la gestione delle \textbf{sessioni}, l'identificazione dei canali basata su \textbf{\gls{UUID}} e la 
-serializzazione dei payload in \textbf{\gls{JSON}}. L'implementazione di tale libreria viene validata attraverso lo sviluppo 
-di una semplice applicazione \textbf{Proof of Concept} (PoC), un \textbf{frontend}, realizzato con Qt/QML e compilato 
-con \gls{WebAssembly} \cite{wasm_spec} per l'esecuzione in browser, e un servizio \textbf{backend} nativo in C++.
+Viene quindi sviluppata una libreria modulare in C++ (con QT \cite{qt_docs}) per astrarre l'\gls{API} di Appwrite, implementando 
+funzionalità come la gestione delle sessioni, l'identificazione dei canali basata su \gls{UUID} e la 
+serializzazione dei payload in \gls{JSON}. L'implementazione di tale libreria viene validata attraverso lo sviluppo 
+di una semplice applicazione Proof of Concept (PoC), un frontend, realizzato con Qt/QML e compilato 
+con \gls{WebAssembly} \cite{wasm_spec} per l'esecuzione in browser, e un servizio backend nativo in C++.
 
 \vspace{0.5cm}
 \noindent\rule{\textwidth}{0.5pt}
 \vspace{0.5cm}
 
 \noindent Modern security policies often restrict direct client-server communication, especially in private networks.
-This project details the design and development of a \textbf{client-server architecture}, designed to overcome the
+This project details the design and development of a client-server architecture, designed to overcome the
 limitations of firewalls and NAT in private networks.
-The core mechanism \textbf{replaces} the traditional client-server \textbf{socket connections} with a
-\textbf{REST + WebSocket} based approach, using Appwrite as a Proxy.
-The system creates a \textbf{secure} communication \textbf{channel} on which clients and servers interact 
+The core mechanism replaces the traditional client-server socket connections with a
+REST + WebSocket based approach, using Appwrite as a Proxy.
+The system creates a secure communication channel on which clients and servers interact 
 asynchronously via document creation events in the Appwrite-hosted database.
 
-A modular C++ (with QT) \textbf{library} is developed to abstract the Appwrite API, implementing features such as 
-\textbf{session} management, \textbf{UUID}-based channel identification and \textbf{JSON} payload serialization. 
-The implementation of said library is validated through the development of a simple \textbf{Proof of Concept} (PoC) 
-application, a \textbf{frontend}, built with Qt/QML and compiled with WebAssembly for browser-based execution, and a 
-native C++ \textbf{backend} service.
+A modular C++ (with QT) library is developed to abstract the Appwrite API, implementing features such as 
+session management, UUID-based channel identification and JSON payload serialization. 
+The implementation of said library is validated through the development of a simple Proof of Concept (PoC) 
+application, a frontend, built with Qt/QML and compiled with WebAssembly for browser-based execution, and a 
+native C++ backend service.
 
 \chapter{Introduzione}
 
-Lo scopo del progetto è lo sviluppo di una libreria in C++ che consenta a client e server di comunicare in modo
-asincrono attraverso Appwrite ed un Proof of Concept che ne dimostri l'efficacia e l'utilità.
+Il progetto nasce dall'esigenza di risolvere una delle sfide che più comunemente affligge le architetture distribuite
+moderne, ovvero la comunicazione bidirezionale asincrona tra un client ed un server che risiedono in reti private.
 
+Lo scopo del progetto è quindi lo sviluppo di una libreria C++ che permetta di utilizzare Appwrite come middleware
+(proxy) per facilitare la creazione di canali di comunicazione sicuri e scalabili tra client e server.
+Al posto di tentare connessioni dirette instabili o poco sicure, entrambe le entità si connettono ad un istanza 
+Appwrite che funge da intermediario autenticato per lo scambio di messaggi strutturati in tempo reale.
+Il sistema deve garantire la sicurezza, fornendo accesso solamente ad utenti autenticati e autorizzati per l'accesso
+ai canali di comunicazione, delegando la gestione di credenziali, sicurezza e persistenza all'infrastruttura sottostante
+di Appwrite.
+
+Gli obbiettivi principali del lavoro sono articolati in diverse aree chiave:
+\begin{itemize}
+\item \textbf{Progettazione di un architettura sicura}: è necessario definire un modello di comunicazione dove il server
+    agisca da amministratore dell'infrastruttura di comunicazione (essendo autenticato tramite API Key) ed il frontend
+    come utente finale (autenticandosi come utente "normale").
+    Il server è inoltre responsabile della gestione dei canali di comunicazione, fornendo un meccanismo di creazione,
+    lettura, aggiornamento e cancellazione (CRUD) per canali, sessioni, mentre invece il frontend si preoccupa
+    semplicemente di connettersi a canali esistenti, inviare messaggi e ricevere notifiche di nuovi messaggi.
+
+\item \textbf{Sviluppo della libreria \texttt{appcom}}: una libreria modulare, scritta in C++ e basata su Qt, che 
+    fornisca un'interfaccia semplice ed intuitiva per interagire con l'API di Appwrite è necessaria per la strutturazione
+    del progetto; questa deve includere funzionalità per la gestione delle sessioni, l'identificazione dei canali
+    basandosi su UUID, la serializzazione, validazione e impacchettamento dei payload e la gestione degli eventi di 
+    comunicazione in modo asincrono.
+
+\item \textbf{Proof of Concept}: per validare l'efficacia e il funzionamento corretto del sistema è necessario lo
+    sviluppo di una semplice applicazione che dimostri la maniera di utilizzo della libreria in un contesto reale ed il
+    funzionamento tecnico del meccanismo di comunicazione. Questa consiste in una chat semplice, dove un frontend,
+    costruito con Qt/QML e compilato con WebAssembly per l'esecuzione tramite web browser, comunica con un servizio
+    backend nativo in C++, attraverso i canali di comunicazione gestiti da Appwrite tramite \texttt{appcom}.
+    Per semplificare la dimostrazione, il backend si limita al ruolo di \textit{echo server}.
+
+\item \textbf{Bootstrap deploy}: per facilitare l'adozione dell'intermediario Appwrite in soluzioni esistenti, è
+    necessario che, in presenza di un istanza "pulita" di Appwrite ed il server, quest'ultimo sia in grado, solamente
+    tramite la chiave API e l'URL dell'istanza, di creare in autonomia l'infrastruttura necessaria per il funzionamento,
+    dimodoché sia possibile integrare Appwrite sia come "primo cambiamento" in un'architettura esistente, sia nel caso
+    si necessiti di scalare orizzontalmente un sistema già configurato con questo proxy, permettendo di cambiare istanza
+    in modo dinamico, senza necessità di riconfigurazione.
+
+\pagebreak
+
+\end{itemize}
 \section{Pianificazione}
 
 \begin{enumerate}
