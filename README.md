@@ -7,4 +7,5 @@
 # TODO List
 
 - [ ] Add User Story and Features for Admin CRUD
+- [ ] Remove Channel's Admin Story/Features
 - [ ] Write README
