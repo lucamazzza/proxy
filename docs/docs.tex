@@ -303,10 +303,29 @@ Gli obbiettivi principali del lavoro sono articolati in diverse aree chiave:
     dimodoché sia possibile integrare Appwrite sia come "primo cambiamento" in un'architettura esistente, sia nel caso
     si necessiti di scalare orizzontalmente un sistema già configurato con questo proxy, permettendo di cambiare istanza
     in modo dinamico, senza necessità di riconfigurazione.
-
-\pagebreak
-
 \end{itemize}
+
+Il prodotto si avvale di uno stack tecnologico moderno e cross-platform, con l'obbiettivo di massimizzare la portabilità 
+e l'integrazione in diversi contesti applicativi, con un focus particolare su soluzioni web-based grazie alla 
+compilazione in WebAssembly.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Tecnologia} & \textbf{Ruolo} \\ \midrule
+Appwrite    & Funge da middleware (proxy) per la comunicazione tra client e server \\
+C++         & Linguaggio di programmazione per la libreria e il backend \\
+Qt          & Framework per lo sviluppo della libreria e del frontend \\
+QML         & Linguaggio per la definizione dell'interfaccia utente del frontend \\
+WebAssembly & Compilazione del frontend per l'esecuzione in browser \\
+JSON        & Formato per la serializzazione dei messaggi scambiati tra client e server \\
+Docker      & Contenitore per il deploy dell'istanza Appwrite e del backend \\
+\bottomrule
+\end{tabular}
+\caption{Tecnologie utilizzate nel progetto}
+\end{table}
+
 \section{Pianificazione}
 
 \begin{enumerate}
