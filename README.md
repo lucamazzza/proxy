@@ -201,7 +201,7 @@ cmake .. -DBUILD_FRONTEND=OFF -DBUILD_BACKEND=ON
    - Create: Authenticated users
    ```
 
-> [NOTE!]
+> [!NOTE]
 > The library has is designed to provide commands to bootstrap the required Appwrite database and collection structure.
 
 ### Configuration
