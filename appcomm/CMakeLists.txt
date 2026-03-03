@@ -10,12 +10,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Network)
 
 add_library(appcomm STATIC
   appcomm.cpp
   appcomm.h
+  appwritesdk.h
+  appwritesdk.cpp
+
 )
 
 target_link_libraries(appcomm PRIVATE Qt${QT_VERSION_MAJOR}::Core)
-
+target_link_libraries(appcomm PRIVATE Qt${QT_VERSION_MAJOR}::Network)
 target_compile_definitions(appcomm PRIVATE APPCOMM_LIBRARY)
