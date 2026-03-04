@@ -177,35 +177,35 @@ public:
     void createDocument(const ConnectionConfig &config, const QJsonObject &data);
 
     /*!
-     * @brief
+     * @brief Lists documents in the configured collection with optional query filters.
      *
-     * @param config
-     * @param queries
+     * @param config Connection configuration with database and collection IDs
+     * @param queries Optional array of query strings (e.g., ["equal(\"channelId\",\"general\")", "limit(100)"])
      */
     void listDocuments(const ConnectionConfig &config, const QJsonArray &queries = QJsonArray());
 
     /*!
-     * @brief
+     * @brief Retrieves a single document by ID.
      *
-     * @param config
-     * @param documentId
+     * @param config Connection configuration with database and collection IDs
+     * @param documentId Unique document identifier
      */
     void getDocument(const ConnectionConfig &config, const QString &documentId);
 
     /*!
-     * @brief
+     * @brief Updates an existing document with new data.
      *
-     * @param config
-     * @param documentId
-     * @param data
+     * @param config Connection configuration with database and collection IDs
+     * @param documentId Unique document identifier
+     * @param data JSON object containing updated document data
      */
     void updateDocument(const ConnectionConfig &config, const QString &documentId, const QJsonObject &data);
 
     /*!
-     * @brief
+     * @brief Deletes a document from the collection.
      *
-     * @param config
-     * @param documentId
+     * @param config Connection configuration with database and collection IDs
+     * @param documentId Unique document identifier to delete
      */
     void deleteDocument(const ConnectionConfig &config, const QString &documentId);
 };
@@ -230,9 +230,9 @@ public:
     void createDatabase(const ConnectionConfig &config, const QString &name);
 
     /*!
-     * @brief
+     * @brief Deletes a database from the Appwrite project.
      *
-     * @param config
+     * @param config Connection configuration with database ID and API key
      */
     void deleteDatabase(const ConnectionConfig &config);
 
@@ -241,21 +241,22 @@ public:
      *
      * @param config Connection configuration with database ID and API key
      * @param name Collection name
+     * @param permissions Optional array of permission strings (default: read/create for anyone)
      */
     void createCollection(const ConnectionConfig &config, const QString &name, const QJsonArray &permissions = QJsonArray());
 
     /*!
-     * @brief
+     * @brief Deletes a collection from the database.
      *
-     * @param config
+     * @param config Connection configuration with database and collection IDs
      */
     void deleteCollection(const ConnectionConfig &config);
 
     /*!
-     * @brief
+     * @brief Updates the permissions for an existing collection.
      *
-     * @param config
-     * @param permissions
+     * @param config Connection configuration with database and collection IDs
+     * @param permissions Array of permission strings (e.g., ["read(\"any\")", "write(\"users\")"])
      */
     void updateCollectionPermissions(const ConnectionConfig &config, const QJsonArray &permissions);
 

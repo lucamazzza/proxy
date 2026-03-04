@@ -23,7 +23,6 @@ void BaseSDK::onResponseFinished() {
         if (doc.isObject()) {
             emit requestSuccess(doc.object());
         } else if (doc.isArray()) {
-            // Wrap array in object for consistency
             QJsonObject wrapper;
             wrapper["documents"] = doc.array();
             emit requestSuccess(wrapper);
