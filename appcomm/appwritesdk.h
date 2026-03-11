@@ -6,7 +6,7 @@
  * Includes client-side authentication and document operations, as well as
  * server-side administrative functions for database and user management.
  *
- * @copyright 2026 SUPSI
+ * @copyright Copyright (c) 2026 SUPSI
  */
 
 #ifndef APPWRITESDK_H

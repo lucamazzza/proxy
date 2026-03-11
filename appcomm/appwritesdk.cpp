@@ -1,3 +1,14 @@
+/*!
+ * @file appwritesdk.cpp
+ * @brief Module in charge of the connection via HTTP to an Appwrite instance.
+ *
+ * Provides Qt-based wrapper classes for Appwrite REST API operations.
+ * Includes client-side authentication and document operations, as well as
+ * server-side administrative functions for database and user management.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "appwritesdk.h"
 #include <QJsonDocument>
 #include <QUrlQuery>
