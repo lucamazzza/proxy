@@ -8,8 +8,8 @@
 % Fonts
 \usepackage{microtype} % Improves text spacing
 \usepackage{fontspec}
-\setmainfont{Helvetica}
-\setmonofont{IBM Plex Mono}
+\setmainfont[Scale=0.9]{Helvetica}
+\setmonofont[Scale=0.9]{IBM Plex Mono}
 \newfontfamily\titlefont{Times New Roman}
 
 % Page Layout & Margins
@@ -262,6 +262,8 @@ The implementation of said library is validated through the development of a sim
 application, a frontend, built with Qt/QML and compiled with WebAssembly for browser-based execution, and a 
 native C++ backend service.
 
+\blankpage
+
 \chapter{Introduzione}
 
 Il progetto nasce dall'esigenza di risolvere una delle sfide che più comunemente affligge le architetture distribuite
@@ -284,7 +286,7 @@ Gli obbiettivi principali del lavoro sono articolati in diverse aree chiave:
     lettura, aggiornamento e cancellazione (CRUD) per canali, sessioni, mentre invece il frontend si preoccupa
     semplicemente di connettersi a canali esistenti, inviare messaggi e ricevere notifiche di nuovi messaggi.
 
-\item \textbf{Sviluppo della libreria \texttt{appcom}}: una libreria modulare, scritta in C++ e basata su Qt, che 
+\item \textbf{Sviluppo della libreria \texttt{appcomm}}: una libreria modulare, scritta in C++ e basata su Qt, che 
     fornisca un'interfaccia semplice ed intuitiva per interagire con l'API di Appwrite è necessaria per la strutturazione
     del progetto; questa deve includere funzionalità per la gestione delle sessioni, l'identificazione dei canali
     basandosi su UUID, la serializzazione, validazione e impacchettamento dei payload e la gestione degli eventi di 
@@ -294,7 +296,7 @@ Gli obbiettivi principali del lavoro sono articolati in diverse aree chiave:
     sviluppo di una semplice applicazione che dimostri la maniera di utilizzo della libreria in un contesto reale ed il
     funzionamento tecnico del meccanismo di comunicazione. Questa consiste in una chat semplice, dove un frontend,
     costruito con Qt/QML e compilato con WebAssembly per l'esecuzione tramite web browser, comunica con un servizio
-    backend nativo in C++, attraverso i canali di comunicazione gestiti da Appwrite tramite \texttt{appcom}.
+    backend nativo in C++, attraverso i canali di comunicazione gestiti da Appwrite tramite \texttt{appcomm}.
     Per semplificare la dimostrazione, il backend si limita al ruolo di \textit{echo server}.
 
 \item \textbf{Bootstrap deploy}: per facilitare l'adozione dell'intermediario Appwrite in soluzioni esistenti, è
@@ -328,30 +330,80 @@ Docker      & Contenitore per il deploy dell'istanza Appwrite e del backend \\
 
 \section{Pianificazione}
 
+Di seguito sono descritte le fasi principali che sono state pianificate per lo sviluppo del progetto. Il piano non è
+ovviamente rigido, data la natura iterativa dello sviluppo software, ma fornisce una roadmap generale per l'implementazione
+e la validazione del sistema.
+
+La presenza di un piano che non sia troppo statico è fondamentale per valorizzare l'obbiettivo di sviluppo piuttosto
+che la semplice realizzazione di un prodotto, permettendo di adeguarsi dinamicamente alle esigenze che potenzialmente
+emergono durante le varie fasi di sviluppo e di discussione con il relatore.
+
+Essendo anche le tecnologie usate relativamente nuove per tutti i membri del team, soprattutto per quanto riguarda
+\gls{Appwrite} e \gls{WebAssembly}, è stato necessario prevedere una fase iniziale di analisi e studio approfondito,
+prima di procedere con l'implementazione vera e propria, per garantire una comprensione solida dei
+meccanismi da implementare.
+
 \begin{enumerate}
-\item \textbf{Analisi:}
-\item \textbf{Applicazione demo:} 
-\item \textbf{Definire struttura API:}
+\item \textbf{Analisi}: occorre dello studio dedicato ad approfondire come possa essere utilizzato \gls{Appwrite}
+    come intermediario per la comunicazione tra client e server, comprendere come adattare l'API dello stesso alle esigenze
+    tecniche del progetto e studiare le tecnologie coinvolte;
+
+\item \textbf{Pianificazione}: è necessario definire un piano di sviluppo per quanto riguarda la libreria \texttt{appcomm},
+    identificando le funzionalità chiave da implementare, formalizzandole tramite delle task. Questo va ripetuto anche
+    per la parte di sviluppo del frontend e del backend;
+
+\item \textbf{Design}: è necessario definire un'architettura per la libreria \texttt{appcomm} che sia modulare, scalabile
+    e manutenibile, identificando i moduli chiave, le loro responsabilità e le interazioni tra di essi. Inoltre, è
+    necessario definire un'architettura generale per il sistema, identificando i componenti chiave, le loro responsabilità
+    e le interazioni tra di essi. Ciò include la produzione di diversi diagrammi che al meglio esplichino le scelte
+    architetturali, come ad esempio diagrammi delle classi, diagrammi di sequenza e diagrammi di flusso;
+
+\item \textbf{Implementazione Libreria}: occorre implementare dapprima la libreria \texttt{appcomm}, la quale verrà
+    implementata con il classico approccio per task, dove si analizza dapprima il relativo requisito, si implementa
+    quanto necessario per soddisfarlo, si definisce un'unità di test per validarne il funzionamento e si procede con
+    quanto segue. Lo sviluppo della libreria deve essere imperativamente preceduto da una fase di design dell'architettura
+    della stessa, per garantire una struttura modulare, scalabile e manutenibile;
+
+\item \textbf{Implementazione PoC}: una volta che la libreria à sufficientemente matura, è possibile procedere con lo
+    sviluppo del Proof of Concept, il quale ha l'unico scopo di validare il funzionamento tecnico del sistema, deve
+    quindi essere il più semplice possibile, limitato appunto alla dimostrazione del funzionamento della libreria;
+
+\item \textbf{Test e Validazione}: una volta che il PoC è completo, è necessario procedere con una fase di test e
+    validazione del prodotto finito, per garantire che tutte le funzionalità siano implementate correttamente e che il
+    sistema funzioni come previsto, dal punto di vista del client e da quello del server, in scenari di comunicazione
+    reali;
+
+\item \textbf{Documentazione}: parallelamente alle fasi di sviluppo, è necessario procedere con la stesura della
+    documentazione tecnica del progetto, che include sia la documentazione della libreria \texttt{appcomm}, sia un
+    manuale d'uso per il prodotto finito, che spieghi come utilizzare il sistema, come configurarlo e come integrarlo in
+    soluzioni esistenti. Questa guida utente riassume la documentazione tecnica integrata nei vari moduli della libreria,
+    fornendo esempi pratici di utilizzo e consigli di troubleshooting per facilitare l'adozione del sistema.
+
 \end{enumerate}
+
+Questo rapporto è stato scritto durante tutta la durata del progetto, parallelamente a tutte le fasi descritte sopra.
+
+\newpage{}
 
 \section{Requisiti}
 \begin{table}[h]
 \centering
-\begin{tabular}{@{}lp{8cm}l@{}}
+\begin{tabular}{@{}lp{11cm}l@{}}
 \toprule
 \textbf{ID} & \textbf{Descrizione} & \textbf{Note} \\ \midrule
-R-01 & \textit{Proxy} deve supportare l'API di Appwrite & -\\
-R-02 & X & \\
-R-03 & X & \\
-R-04 & X & \\
-R-05 & X & \\
-R-06 & X & \\
-R-07 & X & \\
-R-08 & X & \\
-R-09 & X & \\ 
+\texttt{R-01} & \textit{Appcomm} deve astrarre l'API di Appwrite & Modulo dedicato\\
+\texttt{R-02} & \textit{Appcomm} deve esporre lo stato di connessione con Appwrite & -\\
+\texttt{R-03} & \textit{Appcomm} detiene dei modelli di dominio & -\\
+\texttt{R-04} & \textit{Appcomm} deve filtrare i messaggi sulla base del destinatario & -\\
+\texttt{R-05} & \textit{Appcomm} necessita un sistema di Recovery per i messaggi persi & -\\
+\texttt{R-06} & \textit{Appcomm} tiene una cache degli ultimi $n$ messaggi & -\\
+\texttt{R-07} & \textit{Appcomm} immagazzina una policy di persistenza dei messaggi & -\\
+\texttt{R-08} & \textit{Appcomm} gestisce un modello unificato per gli errori & -\\
+\texttt{R-09} & \textit{Appcomm} rende intercambiabile la modalità di comunicazione (RT/Poll) & -\\
+\texttt{R-10} & \textit{Appcomm} fornisce un Wrapper per la gestione di connessione/eventi & -\\
 \bottomrule
 \end{tabular}
-\caption{Requisiti del progetto}
+\caption{Requisiti di \texttt{Appcomm}}
 \end{table}
 
 \chapter{Stato dell'arte}
