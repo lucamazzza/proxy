@@ -17,6 +17,7 @@ add_library(appcomm STATIC
   appcomm.h
   appwritesdk.h
   appwritesdk.cpp
+  ratelimiter.h ratelimiter.cpp
 
 )
 
