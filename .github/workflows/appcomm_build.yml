@@ -23,7 +23,7 @@ jobs:
           version: '6.10.2'
           host: 'linux'
           target: 'desktop'
-          modules: 'qtnetwork, qttest'
+          modules: 'qtnetwork qttest'
 
       - name: Install build essentials
         run: |
