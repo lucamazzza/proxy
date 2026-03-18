@@ -8,7 +8,7 @@
 % Fonts
 \usepackage{microtype} % Improves text spacing
 \usepackage{fontspec}
-\setmainfont[Scale=0.9]{Helvetica}
+\setmainfont[Scale=0.95]{Helvetica}
 \setmonofont[Scale=0.9]{IBM Plex Mono}
 \newfontfamily\titlefont{Times New Roman}
 
@@ -407,6 +407,121 @@ Questo rapporto è stato scritto durante tutta la durata del progetto, parallela
 \end{table}
 
 \chapter{Stato dell'arte}
+
+L'interconnessione tra sistemi residenti in reti locali protette e interfacce web rappresenta una delle sfide
+architettoniche più rilevanti nei sistemi distribuiti moderni. Il problema fondamentale risiede nella natura asimmetrica
+dei sistemi \gls{NAT} e Firewall, che permettono, tipicamente senza particolari filtri, le connessioni \gls{outbound}
+ma bloccano sistematicamente i tentativi di accesso \gls{inbound}.
+
+\section{Limiti delle infrastrutture di rete tradizionali}
+
+La maggior parte delle reti locali opera dietro configurazioni NAT e Firewall Stateful. Mentre queste tecnologie
+proteggono la rete interna, impediscono l'instaurazione di socket passivi all'interno della LAN, che siano raggiungibili
+dall'esterno.
+
+Le soluztioni storiche, come il Port Forwarding o UPnP sono oggi considerate deprecate in contesti professionali a causa
+dell'elevata vulnerabilità ai vettori d'attacco \textit{Zero-day} e della dipendenza verso hardware di rete, che
+non garantisce la portabilità della soluzione.
+
+\section{Tecnologie di superamento dei Firewall}
+
+Attualmente, le metodologie per consentire la comunicazione tra entità separate da barriere di rete si dividono
+in tre categorie principali, che rappresentano le soluzioni più \textit{tradizionali}; ognuna di queste ha dei limiti
+operativi specifici:
+
+\begin{itemize}
+
+\item\textbf{Port Forwarding \& Reverse Proxy}: Queste tecnologie prevedono l'apertura statica di porte direttamente sui
+    router, oppure di esporre alla rete WAN un server che risiede invece nella LAN. Sebbene possano essere efficienti,
+    aumentano la superficie di attacco del backend e richiedono privilegi di amministrazione sulla rete non sempre
+    disponibili in contesti aziendali o sotto reti mobili.
+
+\item\textbf{VPN (Virtual Private Network)}: Consiste nella creazione di un tunnel logico attraverso la rete, nel quale
+    è possibile comunicare direttamente in maniera sicura. Queste tuttavia introducono un importante overhead in termini
+    di latenza, e spesso richiedono l'installazione di software specifici per il client, rendendole inadatte per
+    per applicazioni web-based leggere o temporanee.
+
+\item\textbf{Protocolli Pub/Sub (MQTT\footnote{\url{https://mqtt.org/}}/AMQP\footnote{\url{https://amqp.org/}})}: 
+    Utilizzano un broker centrale come punto di incontro. Sebbene ideali per l'IoT, la loro integrazione in ambienti
+    Web puro richiede spesso gateway WebSocket aggiuntivi, complicando il deployment in architetture cross-platform.
+
+\end{itemize}
+
+\section{Protocolli di messaggistica e middleware}
+
+Esistono diverse tecnologie che tentano di risolvere il problema del \textit{punto di incontro} tra due entità separate.
+
+Tra queste appare REST, il quale è de-facto lo standard per il web.
+Tuttavia REST è per natura \textit{stateless}, ed è basato su un modello \texttt{request-response}. Per ottenere la
+bidirezionalità necessaria ad un sistema di controllo o ad una chat, richiede tecniche di Long Polling\footnote{\url{https://ably.com/topic/long-polling}},
+che risultano inefficienti in termini di banda e latenza.
+
+Un'altra tecnologia è WebRTC, il quale è un protocollo avanzato, mirato alla comunicazione Peer to Peer. Sebbene offra
+latenze minime, la sua implementazione in C++ nativo richiede librerie di enormi dimensioni ed è estremamente complessa
+da integrare in un sistema Wasm senza un server di segnalazione esterno.
+
+Infine è anche presente MQTT, il quale è invece un protocollo leggero di tipo Pub/Sub. È molto efficace, ma la sicurezza
+è spesso delegata a strati esterni, e non offre una persistenza dei dati strutturata.
+
+\section{Il paradigma Backend-as-a-Service (BaaS)}
+
+L'evoluzione dei servizi Cloud ha portato all'emergere di piattaforme BaaS\footnote{\url{https://geeksforgeeks.org/firebase/what-is-firebase/}}
+(come Firebase, Supabase o Appwrite).
+Queste soluzioni agiscono come un middleware neutro sulla rete pubblica. 
+Il vantaggio risiede nel fatto che sia il client che il server effettuano connessioni outbound verso la piattaforma,
+che sono permesse dai firewall standard, eliminando la necessità di esporre porte fisiche sul backend nativo.
+
+\section{Il ruolo di Appwrite come middleware evoluto}
+
+Appwrite si inserisce in questo scenario non solo come un database, ma come un Orchestratore di Backend.
+A differenza di un semplice broker di messaggi, Appwrite fornisce:
+
+\begin{itemize}
+\item\textbf{Identity Management}: L'integrazione nativa di sessioni utente (JWT o Cookie) permette di proteggere i
+    canali di comunicazione senza dover implementare logiche di cifratura custom.
+
+\item\textbf{Protocollo Realtime}: Appwrite astrae la gestione dei socket. Il client si sottoscrive a un canale
+    (documento) e riceve notifiche push al variare dello stato, simulando una comunicazione diretta pur passando per
+    un proxy sicuro.
+
+\item\textbf{Self-Hosting/Cloud}: Seguendo la filosofia dell'indipendenza tecnologica, il supporto a Docker permette di
+    evitare il Vendor Lock-in, tipico di piattaforme come Firebase.
+
+\end{itemize}
+
+\newpage{}
+
+\section{WebAssembly e Qt}
+
+L'aspetto che porta l'innovazione più grande del progetto è la possibilità di utilizzare WebAssembly per compilare
+applicazioni Qt, per poi essere in grado di utilizzarle tramite Web Browser. Ciò permette di sviluppare una libreria
+unica, che funzioni per il backend in C++, e che sia compatibile con l'applicazione web del frontend.
+
+In tale situazione, è garantita la serializzazione e deserializzazione identica dei messaggi, la gestione identica degli
+errori e che i test di unità siano validi per l'intero ecosistema.
+
+\section{Comparativa delle tecnologie}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lp{4cm}lp{4cm}ll@{}}
+\toprule
+\textbf{Categoria} & \textbf{Soluzione} & \textbf{Persistenza} & \textbf{Sicurezza} \\ \midrule
+Direct     & Port Forwarding & No       & Bassa \\
+Tunnel     & VPN/SSH         & No       & Alta \\
+Pub/Sub    & MQTT            & Limitata & Media \\
+BaaS Proxy & Appwrite        & Alta     & Alta \\
+\bottomrule
+\end{tabular}
+\caption{Analisi comparativa delle tecnologie}
+\end{table}
+
+\section{Conclusione}
+
+In conclusione, la soluzione proposta rappresenta un avanzamento rispetto ai metodi tradizionali di comunicazione 
+cross-network. Sfruttando la robustezza di un middleware BaaS e la portabilità del binario WebAssembly, il progetto 
+risolve i problemi di latenza, sicurezza e configurazione di rete in un'unica architettura software modulare e
+manutenibile.
 
 \chapter{Design e implementazione}
 \section{API}
