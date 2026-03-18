@@ -40,7 +40,7 @@ struct Message {
 };
 
 struct SessionInfo {
-    QString channelId;
+    QString userId;
     QString sessionId;
     MemberType memberType;
     QDateTime createdAt;
@@ -63,9 +63,9 @@ struct ChannelMember {
 };
 
 struct PersistencePolicy {
-    int messageTTL;
-    int sessionTTL;
-    int inactiveChannelTTL;
+    int messageTTL = -1; //Per non far contenere random memory, ma non metto logica di business in model.
+    int sessionTTL = -1;
+    int inactiveChannelTTL = -1;
 };
 
 struct AppCommConfig {
