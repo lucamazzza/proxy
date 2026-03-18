@@ -46,7 +46,7 @@ struct SessionInfo {
     QDateTime createdAt;
     QDateTime expiresAt;
 
-    bool isExpired();
+    bool isExpired() const;
     static SessionInfo fromJson(const QJsonObject& obj);
 };
 
@@ -59,7 +59,7 @@ struct ChannelMember {
     bool isActive;
 
     QJsonObject toJson() const;
-    static Message fromJson(const QJsonObject& obj);
+    static ChannelMember fromJson(const QJsonObject& obj);
 };
 
 struct PersistencePolicy {
