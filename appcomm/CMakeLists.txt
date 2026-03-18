@@ -20,6 +20,7 @@ add_library(appcomm STATIC
   ratelimiter.h ratelimiter.cpp
   model.h
   errormodel.h
+  model.cpp
 
 )
 
