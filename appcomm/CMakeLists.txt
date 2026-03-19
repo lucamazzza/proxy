@@ -21,6 +21,7 @@ add_library(appcomm STATIC
   model.h
   errormodel.h
   model.cpp
+  errormodel.cpp
 
 )
 
