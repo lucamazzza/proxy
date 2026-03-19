@@ -135,6 +135,16 @@ fontsize=\small,
 \makeglossaries
 \loadglsentries{glossary.tex}
 
+% PDF Metadata
+\hypersetup{
+    pdftitle={Progetto di Semestre SP2526},
+    pdfauthor={Mazza Luca, Mondini Manuela},
+    pdfsubject={Proxy basato su Appwrite},
+    pdfkeywords={Appwrite, Proxy, C++, WebAssembly, Qt},
+    pdfproducer={XeLaTeX},
+    pdfcreator={XeLaTeX with hyperref}
+}
+
 \begin{document}
 
 % Custom Title Page 
@@ -552,7 +562,7 @@ il che risulta consistente e comodo per il resto dell'implementazione e soprattu
         comunicazione;
 
     \item\texttt{BaseSDK}: Classe base astratta che gestisce l'istanza di \texttt{QNetworkAccessManager}, la gestione 
-        dei Cookie (con \texttt{QNetworkCookieJar}) e la logica comune di parsing delle risposte e degli errori. Qui
+        dei Cookie (con \texttt{QNetworkCookieJar}\footnote{\url{https://doc.qt.io/qt-6/qnetworkaccessmanager.html}}) e la logica comune di parsing delle risposte e degli errori. Qui
         vengono impiegati \texttt{signals} e \texttt{slots} per la comunicazione.
 
     \item\texttt{Client}: Specializzazione dedicata al frontend. Gestisce tutte le operazioni non-privilegiate, come
@@ -625,6 +635,8 @@ client->createDocument(config, msg);
 Incluso nell'SDK, è presente un parser intelligente, che estrae i messaggi di errore restituiti da Appwrite (per esempio
 \textit{Invalid credentials} o \textit{Document not found} e li propaga attraverso il segnale \texttt{requestError}, 
 permettendo una gestione centralizzata dei guasti nel modulo superiore di logica di business.
+
+\section{Cache dei messaggi recenti}
 
 \chapter{Test e validazione}
 
