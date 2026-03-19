@@ -524,15 +524,107 @@ risolve i problemi di latenza, sicurezza e configurazione di rete in un'unica ar
 manutenibile.
 
 \chapter{Design e implementazione}
-\section{API}
-Di seguito è riportato un esempio di codice per l'inizializzazione.
+\section{Appwrite SDK}
+
+Il modulo \texttt{AppwriteSDK} costituisce il cuore tecnologico della libreria \texttt{appcomm}. Questo astrae l'API
+REST\footnote{\url{https://appwrite.io/docs/apis/rest}} di Appwrite, permettendo al resto della libreria di interagire
+con il backend senza dover gestire manualmente la complessità del protocollo HTTP o della gestione delle sessioni.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{appwritesdk.png}
+\caption{Struttura di classi di \texttt{AppwriteSDK}}
+\end{figure}
+
+L'architettura del modulo segue i principi di ereditarietà, con lo scopo principale di separare le responsabilità per
+quello che riguarda la parte che interessa al client, e quella che interessa al server.
+
+La scelta di utilizzare Qt, tramite \texttt{QNetworkAccessManager}\footnote{\url{https://doc.qt.io/qt-6/qnetworkaccessmanager.html}}
+è principalmente dovuta alla necessità del frontend di eseguire una build con WebAssembly, il quale non supporta librerie 
+di comunicazione come \texttt{Curl}.
+Inoltre l'utilizzo di tale libreria, permette la connessione e la comunicazione tramite \texttt{signals} e \texttt{slots},
+il che risulta consistente e comodo per il resto dell'implementazione e soprattutto per il testing del modulo.
+
+\subsection{Componenti principali}
+
+\begin{enumerate}
+    \item\texttt{ConnectionConfig}: Struttura che incapsula le credenziali e gli identificatori necessari per la 
+        comunicazione;
+
+    \item\texttt{BaseSDK}: Classe base astratta che gestisce l'istanza di \texttt{QNetworkAccessManager}, la gestione 
+        dei Cookie (con \texttt{QNetworkCookieJar}) e la logica comune di parsing delle risposte e degli errori. Qui
+        vengono impiegati \texttt{signals} e \texttt{slots} per la comunicazione.
+
+    \item\texttt{Client}: Specializzazione dedicata al frontend. Gestisce tutte le operazioni non-privilegiate, come
+        l'autenticazione anonima o tramite email e la creazione di documenti nel database.
+
+    \item\texttt{Server}: Specializzazione privilegiata per il backend. Utilizzando la chiave API esegue le operazioni
+        amministrative, come il provisioning del database, la creazione di attributes e la gestione degli utenti.
+
+\end{enumerate}
+
+\subsection{Comunicazione asincrona (con \texttt{signals} e \texttt{slots})}
+
+A differenza di un approccio sincrono, quindi bloccante, l'utilizzo del meccanismo di Qt \texttt{signals} e \texttt{slots}
+è stato scelto per garantire la latenza minima di rete. Quando viene inviata una richiesta alla REST API, il controllo
+torna immediatamente all'applicazione; una volta ricevuta una risposta, viene emesso un segnale, tra \texttt{requestSuccess}
+o \texttt{requestError}. Tutto ciò è essenziale per WebAssembly, del quale il thread principale non può mai essere bloccato.
+
+\subsection{Gestione della sessione}
+
+L'SDK è configurato per utilizzare un \texttt{QNetworkCookieJar}. Nel caso del client, permette ad Appwrite id iniettare
+un cookie di sessione dopo il login. Qt gestisce automaticamente la persistenza di quest'ultimo nelle richieste
+successive, simulando lo stato di autenticazione tipico di un browser senza dover gestire manualmente i token JWT nel
+codice.
+
+\subsection{Dualità Server-Client}
+
+Sebbene il codice sia condiviso, l'SDK implementa una distinzione netta tra la modalità \texttt{ADMIN} e \texttt{USER}.
+
+Il server agisce come supervisore; crea l'infrastruttura e gestisce l'integrità dei dati. Il client invece interagisce
+esclusivamente con i propri canali autorizzati. Questa separazione garantisce che le chiavi API amministrative non
+vengano mai compilate nel binario esposto pubblicamente.
+
+\subsection{Utilizzo}
+
+Per utilizzare il modulo, è dapprima necesasrio definire una \texttt{ConnectionConfig} e istanziare uno dei due
+componenti desiderati (\texttt{Client}/\texttt{Server}):
 
 \begin{minted}{cpp}
-// Esempio di inizializzazione
-float x = 0.5f;
-std::vector<float> input = {x, x, x}; // Input per il modello
-// Altri parametri...
+AppwriteSDK::ConnectionConfig config;
+config.endpoint = "https://cloud.appwrite.io/v1";
+config.projectId = "my-project-id";
+config.dbId = "chat-db";
+// Altri campi...
+
+QNetworkAccessManager* mgr = new QNetworkAccessManager(this);
+AppwriteSDK::Client* client = new AppwriteSDK::Client(mgr, this);
 \end{minted}
+
+Di seguito un esempio di flusso, dove viene effettuato un login e l'invio di un messaggio:
+
+\begin{minted}{cpp}
+// Connessione ai segnali
+connect(client &AppwriteSDK::Client::requestSuccess, this,
+[](const QJsonObject& data){
+    qDebug() << "Success: " << data;
+});
+
+// Login Asincrono
+client->createEmailSession(config, "user@example.com", "password123");
+
+// Invio messaggio
+QJsonObject msg;
+msg["payload"] = "Hello, World!";
+msg["channelId"] = "room-01";
+client->createDocument(config, msg);
+\end{minted}
+
+\subsection{Gestione degli errori}
+
+Incluso nell'SDK, è presente un parser intelligente, che estrae i messaggi di errore restituiti da Appwrite (per esempio
+\textit{Invalid credentials} o \textit{Document not found} e li propaga attraverso il segnale \texttt{requestError}, 
+permettendo una gestione centralizzata dei guasti nel modulo superiore di logica di business.
 
 \chapter{Test e validazione}
 
