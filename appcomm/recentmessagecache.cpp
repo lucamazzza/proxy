@@ -9,6 +9,8 @@ RecentMessageCache::RecentMessageCache(int capacity, QObject *parent)
 
 void RecentMessageCache::addMessage(const QString &messageId, const QJsonObject &data) {
     if (messageId.isEmpty()) return;
+    if (m_capacity <= 0) return;
+    
     if (m_cache.contains(messageId)) {
         m_cache[messageId].data = data;
         m_cache[messageId].timestamp = QDateTime::currentMSecsSinceEpoch();

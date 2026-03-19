@@ -18,6 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(TEST_FILES
     tst_appwritesdk.cpp
     tst_ratelimiter.cpp
+    tst_recentmessagecache.cpp
     # tst_models.cpp
     # tst_appcommclient.cpp
 )
