@@ -40,6 +40,12 @@ Thumbs.db
 *.qbs.user*
 CMakeLists.txt.user*
 
+# CMake merge artifacts
+appcomm/*_BASE_*.txt
+appcomm/*_LOCAL_*.txt
+appcomm/*_REMOTE_*.txt
+appcomm/*_BACKUP_*.txt
+
 # xemacs temporary files
 *.flc
 
