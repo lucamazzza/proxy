@@ -73,13 +73,13 @@ SessionInfo SessionInfo::fromJson(const QJsonObject& obj) {
 
     const QJsonValue userIdValue = obj.value("userId");
     const QJsonValue sessionIdValue = obj.value("sessionId");
-    const QJsonValue memberTypeValue = obj.value("memberType");
+    const QJsonValue authTypeValue = obj.value("authType");
     const QJsonValue createdAtValue = obj.value("createdAt");
     const QJsonValue expiresAtValue = obj.value("expiresAt");
 
     if (!userIdValue.isString()
         || !sessionIdValue.isString()
-        || !memberTypeValue.isDouble()
+        || !authTypeValue.isDouble()
         || !createdAtValue.isString()
         || !expiresAtValue.isString()) {
         return {};
@@ -87,7 +87,7 @@ SessionInfo SessionInfo::fromJson(const QJsonObject& obj) {
 
     sessionInfo.userId = userIdValue.toString().trimmed();
     sessionInfo.sessionId = sessionIdValue.toString().trimmed();
-    sessionInfo.memberType = static_cast<MemberType>(memberTypeValue.toInt());
+    sessionInfo.authType = static_cast<AuthType>(authTypeValue.toInt());
     sessionInfo.createdAt = QDateTime::fromString(createdAtValue.toString(), Qt::ISODate);
     sessionInfo.expiresAt = QDateTime::fromString(expiresAtValue.toString(), Qt::ISODate);
 

@@ -7,7 +7,7 @@
 
 namespace model {
 
-enum class MemberType {
+enum class AuthType {
     Guest = 0,
     Email
 };
@@ -42,7 +42,7 @@ struct Message {
 struct SessionInfo {
     QString userId;
     QString sessionId;
-    MemberType memberType;
+    AuthType authType;
     QDateTime createdAt;
     QDateTime expiresAt;
 
