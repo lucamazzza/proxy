@@ -44,7 +44,7 @@ void RecoveryManager::requestFrom(const QString &messageId) {
     QJsonArray queries;
     queries.append(QString("greaterThan(\"timestamp\",\"%1\")").arg(startMsg.timestamp.toString(Qt::ISODate)));
     queries.append("orderAsc(\"timestamp\")");
-    queries.append(QString("limit(%1)").arg(m_cache.size()));
+    queries.append(QString("limit(%1)").arg(m_cache->size()));
     m_client->listDocuments(m_config, queries);
 }
 
