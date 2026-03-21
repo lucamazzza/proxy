@@ -19,6 +19,10 @@ add_library(appcomm STATIC
   appwritesdk.cpp
   ratelimiter.h ratelimiter.cpp
   recentmessagecache.h recentmessagecache.cpp
+  model.h
+  errormodel.h
+  model.cpp
+  errormodel.cpp
 
 )
 
