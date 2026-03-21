@@ -13,19 +13,12 @@
 
 #include <QObject>
 #include <QString>
-#include <QJsonObject>
 #include <QQueue>
 #include <QHash>
 
+#include "model.h"
+
 namespace appcomm {
-/*!
- * @brief Message structure for cache storage.
- */
-struct CachedMessage {
-    QString messageId; ///< Id of the cached message
-    QJsonObject data;  ///< Data contained in the cached message
-    qint64 timestamp;  ///< Timestamp when the message was cached
-};
 
 /*!
  * @brief LRU cache for recent messages.
@@ -52,10 +45,9 @@ public:
      * If cache is at capacity, removes the oldest message.
      * If messageId already exists, updates the existing entry.
      *
-     * @param messageId Unique message identifier.
-     * @param data Message content as JSON object.
+     * @param msg Message to add to cache.
      */
-    void addMessage(const QString &messageId, const QJsonObject &data);
+    void addMessage(const model::Message &msg);
 
     /*!
      * @brief Retrieves messages after a specific message ID.
@@ -66,15 +58,15 @@ public:
      * @param fromMessageId Starting point (exclusive).
      * @return List of messages after fromMessageId, empty if not found.
      */
-    QList<CachedMessage> getMessagesSince(const QString &messageId) const;
+    QList<model::Message> getMessagesSince(const QString &messageId) const;
 
     /*!
      * @brief Gets a specific message by ID.
      *
      * @param messageId Message identifier to retrieve.
-     * @return CachedMessage if found, null CachedMessage otherwise.
+     * @return Message if found, invalid Message otherwise.
      */
-    CachedMessage getMessage(const QString &messageId) const;
+    model::Message getMessage(const QString &messageId) const;
 
     /*!
      * @brief Checks if a message exists in the cache.
@@ -89,7 +81,7 @@ public:
      *
      * @return List of all cached messages.
      */
-    QList<CachedMessage> getAllMessages() const;
+    QList<model::Message> getAllMessages() const;
 
     /*!
      * @brief Clears all messages from the cache.
@@ -120,7 +112,7 @@ public:
 private:
     int m_capacity;                         ///< Maximum cache capacity
     QQueue<QString> m_queue;                ///< Message order (FIFO)
-    QHash<QString, CachedMessage> m_cache;  ///< Fast lookup by messageId
+    QHash<QString, model::Message> m_cache; ///< Fast lookup by messageId
 };
 
 } // namespace appcomm

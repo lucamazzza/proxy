@@ -25,20 +25,16 @@ void RecoveryManager::requestFrom(const QString &messageId) {
         emit recoveryError(-1, "Invalid messageId: cannot be empty");
         return;
     }
-    QList<CachedMessage> cachedMessages = m_cache->getMessagesSince(messageId);
+    QList<model::Message> cachedMessages = m_cache->getMessagesSince(messageId);
     if (!cachedMessages.isEmpty()) {
         QJsonArray messages;
         for (const auto &msg : cachedMessages) {
-            QJsonObject msgObj;
-            msgObj["$id"] = msg.messageId;
-            msgObj["data"] = msg.data;
-            msgObj["timestamp"] = msg.timestamp;
-            messages.append(msgObj);
+            messages.append(msg.toJson());
         }
         emit messagesRecovered(messages);
         return;
     }
-    CachedMessage startMsg = m_cache->getMessage(messageId);
+    model::Message startMsg = m_cache->getMessage(messageId);
     if (startMsg.messageId.isEmpty()) {
         emit recoveryError(-1, "Message not found in cache and cannot determine timestamp");
         return;
@@ -46,7 +42,7 @@ void RecoveryManager::requestFrom(const QString &messageId) {
     m_currentOperation = OperationType::RequestFrom;
     m_currentMessageId = messageId;
     QJsonArray queries;
-    queries.append(QString("greaterThan(\"timestamp\",%1)").arg(startMsg.timestamp));
+    queries.append(QString("greaterThan(\"timestamp\",\"%1\")").arg(startMsg.timestamp.toString(Qt::ISODate)));
     queries.append("orderAsc(\"timestamp\")");
     queries.append("limit(100)");
     m_client->listDocuments(m_config, queries);
@@ -58,13 +54,9 @@ void RecoveryManager::request(const QString &messageId) {
         return;
     }
     if (m_cache->contains(messageId)) {
-        CachedMessage msg = m_cache->getMessage(messageId);
+        model::Message msg = m_cache->getMessage(messageId);
         QJsonArray messages;
-        QJsonObject msgObj;
-        msgObj["$id"] = msg.messageId;
-        msgObj["data"] = msg.data;
-        msgObj["timestamp"] = msg.timestamp;
-        messages.append(msgObj);
+        messages.append(msg.toJson());
         emit messagesRecovered(messages);
         return;
     }
@@ -119,9 +111,9 @@ void RecoveryManager::onRequestError(int code, const QString &message) {
 void RecoveryManager::processRecoveredMessages(const QJsonArray &messages) {
     for (const QJsonValue &msgValue : messages) {
         QJsonObject msgObj = msgValue.toObject();
-        QString messageId = msgObj.value("$id").toString();
-        if (!messageId.isEmpty()) {
-            m_cache->addMessage(messageId, msgObj);
+        model::Message msg = model::Message::fromJson(msgObj);
+        if (msg.isValid()) {
+            m_cache->addMessage(msg);
         }
     }
 }

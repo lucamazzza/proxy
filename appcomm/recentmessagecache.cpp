@@ -7,29 +7,23 @@ RecentMessageCache::RecentMessageCache(int capacity, QObject *parent)
     , m_capacity(capacity)
 {}
 
-void RecentMessageCache::addMessage(const QString &messageId, const QJsonObject &data) {
-    if (messageId.isEmpty()) return;
+void RecentMessageCache::addMessage(const model::Message &msg) {
+    if (!msg.isValid()) return;
     if (m_capacity <= 0) return;
-    
-    if (m_cache.contains(messageId)) {
-        m_cache[messageId].data = data;
-        m_cache[messageId].timestamp = QDateTime::currentMSecsSinceEpoch();
+    if (m_cache.contains(msg.messageId)) {
+        m_cache[msg.messageId] = msg;
         return;
     }
     if (m_queue.size() >= m_capacity) {
         QString oldest = m_queue.dequeue();
         m_cache.remove(oldest);
     }
-    CachedMessage msg;
-    msg.messageId = messageId;
-    msg.data = data;
-    msg.timestamp = QDateTime::currentMSecsSinceEpoch();
-    m_queue.enqueue(messageId);
-    m_cache.insert(messageId, msg);
+    m_queue.enqueue(msg.messageId);
+    m_cache.insert(msg.messageId, msg);
 }
 
-QList<CachedMessage> RecentMessageCache::getMessagesSince(const QString &messageId) const {
-    QList<CachedMessage> result;
+QList<model::Message> RecentMessageCache::getMessagesSince(const QString &messageId) const {
+    QList<model::Message> result;
     if (!m_cache.contains(messageId)) return result;
     bool found = false;
     for (const auto &id : m_queue) {
@@ -42,7 +36,7 @@ QList<CachedMessage> RecentMessageCache::getMessagesSince(const QString &message
     return result;
 }
 
-CachedMessage RecentMessageCache::getMessage(const QString &messageId) const {
+model::Message RecentMessageCache::getMessage(const QString &messageId) const {
     return m_cache.value(messageId);
 }
 
@@ -50,8 +44,8 @@ bool RecentMessageCache::contains(const QString &messageId) const {
     return m_cache.contains(messageId);
 }
 
-QList<CachedMessage> RecentMessageCache::getAllMessages() const {
-    QList<CachedMessage> result;
+QList<model::Message> RecentMessageCache::getAllMessages() const {
+    QList<model::Message> result;
     for (const auto &id : m_queue) {
         result.append(m_cache.value(id));
     }

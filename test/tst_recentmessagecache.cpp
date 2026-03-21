@@ -1,6 +1,8 @@
 #include <QTest>
 #include <QJsonObject>
+#include <QDateTime>
 #include "recentmessagecache.h"
+#include "model.h"
 
 using namespace appcomm;
 
@@ -62,9 +64,14 @@ void tst_recentmessagecache::initState() {
 
 void tst_recentmessagecache::addSingleMessage() {
     RecentMessageCache cache;
-    QJsonObject data{{"text", "Hello"}};
+    model::Message msg;
+    msg.messageId = "msg1";
+    msg.channelId = "channel1";
+    msg.senderId = "user1";
+    msg.timestamp = QDateTime::currentDateTime();
+    msg.payload = QJsonObject{{"text", "Hello"}};
     
-    cache.addMessage("msg1", data);
+    cache.addMessage(msg);
     
     QCOMPARE(cache.size(), 1);
     QVERIFY(!cache.isEmpty());
@@ -75,8 +82,13 @@ void tst_recentmessagecache::addMultipleMessages() {
     RecentMessageCache cache;
     
     for (int i = 0; i < 10; i++) {
-        QJsonObject data{{"index", i}};
-        cache.addMessage(QString("msg%1").arg(i), data);
+        model::Message msg;
+        msg.messageId = QString("msg%1").arg(i);
+        msg.channelId = "channel1";
+        msg.senderId = "user1";
+        msg.timestamp = QDateTime::currentDateTime();
+        msg.payload = QJsonObject{{"index", i}};
+        cache.addMessage(msg);
     }
     
     QCOMPARE(cache.size(), 10);
@@ -86,51 +98,79 @@ void tst_recentmessagecache::addMultipleMessages() {
 
 void tst_recentmessagecache::updateExistingMessage() {
     RecentMessageCache cache;
-    QJsonObject data1{{"text", "Original"}};
-    QJsonObject data2{{"text", "Updated"}};
     
-    cache.addMessage("msg1", data1);
+    model::Message msg1;
+    msg1.messageId = "msg1";
+    msg1.channelId = "channel1";
+    msg1.senderId = "user1";
+    msg1.timestamp = QDateTime::currentDateTime();
+    msg1.payload = QJsonObject{{"text", "Original"}};
+    
+    cache.addMessage(msg1);
     QCOMPARE(cache.size(), 1);
     
-    cache.addMessage("msg1", data2);
+    model::Message msg2;
+    msg2.messageId = "msg1";
+    msg2.channelId = "channel1";
+    msg2.senderId = "user1";
+    msg2.timestamp = QDateTime::currentDateTime();
+    msg2.payload = QJsonObject{{"text", "Updated"}};
+    
+    cache.addMessage(msg2);
     QCOMPARE(cache.size(), 1);
     
-    CachedMessage msg = cache.getMessage("msg1");
-    QCOMPARE(msg.data.value("text").toString(), QString("Updated"));
+    model::Message msg = cache.getMessage("msg1");
+    QCOMPARE(msg.payload.value("text").toString(), QString("Updated"));
 }
 
 void tst_recentmessagecache::checkContains() {
     RecentMessageCache cache;
-    QJsonObject data{{"test", true}};
     
     QVERIFY(!cache.contains("msg1"));
     
-    cache.addMessage("msg1", data);
+    model::Message msg;
+    msg.messageId = "msg1";
+    msg.channelId = "channel1";
+    msg.senderId = "user1";
+    msg.timestamp = QDateTime::currentDateTime();
+    msg.payload = QJsonObject{{"test", true}};
+    
+    cache.addMessage(msg);
     QVERIFY(cache.contains("msg1"));
     QVERIFY(!cache.contains("msg2"));
 }
 
 void tst_recentmessagecache::getMessage() {
     RecentMessageCache cache;
-    QJsonObject data{{"value", 42}};
     
-    cache.addMessage("msg1", data);
+    model::Message msgIn;
+    msgIn.messageId = "msg1";
+    msgIn.channelId = "channel1";
+    msgIn.senderId = "user1";
+    msgIn.timestamp = QDateTime::currentDateTime();
+    msgIn.payload = QJsonObject{{"value", 42}};
     
-    CachedMessage msg = cache.getMessage("msg1");
-    QCOMPARE(msg.messageId, QString("msg1"));
-    QCOMPARE(msg.data.value("value").toInt(), 42);
-    QVERIFY(msg.timestamp > 0);
+    cache.addMessage(msgIn);
+    
+    model::Message msgOut = cache.getMessage("msg1");
+    QCOMPARE(msgOut.messageId, QString("msg1"));
+    QCOMPARE(msgOut.payload.value("value").toInt(), 42);
 }
 
 void tst_recentmessagecache::getAllMessages() {
     RecentMessageCache cache;
     
     for (int i = 0; i < 5; i++) {
-        QJsonObject data{{"index", i}};
-        cache.addMessage(QString("msg%1").arg(i), data);
+        model::Message msg;
+        msg.messageId = QString("msg%1").arg(i);
+        msg.channelId = "channel1";
+        msg.senderId = "user1";
+        msg.timestamp = QDateTime::currentDateTime();
+        msg.payload = QJsonObject{{"index", i}};
+        cache.addMessage(msg);
     }
     
-    QList<CachedMessage> messages = cache.getAllMessages();
+    QList<model::Message> messages = cache.getAllMessages();
     QCOMPARE(messages.size(), 5);
     QCOMPARE(messages[0].messageId, QString("msg0"));
     QCOMPARE(messages[4].messageId, QString("msg4"));
@@ -141,7 +181,13 @@ void tst_recentmessagecache::respectCapacity() {
     RecentMessageCache cache(3);
     
     for (int i = 0; i < 3; i++) {
-        cache.addMessage(QString("msg%1").arg(i), QJsonObject());
+        model::Message msg;
+        msg.messageId = QString("msg%1").arg(i);
+        msg.channelId = "channel1";
+        msg.senderId = "user1";
+        msg.timestamp = QDateTime::currentDateTime();
+        msg.payload = QJsonObject();
+        cache.addMessage(msg);
     }
     
     QCOMPARE(cache.size(), 3);
@@ -150,12 +196,39 @@ void tst_recentmessagecache::respectCapacity() {
 void tst_recentmessagecache::evictOldestMessage() {
     RecentMessageCache cache(3);
     
-    cache.addMessage("msg0", QJsonObject{{"value", 0}});
-    cache.addMessage("msg1", QJsonObject{{"value", 1}});
-    cache.addMessage("msg2", QJsonObject{{"value", 2}});
+    model::Message msg0;
+    msg0.messageId = "msg0";
+    msg0.channelId = "channel1";
+    msg0.senderId = "user1";
+    msg0.timestamp = QDateTime::currentDateTime();
+    msg0.payload = QJsonObject{{"value", 0}};
+    cache.addMessage(msg0);
+    
+    model::Message msg1;
+    msg1.messageId = "msg1";
+    msg1.channelId = "channel1";
+    msg1.senderId = "user1";
+    msg1.timestamp = QDateTime::currentDateTime();
+    msg1.payload = QJsonObject{{"value", 1}};
+    cache.addMessage(msg1);
+    
+    model::Message msg2;
+    msg2.messageId = "msg2";
+    msg2.channelId = "channel1";
+    msg2.senderId = "user1";
+    msg2.timestamp = QDateTime::currentDateTime();
+    msg2.payload = QJsonObject{{"value", 2}};
+    cache.addMessage(msg2);
+    
     QVERIFY(cache.contains("msg0"));
     
-    cache.addMessage("msg3", QJsonObject{{"value", 3}});
+    model::Message msg3;
+    msg3.messageId = "msg3";
+    msg3.channelId = "channel1";
+    msg3.senderId = "user1";
+    msg3.timestamp = QDateTime::currentDateTime();
+    msg3.payload = QJsonObject{{"value", 3}};
+    cache.addMessage(msg3);
     
     QCOMPARE(cache.size(), 3);
     QVERIFY(!cache.contains("msg0"));
@@ -177,10 +250,16 @@ void tst_recentmessagecache::getMessagesSinceValid() {
     RecentMessageCache cache;
     
     for (int i = 0; i < 5; i++) {
-        cache.addMessage(QString("msg%1").arg(i), QJsonObject{{"index", i}});
+        model::Message msg;
+        msg.messageId = QString("msg%1").arg(i);
+        msg.channelId = "channel1";
+        msg.senderId = "user1";
+        msg.timestamp = QDateTime::currentDateTime();
+        msg.payload = QJsonObject{{"index", i}};
+        cache.addMessage(msg);
     }
     
-    QList<CachedMessage> messages = cache.getMessagesSince("msg2");
+    QList<model::Message> messages = cache.getMessagesSince("msg2");
     
     QCOMPARE(messages.size(), 2);
     QCOMPARE(messages[0].messageId, QString("msg3"));
@@ -190,10 +269,23 @@ void tst_recentmessagecache::getMessagesSinceValid() {
 void tst_recentmessagecache::getMessagesSinceInvalid() {
     RecentMessageCache cache;
     
-    cache.addMessage("msg1", QJsonObject());
-    cache.addMessage("msg2", QJsonObject());
+    model::Message msg1;
+    msg1.messageId = "msg1";
+    msg1.channelId = "channel1";
+    msg1.senderId = "user1";
+    msg1.timestamp = QDateTime::currentDateTime();
+    msg1.payload = QJsonObject();
+    cache.addMessage(msg1);
     
-    QList<CachedMessage> messages = cache.getMessagesSince("nonexistent");
+    model::Message msg2;
+    msg2.messageId = "msg2";
+    msg2.channelId = "channel1";
+    msg2.senderId = "user1";
+    msg2.timestamp = QDateTime::currentDateTime();
+    msg2.payload = QJsonObject();
+    cache.addMessage(msg2);
+    
+    QList<model::Message> messages = cache.getMessagesSince("nonexistent");
     
     QVERIFY(messages.isEmpty());
 }
@@ -201,7 +293,7 @@ void tst_recentmessagecache::getMessagesSinceInvalid() {
 void tst_recentmessagecache::getMessagesSinceEmpty() {
     RecentMessageCache cache;
     
-    QList<CachedMessage> messages = cache.getMessagesSince("msg1");
+    QList<model::Message> messages = cache.getMessagesSince("msg1");
     
     QVERIFY(messages.isEmpty());
 }
@@ -209,11 +301,31 @@ void tst_recentmessagecache::getMessagesSinceEmpty() {
 void tst_recentmessagecache::getMessagesSinceLast() {
     RecentMessageCache cache;
     
-    cache.addMessage("msg1", QJsonObject());
-    cache.addMessage("msg2", QJsonObject());
-    cache.addMessage("msg3", QJsonObject());
+    model::Message msg1;
+    msg1.messageId = "msg1";
+    msg1.channelId = "channel1";
+    msg1.senderId = "user1";
+    msg1.timestamp = QDateTime::currentDateTime();
+    msg1.payload = QJsonObject();
+    cache.addMessage(msg1);
     
-    QList<CachedMessage> messages = cache.getMessagesSince("msg3");
+    model::Message msg2;
+    msg2.messageId = "msg2";
+    msg2.channelId = "channel1";
+    msg2.senderId = "user1";
+    msg2.timestamp = QDateTime::currentDateTime();
+    msg2.payload = QJsonObject();
+    cache.addMessage(msg2);
+    
+    model::Message msg3;
+    msg3.messageId = "msg3";
+    msg3.channelId = "channel1";
+    msg3.senderId = "user1";
+    msg3.timestamp = QDateTime::currentDateTime();
+    msg3.payload = QJsonObject();
+    cache.addMessage(msg3);
+    
+    QList<model::Message> messages = cache.getMessagesSince("msg3");
     
     QVERIFY(messages.isEmpty());
 }
@@ -222,7 +334,14 @@ void tst_recentmessagecache::getMessagesSinceLast() {
 void tst_recentmessagecache::addEmptyMessageId() {
     RecentMessageCache cache;
     
-    cache.addMessage("", QJsonObject{{"test", true}});
+    model::Message msg;
+    msg.messageId = "";
+    msg.channelId = "channel1";
+    msg.senderId = "user1";
+    msg.timestamp = QDateTime::currentDateTime();
+    msg.payload = QJsonObject{{"test", true}};
+    
+    cache.addMessage(msg);
     
     QCOMPARE(cache.size(), 0);
     QVERIFY(!cache.contains(""));
@@ -231,7 +350,14 @@ void tst_recentmessagecache::addEmptyMessageId() {
 void tst_recentmessagecache::zeroCapacity() {
     RecentMessageCache cache(0);
     
-    cache.addMessage("msg1", QJsonObject());
+    model::Message msg;
+    msg.messageId = "msg1";
+    msg.channelId = "channel1";
+    msg.senderId = "user1";
+    msg.timestamp = QDateTime::currentDateTime();
+    msg.payload = QJsonObject();
+    
+    cache.addMessage(msg);
     
     QCOMPARE(cache.size(), 0);
 }
@@ -240,7 +366,13 @@ void tst_recentmessagecache::clearCache() {
     RecentMessageCache cache;
     
     for (int i = 0; i < 10; i++) {
-        cache.addMessage(QString("msg%1").arg(i), QJsonObject());
+        model::Message msg;
+        msg.messageId = QString("msg%1").arg(i);
+        msg.channelId = "channel1";
+        msg.senderId = "user1";
+        msg.timestamp = QDateTime::currentDateTime();
+        msg.payload = QJsonObject();
+        cache.addMessage(msg);
     }
     
     QCOMPARE(cache.size(), 10);
@@ -255,25 +387,65 @@ void tst_recentmessagecache::clearCache() {
 void tst_recentmessagecache::duplicateMessages() {
     RecentMessageCache cache(5);
     
-    cache.addMessage("msg1", QJsonObject{{"version", 1}});
-    cache.addMessage("msg2", QJsonObject{{"version", 1}});
-    cache.addMessage("msg1", QJsonObject{{"version", 2}});
+    model::Message msg1;
+    msg1.messageId = "msg1";
+    msg1.channelId = "channel1";
+    msg1.senderId = "user1";
+    msg1.timestamp = QDateTime::currentDateTime();
+    msg1.payload = QJsonObject{{"version", 1}};
+    cache.addMessage(msg1);
+    
+    model::Message msg2;
+    msg2.messageId = "msg2";
+    msg2.channelId = "channel1";
+    msg2.senderId = "user1";
+    msg2.timestamp = QDateTime::currentDateTime();
+    msg2.payload = QJsonObject{{"version", 1}};
+    cache.addMessage(msg2);
+    
+    model::Message msg1Updated;
+    msg1Updated.messageId = "msg1";
+    msg1Updated.channelId = "channel1";
+    msg1Updated.senderId = "user1";
+    msg1Updated.timestamp = QDateTime::currentDateTime();
+    msg1Updated.payload = QJsonObject{{"version", 2}};
+    cache.addMessage(msg1Updated);
     
     QCOMPARE(cache.size(), 2);
     
-    CachedMessage msg = cache.getMessage("msg1");
-    QCOMPARE(msg.data.value("version").toInt(), 2);
+    model::Message msg = cache.getMessage("msg1");
+    QCOMPARE(msg.payload.value("version").toInt(), 2);
 }
 
 // Ordering
 void tst_recentmessagecache::maintainInsertionOrder() {
     RecentMessageCache cache;
     
-    cache.addMessage("msg3", QJsonObject());
-    cache.addMessage("msg1", QJsonObject());
-    cache.addMessage("msg2", QJsonObject());
+    model::Message msg3;
+    msg3.messageId = "msg3";
+    msg3.channelId = "channel1";
+    msg3.senderId = "user1";
+    msg3.timestamp = QDateTime::currentDateTime();
+    msg3.payload = QJsonObject();
+    cache.addMessage(msg3);
     
-    QList<CachedMessage> messages = cache.getAllMessages();
+    model::Message msg1;
+    msg1.messageId = "msg1";
+    msg1.channelId = "channel1";
+    msg1.senderId = "user1";
+    msg1.timestamp = QDateTime::currentDateTime();
+    msg1.payload = QJsonObject();
+    cache.addMessage(msg1);
+    
+    model::Message msg2;
+    msg2.messageId = "msg2";
+    msg2.channelId = "channel1";
+    msg2.senderId = "user1";
+    msg2.timestamp = QDateTime::currentDateTime();
+    msg2.payload = QJsonObject();
+    cache.addMessage(msg2);
+    
+    QList<model::Message> messages = cache.getAllMessages();
     
     QCOMPARE(messages[0].messageId, QString("msg3"));
     QCOMPARE(messages[1].messageId, QString("msg1"));
@@ -283,12 +455,39 @@ void tst_recentmessagecache::maintainInsertionOrder() {
 void tst_recentmessagecache::orderAfterEviction() {
     RecentMessageCache cache(3);
     
-    cache.addMessage("msg1", QJsonObject());
-    cache.addMessage("msg2", QJsonObject());
-    cache.addMessage("msg3", QJsonObject());
-    cache.addMessage("msg4", QJsonObject());
+    model::Message msg1;
+    msg1.messageId = "msg1";
+    msg1.channelId = "channel1";
+    msg1.senderId = "user1";
+    msg1.timestamp = QDateTime::currentDateTime();
+    msg1.payload = QJsonObject();
+    cache.addMessage(msg1);
     
-    QList<CachedMessage> messages = cache.getAllMessages();
+    model::Message msg2;
+    msg2.messageId = "msg2";
+    msg2.channelId = "channel1";
+    msg2.senderId = "user1";
+    msg2.timestamp = QDateTime::currentDateTime();
+    msg2.payload = QJsonObject();
+    cache.addMessage(msg2);
+    
+    model::Message msg3;
+    msg3.messageId = "msg3";
+    msg3.channelId = "channel1";
+    msg3.senderId = "user1";
+    msg3.timestamp = QDateTime::currentDateTime();
+    msg3.payload = QJsonObject();
+    cache.addMessage(msg3);
+    
+    model::Message msg4;
+    msg4.messageId = "msg4";
+    msg4.channelId = "channel1";
+    msg4.senderId = "user1";
+    msg4.timestamp = QDateTime::currentDateTime();
+    msg4.payload = QJsonObject();
+    cache.addMessage(msg4);
+    
+    QList<model::Message> messages = cache.getAllMessages();
     
     QCOMPARE(messages.size(), 3);
     QCOMPARE(messages[0].messageId, QString("msg2"));

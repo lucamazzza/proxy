@@ -2,9 +2,11 @@
 #include <QSignalSpy>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QDateTime>
 #include "recoverymanager.h"
 #include "appwritesdk.h"
 #include "recentmessagecache.h"
+#include "model.h"
 
 using namespace appcomm;
 using namespace AppwriteSDK;
@@ -111,9 +113,29 @@ void tst_recoverymanager::construction()
 
 void tst_recoverymanager::requestFromCacheHit()
 {
-    m_cache->addMessage("msg1", QJsonObject{{"text", "First"}});
-    m_cache->addMessage("msg2", QJsonObject{{"text", "Second"}});
-    m_cache->addMessage("msg3", QJsonObject{{"text", "Third"}});
+    model::Message msg1;
+    msg1.messageId = "msg1";
+    msg1.channelId = "channel1";
+    msg1.senderId = "user1";
+    msg1.timestamp = QDateTime::currentDateTime();
+    msg1.payload = QJsonObject{{"text", "First"}};
+    m_cache->addMessage(msg1);
+    
+    model::Message msg2;
+    msg2.messageId = "msg2";
+    msg2.channelId = "channel1";
+    msg2.senderId = "user1";
+    msg2.timestamp = QDateTime::currentDateTime();
+    msg2.payload = QJsonObject{{"text", "Second"}};
+    m_cache->addMessage(msg2);
+    
+    model::Message msg3;
+    msg3.messageId = "msg3";
+    msg3.channelId = "channel1";
+    msg3.senderId = "user1";
+    msg3.timestamp = QDateTime::currentDateTime();
+    msg3.payload = QJsonObject{{"text", "Third"}};
+    m_cache->addMessage(msg3);
     
     QSignalSpy spy(m_manager, &RecoveryManager::messagesRecovered);
     
@@ -122,14 +144,20 @@ void tst_recoverymanager::requestFromCacheHit()
     QCOMPARE(spy.count(), 1);
     QJsonArray messages = spy.at(0).at(0).toJsonArray();
     QCOMPARE(messages.size(), 2);
-    QCOMPARE(messages[0].toObject()["$id"].toString(), QString("msg2"));
-    QCOMPARE(messages[1].toObject()["$id"].toString(), QString("msg3"));
+    QCOMPARE(messages[0].toObject()["messageId"].toString(), QString("msg2"));
+    QCOMPARE(messages[1].toObject()["messageId"].toString(), QString("msg3"));
 }
 
 void tst_recoverymanager::requestFromCacheHitMultiple()
 {
     for (int i = 0; i < 10; i++) {
-        m_cache->addMessage(QString("msg%1").arg(i), QJsonObject{{"index", i}});
+        model::Message msg;
+        msg.messageId = QString("msg%1").arg(i);
+        msg.channelId = "channel1";
+        msg.senderId = "user1";
+        msg.timestamp = QDateTime::currentDateTime();
+        msg.payload = QJsonObject{{"index", i}};
+        m_cache->addMessage(msg);
     }
     
     QSignalSpy spy(m_manager, &RecoveryManager::messagesRecovered);
@@ -139,13 +167,19 @@ void tst_recoverymanager::requestFromCacheHitMultiple()
     QCOMPARE(spy.count(), 1);
     QJsonArray messages = spy.at(0).at(0).toJsonArray();
     QCOMPARE(messages.size(), 5);
-    QCOMPARE(messages[0].toObject()["$id"].toString(), QString("msg5"));
-    QCOMPARE(messages[4].toObject()["$id"].toString(), QString("msg9"));
+    QCOMPARE(messages[0].toObject()["messageId"].toString(), QString("msg5"));
+    QCOMPARE(messages[4].toObject()["messageId"].toString(), QString("msg9"));
 }
 
 void tst_recoverymanager::requestFromCacheMiss()
 {
-    m_cache->addMessage("msg1", QJsonObject{{"text", "First"}});
+    model::Message msg;
+    msg.messageId = "msg1";
+    msg.channelId = "channel1";
+    msg.senderId = "user1";
+    msg.timestamp = QDateTime::currentDateTime();
+    msg.payload = QJsonObject{{"text", "First"}};
+    m_cache->addMessage(msg);
     
     QSignalSpy errorSpy(m_manager, &RecoveryManager::recoveryError);
     
@@ -156,7 +190,13 @@ void tst_recoverymanager::requestFromCacheMiss()
 
 void tst_recoverymanager::requestSingleCacheHit()
 {
-    m_cache->addMessage("msg1", QJsonObject{{"text", "Hello"}});
+    model::Message msg;
+    msg.messageId = "msg1";
+    msg.channelId = "channel1";
+    msg.senderId = "user1";
+    msg.timestamp = QDateTime::currentDateTime();
+    msg.payload = QJsonObject{{"text", "Hello"}};
+    m_cache->addMessage(msg);
     
     QSignalSpy spy(m_manager, &RecoveryManager::messagesRecovered);
     
@@ -165,8 +205,7 @@ void tst_recoverymanager::requestSingleCacheHit()
     QCOMPARE(spy.count(), 1);
     QJsonArray messages = spy.at(0).at(0).toJsonArray();
     QCOMPARE(messages.size(), 1);
-    QCOMPARE(messages[0].toObject()["$id"].toString(), QString("msg1"));
-    QCOMPARE(messages[0].toObject()["data"].toObject()["text"].toString(), QString("Hello"));
+    QCOMPARE(messages[0].toObject()["messageId"].toString(), QString("msg1"));
 }
 
 void tst_recoverymanager::requestSingleCacheMiss()
@@ -176,21 +215,37 @@ void tst_recoverymanager::requestSingleCacheMiss()
     m_manager->request("msg1");
     
     QJsonObject serverResponse;
-    serverResponse["$id"] = "msg1";
-    serverResponse["text"] = "From server";
+    serverResponse["messageId"] = "msg1";
+    serverResponse["channelId"] = "channel1";
+    serverResponse["senderId"] = "user1";
+    serverResponse["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    serverResponse["payload"] = QJsonObject{{"text", "From server"}};
+    serverResponse["isEcho"] = false;
     
     m_client->simulateSuccess(serverResponse);
     
     QCOMPARE(spy.count(), 1);
     QJsonArray messages = spy.at(0).at(0).toJsonArray();
     QCOMPARE(messages.size(), 1);
-    QCOMPARE(messages[0].toObject()["$id"].toString(), QString("msg1"));
 }
 
 void tst_recoverymanager::requestFullResync()
 {
-    m_cache->addMessage("old1", QJsonObject{{"old", true}});
-    m_cache->addMessage("old2", QJsonObject{{"old", true}});
+    model::Message msg1;
+    msg1.messageId = "old1";
+    msg1.channelId = "channel1";
+    msg1.senderId = "user1";
+    msg1.timestamp = QDateTime::currentDateTime();
+    msg1.payload = QJsonObject{{"old", true}};
+    m_cache->addMessage(msg1);
+    
+    model::Message msg2;
+    msg2.messageId = "old2";
+    msg2.channelId = "channel1";
+    msg2.senderId = "user1";
+    msg2.timestamp = QDateTime::currentDateTime();
+    msg2.payload = QJsonObject{{"old", true}};
+    m_cache->addMessage(msg2);
     
     QSignalSpy recoverSpy(m_manager, &RecoveryManager::messagesRecovered);
     QSignalSpy resyncSpy(m_manager, &RecoveryManager::resyncCompleted);
@@ -203,8 +258,12 @@ void tst_recoverymanager::requestFullResync()
     QJsonArray documents;
     for (int i = 0; i < 5; i++) {
         QJsonObject doc;
-        doc["$id"] = QString("msg%1").arg(i);
-        doc["text"] = QString("Message %1").arg(i);
+        doc["messageId"] = QString("msg%1").arg(i);
+        doc["channelId"] = "channel1";
+        doc["senderId"] = "user1";
+        doc["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+        doc["payload"] = QJsonObject{{"text", QString("Message %1").arg(i)}};
+        doc["isEcho"] = false;
         documents.append(doc);
     }
     serverResponse["documents"] = documents;
@@ -264,7 +323,13 @@ void tst_recoverymanager::serverError()
 
 void tst_recoverymanager::stateAlignedAfterRequestFrom()
 {
-    m_cache->addMessage("msg1", QJsonObject{{"version", 1}});
+    model::Message msg;
+    msg.messageId = "msg1";
+    msg.channelId = "channel1";
+    msg.senderId = "user1";
+    msg.timestamp = QDateTime::currentDateTime();
+    msg.payload = QJsonObject{{"version", 1}};
+    m_cache->addMessage(msg);
     
     QSignalSpy spy(m_manager, &RecoveryManager::messagesRecovered);
     
@@ -273,8 +338,12 @@ void tst_recoverymanager::stateAlignedAfterRequestFrom()
     QJsonObject serverResponse;
     QJsonArray documents;
     QJsonObject doc1;
-    doc1["$id"] = "msg2";
-    doc1["text"] = "New message";
+    doc1["messageId"] = "msg2";
+    doc1["channelId"] = "channel1";
+    doc1["senderId"] = "user1";
+    doc1["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    doc1["payload"] = QJsonObject{{"text", "New message"}};
+    doc1["isEcho"] = false;
     documents.append(doc1);
     serverResponse["documents"] = documents;
     
@@ -291,19 +360,29 @@ void tst_recoverymanager::stateAlignedAfterRequest()
     m_manager->request("msg1");
     
     QJsonObject serverResponse;
-    serverResponse["$id"] = "msg1";
-    serverResponse["text"] = "Retrieved message";
+    serverResponse["messageId"] = "msg1";
+    serverResponse["channelId"] = "channel1";
+    serverResponse["senderId"] = "user1";
+    serverResponse["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    serverResponse["payload"] = QJsonObject{{"text", "Retrieved message"}};
+    serverResponse["isEcho"] = false;
     
     m_client->simulateSuccess(serverResponse);
     
     QVERIFY(m_cache->contains("msg1"));
-    CachedMessage msg = m_cache->getMessage("msg1");
+    model::Message msg = m_cache->getMessage("msg1");
     QCOMPARE(msg.messageId, QString("msg1"));
 }
 
 void tst_recoverymanager::stateAlignedAfterFullResync()
 {
-    m_cache->addMessage("old1", QJsonObject{{"old", true}});
+    model::Message msg;
+    msg.messageId = "old1";
+    msg.channelId = "channel1";
+    msg.senderId = "user1";
+    msg.timestamp = QDateTime::currentDateTime();
+    msg.payload = QJsonObject{{"old", true}};
+    m_cache->addMessage(msg);
     
     m_manager->requestFullResync();
     
@@ -311,7 +390,12 @@ void tst_recoverymanager::stateAlignedAfterFullResync()
     QJsonArray documents;
     for (int i = 0; i < 3; i++) {
         QJsonObject doc;
-        doc["$id"] = QString("new%1").arg(i);
+        doc["messageId"] = QString("new%1").arg(i);
+        doc["channelId"] = "channel1";
+        doc["senderId"] = "user1";
+        doc["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+        doc["payload"] = QJsonObject();
+        doc["isEcho"] = false;
         documents.append(doc);
     }
     serverResponse["documents"] = documents;
@@ -327,8 +411,21 @@ void tst_recoverymanager::stateAlignedAfterFullResync()
 
 void tst_recoverymanager::requestFromLastMessage()
 {
-    m_cache->addMessage("msg1", QJsonObject());
-    m_cache->addMessage("msg2", QJsonObject());
+    model::Message msg1;
+    msg1.messageId = "msg1";
+    msg1.channelId = "channel1";
+    msg1.senderId = "user1";
+    msg1.timestamp = QDateTime::currentDateTime();
+    msg1.payload = QJsonObject();
+    m_cache->addMessage(msg1);
+    
+    model::Message msg2;
+    msg2.messageId = "msg2";
+    msg2.channelId = "channel1";
+    msg2.senderId = "user1";
+    msg2.timestamp = QDateTime::currentDateTime();
+    msg2.payload = QJsonObject();
+    m_cache->addMessage(msg2);
     
     QSignalSpy spy(m_manager, &RecoveryManager::messagesRecovered);
     
@@ -347,8 +444,21 @@ void tst_recoverymanager::requestFromLastMessage()
 
 void tst_recoverymanager::fullResyncClearsCache()
 {
-    m_cache->addMessage("msg1", QJsonObject());
-    m_cache->addMessage("msg2", QJsonObject());
+    model::Message msg1;
+    msg1.messageId = "msg1";
+    msg1.channelId = "channel1";
+    msg1.senderId = "user1";
+    msg1.timestamp = QDateTime::currentDateTime();
+    msg1.payload = QJsonObject();
+    m_cache->addMessage(msg1);
+    
+    model::Message msg2;
+    msg2.messageId = "msg2";
+    msg2.channelId = "channel1";
+    msg2.senderId = "user1";
+    msg2.timestamp = QDateTime::currentDateTime();
+    msg2.payload = QJsonObject();
+    m_cache->addMessage(msg2);
     
     QCOMPARE(m_cache->size(), 2);
     
@@ -363,12 +473,22 @@ void tst_recoverymanager::multipleSequentialRequests()
     
     m_manager->request("msg1");
     QJsonObject response1;
-    response1["$id"] = "msg1";
+    response1["messageId"] = "msg1";
+    response1["channelId"] = "channel1";
+    response1["senderId"] = "user1";
+    response1["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    response1["payload"] = QJsonObject();
+    response1["isEcho"] = false;
     m_client->simulateSuccess(response1);
     
     m_manager->request("msg2");
     QJsonObject response2;
-    response2["$id"] = "msg2";
+    response2["messageId"] = "msg2";
+    response2["channelId"] = "channel1";
+    response2["senderId"] = "user1";
+    response2["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    response2["payload"] = QJsonObject();
+    response2["isEcho"] = false;
     m_client->simulateSuccess(response2);
     
     QCOMPARE(spy.count(), 2);
