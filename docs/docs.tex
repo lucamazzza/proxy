@@ -636,7 +636,46 @@ Incluso nell'SDK, è presente un parser intelligente, che estrae i messaggi di e
 \textit{Invalid credentials} o \textit{Document not found} e li propaga attraverso il segnale \texttt{requestError}, 
 permettendo una gestione centralizzata dei guasti nel modulo superiore di logica di business.
 
-\section{Cache dei messaggi recenti}
+\section{Resilienza e controllo}
+
+Oltre alla gestione del trasporto dati, tramite l'SDK, la libreria \texttt{appcomm} integra dei componenti specializzati
+per garantire la continuità del servizio, la protezione delle risorse e la coerenza di stato tra client e server.
+
+Questo garantisce che la logica di business sia separata dal trasporto, permettendo la gestione in modo robusto delle
+interruzioni di rete e dei limiti infrastrutturali.
+
+\subsection{Cache dei messaggi}
+
+È quindi presente un modulo, \texttt{RecentMessageCache}, il quale è responsabile della gestione di un buffer di memoria
+volatile che conservi i messaggi transitati più di recente.
+La sua funzione principale è ridurre la latenza d'accesso ai dati recenti e fornire una base per le operazioni quando
+è necessario recuperare un'eventuale perdita di messaggi.
+
+\subsubsection{Algoritmo di \textit{Eviction}}
+
+La cahce è implementata seguendo una politica \gls{LRU} semplificata. Per massimizzare le prestazioni, vengono utilizzate
+due strutture dati coordinate:
+
+\begin{enumerate}
+    \item\texttt{QHash<QString, model::Message>}\footnote{\url{https://doc.qt.io/qt-6/qhash.html}}: HashMap che
+        garantisce la ricerca con complessità $O(1)$ per l'estrazione rapida di un singolo messaggio tramite il suo ID.
+
+    \item\texttt{QQueue<QString>}\footnote{\url{https://doc.qt.io/qt-6/qqueue.html}}: mantiene l'ordine cronologico dei
+        messaggi (\gls{FIFO}).
+\end{enumerate}
+
+Quando la cache raggiunge la capacità massima assegnata (\texttt{m\_capacity}), l'elemento più vecchio viene rimosso
+(\textit{evicted}) per fare spazio ai nuovi dati, tenendo traccia degli effettivi ultimi $n$ messaggi.
+
+\subsubsection{Integrità dei dati e supporto alla resilienza}
+
+L'integrazione con \texttt{model::Message} permette alla cache di validare ogni inserimento tramite il metodo
+\texttt{msg.isValid()}. Questo assicura che solo dati strutturalmente corretti vengano memorizzati.
+
+Il metodo di gestione \texttt{getMessagesSince(QString messageId)} analizza la coda cronologica e restituisce tutti i
+messaggi successiv ad un determinato ID. Questa funzione è vitale per gestire brevi interruzioni di rete, permettendo
+al frontend di ricostruire la cronologia mancante, senza dover consultare il server remoto, in quanto possibilmente
+già ricevuti e presenti nel buffer parziale.
 
 \chapter{Test e validazione}
 
