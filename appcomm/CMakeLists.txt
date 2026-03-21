@@ -17,8 +17,12 @@ add_library(appcomm STATIC
   appcomm.h
   appwritesdk.h
   appwritesdk.cpp
-  ratelimiter.h ratelimiter.cpp
-  recentmessagecache.h recentmessagecache.cpp
+  ratelimiter.h
+  ratelimiter.cpp
+  recentmessagecache.h
+  recentmessagecache.cpp
+  recoverymanager.h
+  recoverymanager.cpp
   model.h
   errormodel.h
   model.cpp
