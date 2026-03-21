@@ -231,6 +231,7 @@ fontsize=\small,
 
 % List of Figures/Tables (Optional)
 \listoffigures
+\blankpage
 \listoftables
 \newpage
 
@@ -651,6 +652,12 @@ volatile che conservi i messaggi transitati più di recente.
 La sua funzione principale è ridurre la latenza d'accesso ai dati recenti e fornire una base per le operazioni quando
 è necessario recuperare un'eventuale perdita di messaggi.
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.4\textwidth]{recentmessagecache.png}
+\caption{Struttura di \texttt{RecentMessageCache}}
+\end{figure}
+
 \subsubsection{Algoritmo di \textit{Eviction}}
 
 La cahce è implementata seguendo una politica \gls{LRU} semplificata. Per massimizzare le prestazioni, vengono utilizzate
@@ -676,6 +683,40 @@ Il metodo di gestione \texttt{getMessagesSince(QString messageId)} analizza la c
 messaggi successiv ad un determinato ID. Questa funzione è vitale per gestire brevi interruzioni di rete, permettendo
 al frontend di ricostruire la cronologia mancante, senza dover consultare il server remoto, in quanto possibilmente
 già ricevuti e presenti nel buffer parziale.
+
+\subsection{Gestione della recovery}
+
+Il modulo \texttt{RecoveryManager} agisce come orchestratore per il riallineamento dello stato del client con il backend
+Appwrite. Il suo scopo è colmare lacune informative causate da instabilità della rete o avvii a freddo dell'applicazione.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.4\textwidth]{recoverymanager.png}
+\caption{Struttura di \texttt{RecoveryManager}}
+\end{figure}
+
+\newpage
+
+\subsubsection{Strategie di recupero e \textit{Gap Detection}}
+
+Il modulo gestisce diverse modalità operative per garantire l'integrità dei dati; di seguito una breve descrizione:
+
+\begin{enumerate}
+    \item\textbf{Recupero delta (\texttt{requestFrom})}: Identifica i messaggi mancanti rispetto all'ultimo ID noto.
+        Se la cache non contiene l'intera sequenza, il manager effettua una query asincrona al server utilizzando i
+        filtri temporali estratti dai metadati del messaggio.
+
+    \item\textbf{Sincronizzazione globale (\texttt{requestFullResync})}: Esegue una query per ottenere gli ultimi $n$
+        messaggi dalla collezione, garantendo un punto di recovery certo, pensato per scenari di desincronizzazione
+        critica.
+
+\end{enumerate}
+
+\subsubsection{Pipeline di trasformazione asincrona}
+
+Il manager funge da ponte tra il trasporto JSON ed il modello tipizzato. Quando l'SDK riceve dati dal server, il
+\texttt{RecoveryManager} esegue il parsing tramite \texttt{model::Message::fromJson()}, valida i messaggi e popola
+la cache, prima di emettere il segnale \texttt{messagesRecovered} verso il frontend.
 
 \chapter{Test e validazione}
 
