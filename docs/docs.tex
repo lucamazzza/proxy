@@ -718,6 +718,34 @@ Il manager funge da ponte tra il trasporto JSON ed il modello tipizzato. Quando 
 \texttt{RecoveryManager} esegue il parsing tramite \texttt{model::Message::fromJson()}, valida i messaggi e popola
 la cache, prima di emettere il segnale \texttt{messagesRecovered} verso il frontend.
 
+\subsection{Controllo del \gls{Throughput}}
+
+La prevenzione del superamento delle quote API imposte dal server e la protezione dell'infrastruttura dai carichi
+eccessivi è di vitale importanza per qualsiasi servizio che voglia offrire un'esperienza di utilizzo decente.
+Per fare ciò è stato implementato un modulo di limitazione del traffico, basato sull'algoritmo 
+\textit{Token Bucket} \cite{token_bucket}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.3\textwidth]{ratelimiter.png}
+\caption{Struttura di \texttt{RateLimiter}}
+\end{figure}
+
+\subsubsection{Token Bucket \cite{token_bucket}} 
+
+Il sistema gestisce un "secchio" di token, che definisce la capacità massima di richieste simultanee, anche detta 
+\textit{burst size}. Un token viene consumato ad ogni richiesta e questi vengono rigenerati ad un ritmo costante,
+il quale è presente come stato \texttt{m\_refillRate}. Se il numero di token disponibili è zero, la richiesta viene
+negata, quindi effettivamente messa in attesa finché, una volta che i token sono di nuovo disponibili, potrà riprovare;
+tutto ciò viene svolto tramite il metodo \texttt{allowRequest()}.
+
+\subsubsection{Ottimizzazione delle risorse}
+
+L'implementazione adotta una strategia di refill passivo, detta \textit{lazy refill}: invece di utilizzare timer attivi
+che graverebbero sulla CPU, il calcolo della rigenerazione avviene \textit{on-demand} ogni volta che viene richiesto un
+accesso, misurando i millisecondi trascorsi dall'ultima operazione riuscita. Questo approccio garantisce un controllo
+preciso del traffico con un overhead computazionale trascurabile.
+
 \chapter{Test e validazione}
 
 \section{Risultati}
