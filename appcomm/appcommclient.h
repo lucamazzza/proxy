@@ -1,34 +1,14 @@
-/*!
- * @file appcomm.h
- * @brief Entry point for the fundamental functionalities of `appcomm`
- *
- * <Description...>
- *
- * @copyright Copyright (c) 2026 SUPSI
- */
-
-#ifndef APPCOMM_H
-#define APPCOMM_H
+#ifndef APPCOMMCLIENT_H
+#define APPCOMMCLIENT_H
 
 #include <QObject>
 
-/*!
- * @brief AppComm library namespace
- *
- * Contains classes and types for managing communication with Appwrite
- * instances through the proxy, including connection state management
- * and channel operations.
- */
 namespace appcomm {
 
-/*!
- * @brief Client class for managing channel communication with Appwrite
- */
-class ChannelClient : public QObject
-{
+class AppcommClient : public QObject {
     Q_OBJECT
-
 public:
+    explicit AppcommClient(QObject *parent = nullptr);
     /*!
      * @brief Enumerates the possible states of the proxy
      *
@@ -45,10 +25,9 @@ public:
         Error             ///< The proxy is experiencing some errors.
     };
     Q_ENUM(ConnectionState)
-
-    explicit ChannelClient(QObject *parent = nullptr) : QObject(parent) {}
+signals:
 };
 
-} // namespace appcomm
+}
 
-#endif // APPCOMM_H
+#endif // APPCOMMCLIENT_H

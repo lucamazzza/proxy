@@ -26,8 +26,7 @@ namespace appcomm {
  * Stores the most recent N messages with efficient lookup
  * and supports recovery from a specific message ID.
  */
-class RecentMessageCache : public QObject
-{
+class RecentMessageCache : public QObject {
     Q_OBJECT
 public:
 

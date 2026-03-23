@@ -30,8 +30,7 @@ namespace appcomm {
  *
  * After successful recovery, the client state is realigned with the server.
  */
-class RecoveryManager : public QObject
-{
+class RecoveryManager : public QObject {
     Q_OBJECT
 
 public:

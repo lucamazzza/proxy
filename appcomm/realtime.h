@@ -24,8 +24,7 @@ namespace appcomm {
  * Provides WebSocket-based communication to receive instant updates
  * for database changes, function executions, and other system events.
  */
-class Realtime : public QObject
-{
+class Realtime : public QObject {
     Q_OBJECT
 public:
 

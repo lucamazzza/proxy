@@ -24,8 +24,7 @@
  */
 namespace appcomm {
 
-class RateLimiter : public QObject
-{
+class RateLimiter : public QObject {
     Q_OBJECT
 public:
     /*!
