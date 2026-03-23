@@ -21,6 +21,7 @@ set(TEST_FILES
     tst_recentmessagecache.cpp
     tst_recoverymanager.cpp
     tst_models.cpp
+    tst_errormodel.cpp
     # tst_appcommclient.cpp
 )
 
