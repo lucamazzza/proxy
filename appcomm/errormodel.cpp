@@ -1,13 +1,14 @@
 #include "errormodel.h"
 
-namespace errormodel {
-
-// ==================== AppCommError ====================
+using namespace appcomm::errormodel;
 
 bool AppCommError::hasError() const
 {
     return code != ErrorCode::None;
 }
+
+namespace appcomm {
+namespace errormodel {
 
 QString errorCodeToString(ErrorCode code)
 {
@@ -25,6 +26,9 @@ QString errorCodeToString(ErrorCode code)
     return "Unknown";
 }
 
+}
+}
+
 QString AppCommError::toString() const
 {
     return QString("Error[%1] (%2): %3")
@@ -32,5 +36,3 @@ QString AppCommError::toString() const
         .arg(httpStatus)
         .arg(message);
 }
-
-} // namespace errormodel

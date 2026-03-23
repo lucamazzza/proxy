@@ -1,6 +1,6 @@
 #include "model.h"
 
-namespace model {
+using namespace appcomm::model;
 
 //User
 bool User::isValid() const {
@@ -143,6 +143,4 @@ bool AppCommConfig::isValid() const {
         && !databaseId.trimmed().isEmpty()
         && !messagesCollectionId.trimmed().isEmpty()
         && !membersCollectionId.trimmed().isEmpty();
-}
-
 }

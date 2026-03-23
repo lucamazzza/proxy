@@ -1,7 +1,7 @@
 #include <QTest>
 #include "ratelimiter.h"
 
-using namespace appcomm;
+using namespace appcomm::client;
 
 class tst_ratelimiter: public QObject
 {

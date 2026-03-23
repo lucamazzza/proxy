@@ -13,7 +13,7 @@
 #include <QJsonDocument>
 #include <QUrlQuery>
 
-namespace appwritesdk {
+using namespace appwritesdk;
 
 BaseSDK::BaseSDK(QNetworkAccessManager *mgr, QObject *parent)
     : QObject(parent), m_network(mgr)
@@ -294,4 +294,29 @@ void Server::listUsers(const ConnectionConfig &config, const QJsonArray &queries
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }
 
-} // namespace AppwriteSDK
+void Server::listDocuments(const ConnectionConfig &config, const QJsonArray &queries) {
+    QString path = QString("/databases/%1/collections/%2/documents")
+                       .arg(config.dbId)
+                       .arg(config.collectionId);
+    QUrl url(config.endpoint + path);
+    if (!queries.isEmpty()) {
+        QUrlQuery query;
+        for (const QJsonValue &q : queries) {
+            query.addQueryItem("queries[]", q.toString());
+        }
+        url.setQuery(query);
+    }
+    QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint, ""), true);
+    QNetworkReply *reply = m_network->get(req);
+    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+}
+
+void Server::deleteDocument(const ConnectionConfig &config, const QString &documentId) {
+    QString path = QString("/databases/%1/collections/%2/documents/%3")
+                       .arg(config.dbId)
+                       .arg(config.collectionId)
+                       .arg(documentId);
+    QNetworkRequest req = createBaseRequest(config, path, true);
+    QNetworkReply *reply = m_network->deleteResource(req);
+    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+}

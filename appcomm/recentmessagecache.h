@@ -20,6 +20,8 @@
 
 namespace appcomm {
 
+namespace client {
+
 /*!
  * @brief LRU cache for recent messages.
  *
@@ -113,6 +115,8 @@ private:
     QQueue<QString> m_queue;                ///< Message order (FIFO)
     QHash<QString, model::Message> m_cache; ///< Fast lookup by messageId
 };
+
+} // namespace client
 
 } // namespace appcomm
 

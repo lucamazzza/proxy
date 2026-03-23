@@ -1,7 +1,7 @@
 #include <QTest>
 #include "errormodel.h"
 
-using namespace errormodel;
+using namespace appcomm::errormodel;
 
 class tst_errormodel : public QObject
 {

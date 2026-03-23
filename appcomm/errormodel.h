@@ -13,6 +13,8 @@
 
 #include <QString>
 
+namespace appcomm {
+
 /*!
  * @brief Namespace containing error-related types for AppComm.
  *
@@ -73,5 +75,7 @@ struct AppCommError {
 };
 
 } // namespace errormodel
+
+} // namepsace appcomm
 
 #endif // ERRORMODEL_H

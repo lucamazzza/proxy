@@ -14,8 +14,6 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Network)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS WebSockets)
 
 add_library(appcomm STATIC
-  appcomm.cpp
-  appcomm.h
   appwritesdk.h
   appwritesdk.cpp
   ratelimiter.h
@@ -30,6 +28,16 @@ add_library(appcomm STATIC
   errormodel.cpp
   realtime.h
   realtime.cpp
+  appcommclient.h
+  appcommclient.cpp
+  garbagecollector.h
+  garbagecollector.cpp
+  appcommserver.h
+  appcommserver.cpp
+  membershipservice.h
+  membershipservice.cpp
+  messagequeryservice.h
+  messagequeryservice.cpp
 
 )
 

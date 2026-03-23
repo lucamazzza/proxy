@@ -318,6 +318,22 @@ public:
      * @param queries Optional query filters (e.g., limit, offset, search)
      */
     void listUsers(const ConnectionConfig &config, const QJsonArray &queries = QJsonArray());
+
+    /*!
+     * @brief Lists documents in a collection (admin operation).
+     *
+     * @param config Connection configuration with database and collection IDs
+     * @param queries Optional query filters
+     */
+    void listDocuments(const ConnectionConfig &config, const QJsonArray &queries = QJsonArray());
+
+    /*!
+     * @brief Deletes a document from a collection (admin operation).
+     *
+     * @param config Connection configuration with database and collection IDs
+     * @param documentId Document ID to delete
+     */
+    void deleteDocument(const ConnectionConfig &config, const QString &documentId);
 };
 
 } // namespace AppwriteSDK

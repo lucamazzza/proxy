@@ -16,6 +16,7 @@
 #include <QJsonObject>
 #include <QDateTime>
 
+namespace appcomm {
 
 /*!
  * @brief Holds the model definitions of data that is transfered through Appwrite.
@@ -196,5 +197,7 @@ struct AppCommConfig {
 };
 
 } // namespace model
+
+} // namespace appcomm
 
 #endif // MODEL_H

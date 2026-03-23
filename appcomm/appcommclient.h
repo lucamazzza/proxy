@@ -5,6 +5,8 @@
 
 namespace appcomm {
 
+namespace client {
+
 class AppcommClient : public QObject {
     Q_OBJECT
 public:
@@ -28,6 +30,8 @@ public:
 signals:
 };
 
-}
+} // namespace client
+
+} // namespace appcomm
 
 #endif // APPCOMMCLIENT_H

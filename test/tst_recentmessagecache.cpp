@@ -5,6 +5,7 @@
 #include "model.h"
 
 using namespace appcomm;
+using namespace appcomm::client;
 
 class tst_recentmessagecache : public QObject
 {

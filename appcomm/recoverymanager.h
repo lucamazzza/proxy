@@ -20,6 +20,8 @@
 
 namespace appcomm {
 
+namespace client {
+
 /*!
  * @brief Manager for recovering missing messages and synchronizing client state.
  *
@@ -142,6 +144,8 @@ private:
     OperationType m_currentOperation;        ///< Current operation being performed
     QString m_currentMessageId;              ///< MessageId for current operation
 };
+
+} // namespace client
 
 } // namespace appcomm
 

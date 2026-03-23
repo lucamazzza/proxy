@@ -2,7 +2,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 
-using namespace appcomm;
+using namespace appcomm::client;
 
 RecoveryManager::RecoveryManager(appwritesdk::Client *client,
                                  RecentMessageCache *cache,

@@ -7,8 +7,8 @@ Realtime::Realtime(const ConnectionConfig &config, QObject *parent)
     , m_config(config)
 {
     m_webSocket = new QWebSocket(QString(), QWebSocketProtocol::VersionLatest, this);
-    QObject::connect(m_webSocket, &QWebSocket::connected, this, &Realtime::connected);
-    QObject::connect(m_webSocket, &QWebSocket::disconnected, this, &Realtime::disconnected);
+    QObject::connect(m_webSocket, &QWebSocket::connected, this, &Realtime::onConnected);
+    QObject::connect(m_webSocket, &QWebSocket::disconnected, this, &Realtime::onDisconnected);
     QObject::connect(m_webSocket, &QWebSocket::textMessageReceived, this, &Realtime::onTextMessageReceived);
     QObject::connect(m_webSocket, &QWebSocket::errorOccurred, this, &Realtime::onErrorOccurred);
 }

@@ -15,6 +15,10 @@
 #include <QObject>
 #include <QDateTime>
 
+namespace appcomm {
+
+namespace client {
+
 /*!
  * @brief Token bucket rate limiter.
  *
@@ -22,8 +26,6 @@
  * Tokens are refilled at a constant rate and consumed by requests.
  * When no tokens are available, requests are denied.
  */
-namespace appcomm {
-
 class RateLimiter : public QObject {
     Q_OBJECT
 public:
@@ -90,6 +92,8 @@ private:
     int m_refillRate;       ///< Tokens added each second.
     QDateTime m_lastRefill; ///< Last refill Timestamp.
 };
+
+} // namespace client
 
 } // namespace appcomm
 

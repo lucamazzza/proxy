@@ -1,6 +1,7 @@
 #include "recentmessagecache.h"
 
 using namespace appcomm;
+using namespace appcomm::client;
 
 RecentMessageCache::RecentMessageCache(int capacity, QObject *parent)
     : QObject{parent}

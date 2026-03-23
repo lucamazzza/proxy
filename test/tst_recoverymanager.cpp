@@ -9,6 +9,7 @@
 #include "model.h"
 
 using namespace appcomm;
+using namespace appcomm::client;
 using namespace appwritesdk;
 
 class MockClient : public Client {

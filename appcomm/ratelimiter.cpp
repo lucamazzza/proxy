@@ -1,6 +1,6 @@
 #include "ratelimiter.h"
 
-using namespace appcomm;
+using namespace appcomm::client;
 
 RateLimiter::RateLimiter(int maxTokens, int refillRate, QObject *parent)
     : QObject{parent}

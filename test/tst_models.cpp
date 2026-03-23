@@ -1,7 +1,7 @@
 #include <QTest>
 #include "model.h"
 
-using namespace model;
+using namespace appcomm::model;
 
 class tst_models: public QObject
 {
