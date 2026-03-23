@@ -60,9 +60,9 @@ private slots:
     
 private:
     QNetworkAccessManager *m_network;
-    AppwriteSDK::Client *m_client;
-    AppwriteSDK::Server *m_server;
-    AppwriteSDK::ConnectionConfig m_config;
+    appwritesdk::Client *m_client;
+    appwritesdk::Server *m_server;
+    appwritesdk::ConnectionConfig m_config;
 };
 
 tst_appwritesdk::tst_appwritesdk()
@@ -85,8 +85,8 @@ void tst_appwritesdk::initTestCase()
     m_config.collectionId = "test-collection";
     
     m_network = new QNetworkAccessManager(this);
-    m_client = new AppwriteSDK::Client(m_network, this);
-    m_server = new AppwriteSDK::Server(m_network, this);
+    m_client = new appwritesdk::Client(m_network, this);
+    m_server = new appwritesdk::Server(m_network, this);
 }
 
 void tst_appwritesdk::cleanupTestCase()
@@ -97,7 +97,7 @@ void tst_appwritesdk::cleanupTestCase()
 
 void tst_appwritesdk::testConnectionConfig()
 {
-    AppwriteSDK::ConnectionConfig config;
+    appwritesdk::ConnectionConfig config;
     config.endpoint = "http://test.com/v1";
     config.projectId = "proj123";
     config.apiKey = "key456";
@@ -135,14 +135,14 @@ void tst_appwritesdk::testCreateBaseRequestWithAdmin()
 
 void tst_appwritesdk::testClientConstruction()
 {
-    AppwriteSDK::Client client(m_network);
+    appwritesdk::Client client(m_network);
     QVERIFY(true);
 }
 
 void tst_appwritesdk::testCreateAnonymousSession()
 {
-    QSignalSpy successSpy(m_client, &AppwriteSDK::Client::requestSuccess);
-    QSignalSpy errorSpy(m_client, &AppwriteSDK::Client::requestError);
+    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
+    QSignalSpy errorSpy(m_client, &appwritesdk::Client::requestError);
     
     m_client->createAnonymousSession(m_config);
     
@@ -152,8 +152,8 @@ void tst_appwritesdk::testCreateAnonymousSession()
 
 void tst_appwritesdk::testCreateEmailSession()
 {
-    QSignalSpy successSpy(m_client, &AppwriteSDK::Client::requestSuccess);
-    QSignalSpy errorSpy(m_client, &AppwriteSDK::Client::requestError);
+    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
+    QSignalSpy errorSpy(m_client, &appwritesdk::Client::requestError);
     
     m_client->createEmailSession(m_config, "test@example.com", "password123");
     
@@ -163,7 +163,7 @@ void tst_appwritesdk::testCreateEmailSession()
 
 void tst_appwritesdk::testDeleteSession()
 {
-    QSignalSpy successSpy(m_client, &AppwriteSDK::Client::requestSuccess);
+    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
     
     m_client->deleteSession(m_config, "session123");
     
@@ -172,7 +172,7 @@ void tst_appwritesdk::testDeleteSession()
 
 void tst_appwritesdk::testDeleteSessions()
 {
-    QSignalSpy successSpy(m_client, &AppwriteSDK::Client::requestSuccess);
+    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
     
     m_client->deleteSessions(m_config);
     
@@ -181,7 +181,7 @@ void tst_appwritesdk::testDeleteSessions()
 
 void tst_appwritesdk::testGetAccount()
 {
-    QSignalSpy successSpy(m_client, &AppwriteSDK::Client::requestSuccess);
+    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
     
     m_client->getAccount(m_config);
     
@@ -192,7 +192,7 @@ void tst_appwritesdk::testGetAccount()
 
 void tst_appwritesdk::testCreateDocument()
 {
-    QSignalSpy successSpy(m_client, &AppwriteSDK::Client::requestSuccess);
+    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
     
     QJsonObject data;
     data["text"] = "Hello World";
@@ -205,7 +205,7 @@ void tst_appwritesdk::testCreateDocument()
 
 void tst_appwritesdk::testListDocuments()
 {
-    QSignalSpy successSpy(m_client, &AppwriteSDK::Client::requestSuccess);
+    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
     
     m_client->listDocuments(m_config);
     
@@ -214,7 +214,7 @@ void tst_appwritesdk::testListDocuments()
 
 void tst_appwritesdk::testListDocumentsWithQueries()
 {
-    QSignalSpy successSpy(m_client, &AppwriteSDK::Client::requestSuccess);
+    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
     
     QJsonArray queries;
     queries.append("equal(\"channelId\",\"general\")");
@@ -227,7 +227,7 @@ void tst_appwritesdk::testListDocumentsWithQueries()
 
 void tst_appwritesdk::testGetDocument()
 {
-    QSignalSpy successSpy(m_client, &AppwriteSDK::Client::requestSuccess);
+    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
     
     m_client->getDocument(m_config, "doc123");
     
@@ -236,7 +236,7 @@ void tst_appwritesdk::testGetDocument()
 
 void tst_appwritesdk::testUpdateDocument()
 {
-    QSignalSpy successSpy(m_client, &AppwriteSDK::Client::requestSuccess);
+    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
     
     QJsonObject data;
     data["text"] = "Updated text";
@@ -248,7 +248,7 @@ void tst_appwritesdk::testUpdateDocument()
 
 void tst_appwritesdk::testDeleteDocument()
 {
-    QSignalSpy successSpy(m_client, &AppwriteSDK::Client::requestSuccess);
+    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
     
     m_client->deleteDocument(m_config, "doc123");
     
@@ -259,13 +259,13 @@ void tst_appwritesdk::testDeleteDocument()
 
 void tst_appwritesdk::testServerConstruction()
 {
-    AppwriteSDK::Server server(m_network);
+    appwritesdk::Server server(m_network);
     QVERIFY(true);
 }
 
 void tst_appwritesdk::testCreateDatabase()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     m_server->createDatabase(m_config, "TestDatabase");
     
@@ -274,7 +274,7 @@ void tst_appwritesdk::testCreateDatabase()
 
 void tst_appwritesdk::testDeleteDatabase()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     m_server->deleteDatabase(m_config);
     
@@ -283,7 +283,7 @@ void tst_appwritesdk::testDeleteDatabase()
 
 void tst_appwritesdk::testCreateCollection()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     m_server->createCollection(m_config, "Messages");
     
@@ -292,7 +292,7 @@ void tst_appwritesdk::testCreateCollection()
 
 void tst_appwritesdk::testCreateCollectionWithPermissions()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     QJsonArray permissions;
     permissions.append("read(\"any\")");
@@ -305,7 +305,7 @@ void tst_appwritesdk::testCreateCollectionWithPermissions()
 
 void tst_appwritesdk::testDeleteCollection()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     m_server->deleteCollection(m_config);
     
@@ -314,7 +314,7 @@ void tst_appwritesdk::testDeleteCollection()
 
 void tst_appwritesdk::testUpdateCollectionPermissions()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     QJsonArray permissions;
     permissions.append("read(\"any\")");
@@ -327,7 +327,7 @@ void tst_appwritesdk::testUpdateCollectionPermissions()
 
 void tst_appwritesdk::testCreateAttributeString()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     QJsonObject options;
     options["size"] = 255;
@@ -339,7 +339,7 @@ void tst_appwritesdk::testCreateAttributeString()
 
 void tst_appwritesdk::testCreateAttributeInteger()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     QJsonObject options;
     options["min"] = 0;
@@ -352,7 +352,7 @@ void tst_appwritesdk::testCreateAttributeInteger()
 
 void tst_appwritesdk::testCreateAttributeBoolean()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     QJsonObject options;
     options["default"] = false;
@@ -364,7 +364,7 @@ void tst_appwritesdk::testCreateAttributeBoolean()
 
 void tst_appwritesdk::testCreateAttributeDatetime()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     m_server->createAttribute(m_config, "datetime", "timestamp", true);
     
@@ -373,7 +373,7 @@ void tst_appwritesdk::testCreateAttributeDatetime()
 
 void tst_appwritesdk::testCreateIndex()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     QStringList attributes;
     attributes << "channelId" << "timestamp";
@@ -385,7 +385,7 @@ void tst_appwritesdk::testCreateIndex()
 
 void tst_appwritesdk::testCreateUser()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     m_server->createUser(m_config, "user@example.com", "password123");
     
@@ -394,7 +394,7 @@ void tst_appwritesdk::testCreateUser()
 
 void tst_appwritesdk::testCreateUserWithName()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     m_server->createUser(m_config, "user@example.com", "password123", "John Doe");
     
@@ -403,7 +403,7 @@ void tst_appwritesdk::testCreateUserWithName()
 
 void tst_appwritesdk::testDeleteUser()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     m_server->deleteUser(m_config, "user123");
     
@@ -412,7 +412,7 @@ void tst_appwritesdk::testDeleteUser()
 
 void tst_appwritesdk::testListUsers()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     m_server->listUsers(m_config);
     
@@ -421,7 +421,7 @@ void tst_appwritesdk::testListUsers()
 
 void tst_appwritesdk::testListUsersWithQueries()
 {
-    QSignalSpy successSpy(m_server, &AppwriteSDK::Server::requestSuccess);
+    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
     
     QJsonArray queries;
     queries.append("limit(10)");

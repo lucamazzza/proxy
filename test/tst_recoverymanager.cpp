@@ -9,7 +9,7 @@
 #include "model.h"
 
 using namespace appcomm;
-using namespace AppwriteSDK;
+using namespace appwritesdk;
 
 class MockClient : public Client {
     Q_OBJECT

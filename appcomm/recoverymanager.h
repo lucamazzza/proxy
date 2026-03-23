@@ -43,9 +43,9 @@ public:
      * @param config Appwrite connection configuration
      * @param parent Parent QObject for memory management
      */
-    explicit RecoveryManager(AppwriteSDK::Client *client,
+    explicit RecoveryManager(appwritesdk::Client *client,
                            RecentMessageCache *cache,
-                           const AppwriteSDK::ConnectionConfig &config,
+                           const appwritesdk::ConnectionConfig &config,
                            QObject *parent = nullptr);
 
     /*!
@@ -137,9 +137,9 @@ private:
      */
     void processRecoveredMessages(const QJsonArray &messages);
 
-    AppwriteSDK::Client *m_client;           ///< Appwrite client for API calls
+    appwritesdk::Client *m_client;           ///< Appwrite client for API calls
     RecentMessageCache *m_cache;             ///< Local message cache
-    AppwriteSDK::ConnectionConfig m_config;  ///< Appwrite connection config
+    appwritesdk::ConnectionConfig m_config;  ///< Appwrite connection config
     OperationType m_currentOperation;        ///< Current operation being performed
     QString m_currentMessageId;              ///< MessageId for current operation
 };

@@ -16,6 +16,13 @@
 #include <QJsonObject>
 #include <QDateTime>
 
+
+/*!
+ * @brief Holds the model definitions of data that is transfered through Appwrite.
+ *
+ * Contains model structure definitions of data commonly transferred through Appwrite
+ * that concern the messages sent to the client and to the server.
+ */
 namespace model {
 
 /*!
@@ -25,7 +32,7 @@ namespace model {
  */
 enum class AuthType {
     Guest = 0, ///< Anonymous session
-    Email     ///< Email/password authentication
+    Email      ///< Email/password authentication
 };
 
 /*!
@@ -66,9 +73,9 @@ struct Channel {
  * Messages are serialized as JSON and can carry arbitrary payload data.
  */
 struct Message {
-    QString channelId;  ///< Channel to which the message belongs
-    QString senderId;   ///< ID of the sender user
-    QString messageId;  ///< Unique message identifier
+    QString channelId;   ///< Channel to which the message belongs
+    QString senderId;    ///< ID of the sender user
+    QString messageId;   ///< Unique message identifier
     QDateTime timestamp; ///< Message creation timestamp (UTC)
     QJsonObject payload; ///< Arbitrary JSON payload
     bool isEcho = false; ///< True if message was echoed by server
@@ -102,9 +109,9 @@ struct Message {
  * Contains authentication type and validity period of the session.
  */
 struct SessionInfo {
-    QString userId;     ///< ID of the associated user
-    QString sessionId;  ///< Unique session identifier
-    AuthType authType;  ///< Authentication method used
+    QString userId;      ///< ID of the associated user
+    QString sessionId;   ///< Unique session identifier
+    AuthType authType;   ///< Authentication method used
     QDateTime createdAt; ///< Session creation timestamp (UTC)
     QDateTime expiresAt; ///< Session expiration timestamp (UTC)
 

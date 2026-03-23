@@ -4,9 +4,9 @@
 
 using namespace appcomm;
 
-RecoveryManager::RecoveryManager(AppwriteSDK::Client *client,
+RecoveryManager::RecoveryManager(appwritesdk::Client *client,
                                  RecentMessageCache *cache,
-                                 const AppwriteSDK::ConnectionConfig &config,
+                                 const appwritesdk::ConnectionConfig &config,
                                  QObject *parent)
     : QObject(parent)
     , m_client(client)
@@ -14,9 +14,9 @@ RecoveryManager::RecoveryManager(AppwriteSDK::Client *client,
     , m_config(config)
     , m_currentOperation(OperationType::None)
 {
-    connect(m_client, &AppwriteSDK::Client::requestSuccess,
+    connect(m_client, &appwritesdk::Client::requestSuccess,
             this, &RecoveryManager::onRequestSuccess);
-    connect(m_client, &AppwriteSDK::Client::requestError,
+    connect(m_client, &appwritesdk::Client::requestError,
             this, &RecoveryManager::onRequestError);
 }
 

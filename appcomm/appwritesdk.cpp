@@ -13,7 +13,7 @@
 #include <QJsonDocument>
 #include <QUrlQuery>
 
-namespace AppwriteSDK {
+namespace appwritesdk {
 
 BaseSDK::BaseSDK(QNetworkAccessManager *mgr, QObject *parent)
     : QObject(parent), m_network(mgr)

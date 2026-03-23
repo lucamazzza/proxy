@@ -12,10 +12,10 @@
 #ifndef APPWRITESDK_H
 #define APPWRITESDK_H
 
-#include <QtCore/qjsonarray.h>
 #define APPCOMM_USER false ///< `false` is mapped to the unprivileged mode
 #define APPCOMM_ADMIN true ///< `true` is mapped to the privileged mode
 
+#include <QtCore/qjsonarray.h>
 #include <QObject>
 #include <QString>
 #include <QJsonObject>
@@ -29,7 +29,7 @@
  *
  * Contains client and server SDK classes for interacting with Appwrite backend services.
  */
-namespace AppwriteSDK {
+namespace appwritesdk {
 
 /*!
  * @brief Configuration structure for Appwrite connections.

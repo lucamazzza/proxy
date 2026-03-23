@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Network)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS WebSockets)
 
 add_library(appcomm STATIC
   appcomm.cpp
@@ -27,9 +28,12 @@ add_library(appcomm STATIC
   errormodel.h
   model.cpp
   errormodel.cpp
+  realtime.h
+  realtime.cpp
 
 )
 
 target_link_libraries(appcomm PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 target_link_libraries(appcomm PRIVATE Qt${QT_VERSION_MAJOR}::Network)
+target_link_libraries(appcomm PRIVATE Qt${QT_VERSION_MAJOR}::WebSockets)
 target_compile_definitions(appcomm PRIVATE APPCOMM_LIBRARY)

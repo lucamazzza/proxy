@@ -55,9 +55,9 @@ QString errorCodeToString(ErrorCode code);
  * from an HTTP-based operation.
  */
 struct AppCommError {
-    ErrorCode code = ErrorCode::None;  ///< Error classification
-    QString message; ///< Human-readable error message
-    int httpStatus = 0;  ///< HTTP status code (if applicable)
+    ErrorCode code = ErrorCode::None;   ///< Error classification
+    QString message;                    ///< Human-readable error message
+    int httpStatus = 0;                 ///< HTTP status code (if applicable)
 
     /*!
      * @brief Checks whether this object represents an error.
