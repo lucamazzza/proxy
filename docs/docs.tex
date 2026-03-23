@@ -535,6 +535,74 @@ risolve i problemi di latenza, sicurezza e configurazione di rete in un'unica ar
 manutenibile.
 
 \chapter{Design e implementazione}
+
+\section{Modello di dominio}
+
+Per disaccoppiare la logica applicativa dalla rappresentazione JSON dei dati, il progetto introduce un modulo di dominio
+centralizzato definito nel file \texttt{model.h}. Questo modulo raccoglie tutte le strutture dati utilizzate nello scambio
+di informazioni tra frontend, proxy e backend.
+
+L'obiettivo è fornire una rappresentazione tipizzata e coerente delle entità del sistema, evitando la manipolazione 
+diretta di oggetti \texttt{QJsonObject} nei livelli superiori.
+
+\subsection{Struttura del modulo}
+
+Tutte le entità sono definite all'interno del namespace \texttt{model}, che rappresenta il punto di accesso unico per 
+il dominio applicativo. Le strutture sono progettate per essere, in primis leggere e facilmente serializzabili,
+indipendenti dal trasporto di dati e riutilizzabili tra i diversi moduli del sistema.
+
+\subsection{Entità principali}
+
+Il modello definisce diverse entità fondamentali:
+
+\begin{itemize}
+    \item \textbf{User}: rappresenta un utente tramite identificatore e email, con metodo \texttt{isValid()} per 
+        verificare la consistenza dei dati;
+    \item \textbf{Channel}: identifica un canale di comunicazione tramite un ID e un nome visibile in UI;
+    \item \textbf{Message}: rappresenta l'unità base della comunicazione. Contiene un identificatore del canale, un 
+        identificatore del mittente, uno per il messaggio, un timestamp in formato UTC, un payload generico in formato 
+        JSON ed un flag \texttt{isEcho} per distinguere messaggi generati localmente da quelli ricevuti dal server.
+    \item \textbf{SessionInfo}: contiene metadati relativi alla sessione, inclusi tipo di autenticazione 
+        e timestamp di creazione e scadenza;
+    \item \textbf{ChannelMember}: descrive la presenza di un utente in un canale, includendo stato di attività e 
+        informazioni temporali;
+    \item \textbf{PersistencePolicy}: definisce le politiche di persistenza (\gls{TTL}) per messaggi, sessioni e canali inattivi;
+    \item \textbf{AppCommConfig}: contiene i parametri di configurazione necessari per connettersi al backend Appwrite.
+\end{itemize}
+
+\subsection{Serializzazione e parsing}
+
+Le entità del modello implementano metodi di conversione bidirezionale tra rappresentazione tipizzata e formato JSON. 
+In particolare \texttt{fromJson()} consente di costruire oggetti a partire dai payload ricevuti dal backend mentre 
+\texttt{toJson()} permette la serializzazione per l'invio dei dati.
+
+Questo approccio centralizza la logica di parsing, evitando duplicazioni e garantendo coerenza tra i diversi componenti 
+del sistema.
+
+\subsection{Validazione}
+
+Le strutture principali includono metodi di validazione come \texttt{isValid()}, utilizzati per verificare la presenza
+e la correttezza dei campi obbligatori prima dell'utilizzo degli oggetti.
+
+Nel caso di parsing da JSON, se i dati non risultano validi, viene restituita un'istanza vuota. Questo consente ai
+moduli superiori di gestire esplicitamente i casi di errore senza propagare dati inconsistenti.
+
+\subsection{Gestione della sessione}
+
+Il tipo \texttt{SessionInfo} include il metodo \texttt{isExpired()}, che permette di verificare in modo immediato la
+validità temporale della sessione. Il tipo di autenticazione è modellato tramite l'enumerazione \texttt{AuthType}, che
+distingue tra sessioni anonime (guest) e autenticazione tramite email.
+
+\subsection{Integrazione con gli altri componenti}
+
+Il modello di dominio è utilizzato trasversalmente dai principali moduli del sistema; l'SDK riceve dati in formato JSON 
+dal backend, il \texttt{RecoveryManager} converte tali dati in oggetti \texttt{model::Message}, la 
+\texttt{RecentMessageCache} memorizza solo messaggi validati ed i livelli applicativi lavorano esclusivamente con 
+strutture tipizzate.
+
+Questa architettura garantisce una separazione chiara tra livello di trasporto e logica applicativa, migliorando
+robustezza, leggibilità e manutenibilità del codice.
+
 \section{Appwrite SDK}
 
 Il modulo \texttt{AppwriteSDK} costituisce il cuore tecnologico della libreria \texttt{appcomm}. Questo astrae l'API
@@ -745,6 +813,82 @@ L'implementazione adotta una strategia di refill passivo, detta \textit{lazy ref
 che graverebbero sulla CPU, il calcolo della rigenerazione avviene \textit{on-demand} ogni volta che viene richiesto un
 accesso, misurando i millisecondi trascorsi dall'ultima operazione riuscita. Questo approccio garantisce un controllo
 preciso del traffico con un overhead computazionale trascurabile.
+
+\section{Gestione degli errori}
+
+Per gestire in modo uniforme i fallimenti all'interno del sistema, il progetto introduce un modello di errore
+centralizzato definito nel file \texttt{errormodel.h}. 
+Questo modulo consente di rappresentare e propagare gli errori in maniera coerente tra frontend, proxy e backend.
+
+L'obiettivo è evitare l'uso di codici di errore impliciti o messaggi non strutturati, fornendo invece una
+rappresentazione tipizzata e standardizzata delle condizioni di errore.
+
+\subsection{Classificazione degli errori}
+
+Gli errori sono classificati tramite l'enumerazione \texttt{ErrorCode}, che definisce un insieme finito di categorie:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Codice} & \textbf{Descrizione} \\ \midrule
+    \textbf{None}              & assenza di errore                       \\
+    \textbf{AuthError}         & errore di autenticazione                \\
+    \textbf{NetworkError}      & problemi di rete                        \\
+    \textbf{ParseError}        & errori durante il parsing dei dati      \\
+    \textbf{ProtocolError}     & comportamento non conforme al protocollo\\
+    \textbf{PermissionError}   & accesso negato                          \\
+    \textbf{TimeoutError}      & timeout della richiesta                 \\
+    \textbf{RateLimitExceeded} & superamento dei limiti di richiesta     \\
+    \textbf{Unknown}           & errore non classificato                 \\
+\bottomrule
+\end{tabular}
+\caption{Codici di errore}
+\end{table}
+
+Questa classificazione permette di distinguere rapidamente la natura del problema e di gestirlo in modo appropriato nei
+diversi livelli dell'applicazione.
+
+\subsection{Struttura dell'errore}
+
+La struttura \texttt{AppCommError} rappresenta un errore completo all'interno del sistema. Essa include un codice di
+errore (\texttt{ErrorCode}), un messaggio descrittivo leggibile (\texttt{message}) ed un codice di stato HTTP opzionale
+(\texttt{httpStatus}), utile quando l'errore deriva da operazioni REST.
+
+Questa struttura consente di trasportare sia informazioni tecniche sia informazioni utili per il debug o la 
+visualizzazione lato utente.
+
+\subsection{Rilevazione e formattazione}
+
+Il metodo \texttt{hasError()} permette di verificare rapidamente se l'oggetto rappresenta un errore, controllando che
+il codice sia diverso da \texttt{ErrorCode::None}. Questo evita l'uso di controlli sparsi o condizioni implicite.
+
+La funzione \texttt{errorCodeToString()} fornisce una rappresentazione testuale del codice di errore, utile per logging
+e debugging.
+
+Il metodo \texttt{toString()} restituisce invece una stringa formattata che include il tipo di errore, il codice HTTP 
+associato ed il messaggio descrittivo.
+
+Ad esempio, un errore può essere rappresentato come:
+
+\begin{minted}{text}
+Error[NetworkError] (500): Internal server error
+\end{minted}
+
+\subsection{Integrazione nel sistema}
+
+Il modello di errore è utilizzato trasversalmente nei diversi componenti del sistema;
+Mentre l'SDK segnala errori di rete o autenticazione, il parsing dei dati invece lo utilizza \texttt{ParseError} in caso
+di payload non validi, il proxy può generare errori di protocollo o permessi ed i moduli applicativi possono reagire in
+base al tipo di errore ricevuto.
+
+L'uso di un modello centralizzato consente di evitare ambiguità e di uniformare la gestione degli errori in tutto il sistema, migliorando la robustezza e la leggibilità del codice.
+
+\subsection{Scelte progettuali}
+
+L'introduzione di un tipo dedicato per gli errori evita la propagazione di stringhe non strutturate o codici numerici non documentati. Questo approccio rende esplicito il significato degli errori e facilita l'estensione futura del sistema con nuove categorie o metadati aggiuntivi.
+
+Inoltre, la separazione tra codice di errore, messaggio e stato HTTP permette di gestire in modo flessibile sia errori interni sia errori derivanti da servizi esterni.
 
 \chapter{Test e validazione}
 
