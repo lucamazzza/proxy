@@ -42,5 +42,5 @@ void Realtime::onTextMessageReceived(const QString &msg) {
 
 void Realtime::onErrorOccurred(QAbstractSocket::SocketError error) {
     Q_UNUSED(error);
-    emit errorOccourred(m_webSocket->errorString());
+    emit errorOccurred(m_webSocket->errorString());
 }
