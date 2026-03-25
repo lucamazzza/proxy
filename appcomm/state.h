@@ -14,9 +14,10 @@ struct ClientState {
 };
 
 enum class ConnectionState {
+    Disconnected = 0,
     Disconnecting,
-    Connecting,
     Connected,
+    Connecting,
     Reconnecting,
     Failed
 };
