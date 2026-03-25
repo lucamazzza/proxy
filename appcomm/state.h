@@ -13,6 +13,14 @@ struct ClientState {
     bool authenticated;
 };
 
+enum class ConnectionState {
+    Disconnecting,
+    Connecting,
+    Connected,
+    Reconnecting,
+    Failed
+};
+
 }//namespace client
 
 }//namespace appcomm
