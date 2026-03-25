@@ -1,0 +1,20 @@
+#ifndef STATE_H
+#define STATE_H
+
+#include <QObject>
+
+namespace appcomm {
+
+namespace client {
+
+struct ClientState {
+    QString lastReceivedMessageId;
+    QString activeChannelId;
+    bool authenticated;
+};
+
+}//namespace client
+
+}//namespace appcomm
+
+#endif // STATE_H

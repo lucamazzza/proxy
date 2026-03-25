@@ -38,6 +38,7 @@ add_library(appcomm STATIC
   membershipservice.cpp
   messagequeryservice.h
   messagequeryservice.cpp
+  state.h
 
 )
 
