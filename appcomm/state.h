@@ -32,6 +32,7 @@ namespace client {
  * it with UI or higher-level components.
  */
 struct ClientState {
+    qint64 lastReceivedSequence = -1; ///< Number sequence of the last message received
     QString lastReceivedMessageId; ///< ID of the last message received (used for ordering or recovery)
     QString activeChannelId;       ///< Identifier of the currently active channel
     bool authenticated;            ///< Indicates whether the client is authenticated
