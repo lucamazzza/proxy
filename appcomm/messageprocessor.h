@@ -1,17 +1,25 @@
 #ifndef MESSAGEPROCESSOR_H
 #define MESSAGEPROCESSOR_H
 
+#include "model.h"
 #include "state.h"
-#include <QObject>
 
-using namespace appcomm::client;
+#include <QString>
+#include <optional>
 
-class MessageProcessor : public QObject {
-    Q_OBJECT
+class MessageProcessor {
 public:
-    explicit MessageProcessor(ClientState* clientstate);
+    explicit MessageProcessor(appcomm::client::ClientState* clientState);
+
+    std::optional<appcomm::model::Message> processIncoming(
+        const appcomm::model::Message& message
+        );
+    bool hasGap(const appcomm::model::Message& message) const;
+    bool isDuplicate(const appcomm::model::Message& message) const;
+    void reset(const QString& channelId);
+
 private:
-    ClientState* clientstate;
+    appcomm::client::ClientState* m_clientState;
 };
 
 #endif // MESSAGEPROCESSOR_H
