@@ -40,6 +40,7 @@ add_library(appcomm STATIC
   messagequeryservice.cpp
   state.h
   messageprocessor.h
+  messageprocessor.cpp
 
 )
 
