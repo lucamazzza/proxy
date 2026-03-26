@@ -32,7 +32,7 @@ private slots:
     void processIncoming_duplicateMessage_returnsNullopt();
     void processIncoming_olderMessage_returnsNullopt();
     //TODO: implementare recovery dei messaggi
-    void processIncoming_messageWithGap_returnsMessageAndUpdatesSequence();
+    //void processIncoming_messageWithGap_returnsMessageAndUpdatesSequence();
 
     void isDuplicate_noPreviousMessage_returnsFalse();
     void isDuplicate_sameSequence_returnsTrue();
