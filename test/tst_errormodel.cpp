@@ -6,7 +6,9 @@ using namespace appcomm::errormodel;
 class tst_errormodel : public QObject
 {
     Q_OBJECT
-
+public:
+    tst_errormodel();
+    ~tst_errormodel();
 private slots:
     void initTestCase();
     void cleanupTestCase();
@@ -31,6 +33,8 @@ private slots:
     void testAppCommErrorToString_noneError();
 };
 
+tst_errormodel::tst_errormodel() {}
+tst_errormodel::~tst_errormodel() {}
 void tst_errormodel::initTestCase() {}
 void tst_errormodel::cleanupTestCase() {}
 
