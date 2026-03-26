@@ -13,11 +13,18 @@ using namespace appcomm::client;
  * Verifies message validation, duplicate detection, gap detection,
  * channel filtering, and reset behavior.
  */
-class TestMessageProcessor : public QObject
+class tst_messageprocessor : public QObject
 {
     Q_OBJECT
 
+public:
+    tst_messageprocessor();
+    ~tst_messageprocessor();
+
 private slots:
+    void initTestCase();
+    void cleanupTestCase();
+
     void processIncoming_validFirstMessage_returnsMessageAndUpdatesSequence();
     void processIncoming_invalidMessage_returnsNullopt();
     void processIncoming_wrongChannel_returnsNullopt();
@@ -66,7 +73,12 @@ private:
     }
 };
 
-void TestMessageProcessor::processIncoming_validFirstMessage_returnsMessageAndUpdatesSequence()
+tst_messageprocessor::tst_messageprocessor() {}
+tst_messageprocessor::~tst_messageprocessor() {}
+void tst_messageprocessor::initTestCase() {}
+void tst_messageprocessor::cleanupTestCase() {}
+
+void tst_messageprocessor::processIncoming_validFirstMessage_returnsMessageAndUpdatesSequence()
 {
     ClientState state;
     state.activeChannelId = "channel-1";
@@ -83,7 +95,7 @@ void TestMessageProcessor::processIncoming_validFirstMessage_returnsMessageAndUp
     QCOMPARE(state.lastReceivedSequence, 0);
 }
 
-void TestMessageProcessor::processIncoming_invalidMessage_returnsNullopt()
+void tst_messageprocessor::processIncoming_invalidMessage_returnsNullopt()
 {
     ClientState state;
     state.activeChannelId = "channel-1";
@@ -100,7 +112,7 @@ void TestMessageProcessor::processIncoming_invalidMessage_returnsNullopt()
     QCOMPARE(state.lastReceivedSequence, -1);
 }
 
-void TestMessageProcessor::processIncoming_wrongChannel_returnsNullopt()
+void tst_messageprocessor::processIncoming_wrongChannel_returnsNullopt()
 {
     ClientState state;
     state.activeChannelId = "channel-1";
@@ -115,7 +127,7 @@ void TestMessageProcessor::processIncoming_wrongChannel_returnsNullopt()
     QCOMPARE(state.lastReceivedSequence, -1);
 }
 
-void TestMessageProcessor::processIncoming_emptyActiveChannel_acceptsMessage()
+void tst_messageprocessor::processIncoming_emptyActiveChannel_acceptsMessage()
 {
     ClientState state;
     state.activeChannelId = "";
@@ -131,7 +143,7 @@ void TestMessageProcessor::processIncoming_emptyActiveChannel_acceptsMessage()
     QCOMPARE(state.lastReceivedSequence, 0);
 }
 
-void TestMessageProcessor::processIncoming_duplicateMessage_returnsNullopt()
+void tst_messageprocessor::processIncoming_duplicateMessage_returnsNullopt()
 {
     ClientState state;
     state.activeChannelId = "channel-1";
@@ -146,7 +158,7 @@ void TestMessageProcessor::processIncoming_duplicateMessage_returnsNullopt()
     QCOMPARE(state.lastReceivedSequence, 5);
 }
 
-void TestMessageProcessor::processIncoming_olderMessage_returnsNullopt()
+void tst_messageprocessor::processIncoming_olderMessage_returnsNullopt()
 {
     ClientState state;
     state.activeChannelId = "channel-1";
@@ -162,13 +174,13 @@ void TestMessageProcessor::processIncoming_olderMessage_returnsNullopt()
 }
 
 /*
-void TestMessageProcessor::processIncoming_messageWithGap_returnsMessageAndUpdatesSequence()
+void tst_messageprocessor::processIncoming_messageWithGap_returnsMessageAndUpdatesSequence()
 {
     //TODO
 }
 */
 
-void TestMessageProcessor::isDuplicate_noPreviousMessage_returnsFalse()
+void tst_messageprocessor::isDuplicate_noPreviousMessage_returnsFalse()
 {
     ClientState state;
     state.lastReceivedSequence = -1;
@@ -179,7 +191,7 @@ void TestMessageProcessor::isDuplicate_noPreviousMessage_returnsFalse()
     QVERIFY(!processor.isDuplicate(msg));
 }
 
-void TestMessageProcessor::isDuplicate_sameSequence_returnsTrue()
+void tst_messageprocessor::isDuplicate_sameSequence_returnsTrue()
 {
     ClientState state;
     state.lastReceivedSequence = 4;
@@ -190,7 +202,7 @@ void TestMessageProcessor::isDuplicate_sameSequence_returnsTrue()
     QVERIFY(processor.isDuplicate(msg));
 }
 
-void TestMessageProcessor::isDuplicate_lowerSequence_returnsTrue()
+void tst_messageprocessor::isDuplicate_lowerSequence_returnsTrue()
 {
     ClientState state;
     state.lastReceivedSequence = 4;
@@ -201,7 +213,7 @@ void TestMessageProcessor::isDuplicate_lowerSequence_returnsTrue()
     QVERIFY(processor.isDuplicate(msg));
 }
 
-void TestMessageProcessor::isDuplicate_higherSequence_returnsFalse()
+void tst_messageprocessor::isDuplicate_higherSequence_returnsFalse()
 {
     ClientState state;
     state.lastReceivedSequence = 4;
@@ -212,7 +224,7 @@ void TestMessageProcessor::isDuplicate_higherSequence_returnsFalse()
     QVERIFY(!processor.isDuplicate(msg));
 }
 
-void TestMessageProcessor::hasGap_noPreviousMessage_returnsFalse()
+void tst_messageprocessor::hasGap_noPreviousMessage_returnsFalse()
 {
     ClientState state;
     state.lastReceivedSequence = -1;
@@ -223,7 +235,7 @@ void TestMessageProcessor::hasGap_noPreviousMessage_returnsFalse()
     QVERIFY(!processor.hasGap(msg));
 }
 
-void TestMessageProcessor::hasGap_consecutiveSequence_returnsFalse()
+void tst_messageprocessor::hasGap_consecutiveSequence_returnsFalse()
 {
     ClientState state;
     state.lastReceivedSequence = 7;
@@ -234,7 +246,7 @@ void TestMessageProcessor::hasGap_consecutiveSequence_returnsFalse()
     QVERIFY(!processor.hasGap(msg));
 }
 
-void TestMessageProcessor::hasGap_sameSequence_returnsFalse()
+void tst_messageprocessor::hasGap_sameSequence_returnsFalse()
 {
     ClientState state;
     state.lastReceivedSequence = 7;
@@ -245,7 +257,7 @@ void TestMessageProcessor::hasGap_sameSequence_returnsFalse()
     QVERIFY(!processor.hasGap(msg));
 }
 
-void TestMessageProcessor::hasGap_skippedSequence_returnsTrue()
+void tst_messageprocessor::hasGap_skippedSequence_returnsTrue()
 {
     ClientState state;
     state.lastReceivedSequence = 7;
@@ -256,7 +268,7 @@ void TestMessageProcessor::hasGap_skippedSequence_returnsTrue()
     QVERIFY(processor.hasGap(msg));
 }
 
-void TestMessageProcessor::reset_setsChannelAndResetsSequence()
+void tst_messageprocessor::reset_setsChannelAndResetsSequence()
 {
     ClientState state;
     state.activeChannelId = "old-channel";
@@ -270,5 +282,5 @@ void TestMessageProcessor::reset_setsChannelAndResetsSequence()
     QCOMPARE(state.lastReceivedSequence, -1);
 }
 
-QTEST_APPLESS_MAIN(TestMessageProcessor)
+QTEST_APPLESS_MAIN(tst_messageprocessor)
 #include "tst_messageprocessor.moc"
