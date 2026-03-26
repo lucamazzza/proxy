@@ -23,6 +23,7 @@ set(TEST_FILES
     tst_recoverymanager.cpp
     tst_models.cpp
     tst_errormodel.cpp
+    tst_messageprocessor.cpp
     # tst_appcommclient.cpp
 )
 
