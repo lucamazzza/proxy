@@ -74,12 +74,13 @@ struct Channel {
  * Messages are serialized as JSON and can carry arbitrary payload data.
  */
 struct Message {
-    QString channelId;   ///< Channel to which the message belongs
-    QString senderId;    ///< ID of the sender user
-    QString messageId;   ///< Unique message identifier
-    QDateTime timestamp; ///< Message creation timestamp (UTC)
-    QJsonObject payload; ///< Arbitrary JSON payload
-    bool isEcho = false; ///< True if message was echoed by server
+    QString channelId;        ///< Channel to which the message belongs
+    QString senderId;         ///< ID of the sender user
+    QString messageId;        ///< Unique message identifier
+    qint64 sequenceNumber = -1;  ///< Unique message number in sequence
+    QDateTime timestamp;      ///< Message creation timestamp (UTC)
+    QJsonObject payload;      ///< Arbitrary JSON payload
+    bool isEcho = false;      ///< True if message was echoed by server
 
     /*!
      * @brief Validates the message object.

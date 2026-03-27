@@ -38,8 +38,9 @@ add_library(appcomm STATIC
   membershipservice.cpp
   messagequeryservice.h
   messagequeryservice.cpp
-  appcomm.qtdocconf
-
+  state.h
+  messageprocessor.h
+  messageprocessor.cpp
 )
 
 target_link_libraries(appcomm PRIVATE Qt${QT_VERSION_MAJOR}::Core)
