@@ -2,6 +2,7 @@
 #define MESSAGEPROCESSOR_H
 
 #include "model.h"
+#include "recoverymanager.h"
 #include "state.h"
 
 #include <QString>
@@ -30,7 +31,7 @@ public:
      *
      * @note The pointer must not be null and is not owned by this class.
      */
-    explicit MessageProcessor(ClientState* clientState);
+    explicit MessageProcessor(ClientState* clientState, RecoveryManager* recoveryManager);
 
     /*!
      * @brief Processes an incoming message.
@@ -87,6 +88,8 @@ private:
      * This pointer is not owned by MessageProcessor.
      */
     ClientState* m_clientState;
+
+    RecoveryManager *m_recoveryManager;
 };
 
 } //namespace client

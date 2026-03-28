@@ -4,8 +4,10 @@ namespace appcomm {
 
 namespace client {
 
-MessageProcessor::MessageProcessor(ClientState* clientState)
-    : m_clientState(clientState){
+MessageProcessor::MessageProcessor(ClientState* clientState, RecoveryManager* recoveryManager)
+    : m_clientState(clientState)
+    , m_recoveryManager(recoveryManager)
+{
 }
 
 std::optional<model::Message> MessageProcessor::processIncoming(
@@ -26,10 +28,12 @@ std::optional<model::Message> MessageProcessor::processIncoming(
     }
 
     if (hasGap(message)) {
-        //Recovery
+        m_recoveryManager->requestFrom(m_clientState->lastReceivedMessageId);
+        return std::nullopt;
     }
 
     m_clientState->lastReceivedSequence = message.sequenceNumber;
+    m_clientState->lastReceivedMessageId = message.messageId;
 
     return message;
 }
