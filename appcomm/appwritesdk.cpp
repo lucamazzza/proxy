@@ -78,7 +78,7 @@ QNetworkRequest BaseSDK::createBaseRequest(const ConnectionConfig &config,
 }
 
 void Client::createAnonymousSession(const ConnectionConfig &config) {
-    QNetworkRequest req = createBaseRequest(config, "account/sessions/anonymous", false);
+    QNetworkRequest req = createBaseRequest(config, "account/sessions/anonymous", APPCOMM_USER);
     QNetworkReply *reply = m_network->post(req, QByteArray());
     connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
 }
@@ -86,7 +86,7 @@ void Client::createAnonymousSession(const ConnectionConfig &config) {
 void Client::createEmailSession(const ConnectionConfig &config,
                                 const QString &email,
                                 const QString &password) {
-    QNetworkRequest req = createBaseRequest(config, "account/sessions/email", false);
+    QNetworkRequest req = createBaseRequest(config, "account/sessions/email", APPCOMM_USER);
     QJsonObject body;
     body["email"] = email;
     body["password"] = password;
@@ -96,19 +96,19 @@ void Client::createEmailSession(const ConnectionConfig &config,
 
 void Client::deleteSession(const ConnectionConfig &config, const QString &sessionId) {
     QString path = QString("account/sessions/%1").arg(sessionId);
-    QNetworkRequest req = createBaseRequest(config, path, false);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_USER);
     QNetworkReply *reply = m_network->deleteResource(req);
     connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
 }
 
 void Client::deleteSessions(const ConnectionConfig &config) {
-    QNetworkRequest req = createBaseRequest(config, "account/sessions", false);
+    QNetworkRequest req = createBaseRequest(config, "account/sessions", APPCOMM_USER);
     QNetworkReply *reply = m_network->deleteResource(req);
     connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
 }
 
 void Client::getAccount(const ConnectionConfig &config) {
-    QNetworkRequest req = createBaseRequest(config, "account", false);
+    QNetworkRequest req = createBaseRequest(config, "account", APPCOMM_USER);
     QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
 }
@@ -116,7 +116,7 @@ void Client::getAccount(const ConnectionConfig &config) {
 void Client::createDocument(const ConnectionConfig &config, const QJsonObject &data) {
     QString path = QString("databases/%1/collections/%2/documents")
                        .arg(config.dbId, config.collectionId);
-    QNetworkRequest req = createBaseRequest(config, path, false);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_USER);
     QJsonObject body;
     body["documentId"] = "unique()";
     body["data"] = data;
@@ -135,7 +135,7 @@ void Client::listDocuments(const ConnectionConfig &config, const QJsonArray &que
         }
         url.setQuery(query);
     }
-    QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint + "/", ""), false);
+    QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint + "/", ""), APPCOMM_USER);
     QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
 }
@@ -143,7 +143,7 @@ void Client::listDocuments(const ConnectionConfig &config, const QJsonArray &que
 void Client::getDocument(const ConnectionConfig &config, const QString &documentId) {
     QString path = QString("databases/%1/collections/%2/documents/%3")
                        .arg(config.dbId, config.collectionId, documentId);
-    QNetworkRequest req = createBaseRequest(config, path, false);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_USER);
     QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
 }
@@ -153,7 +153,7 @@ void Client::updateDocument(const ConnectionConfig &config,
                            const QJsonObject &data) {
     QString path = QString("databases/%1/collections/%2/documents/%3")
                        .arg(config.dbId, config.collectionId, documentId);
-    QNetworkRequest req = createBaseRequest(config, path, false);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_USER);
     QJsonObject body;
     body["data"] = data;
     QNetworkReply *reply = m_network->put(req, QJsonDocument(body).toJson());
@@ -163,13 +163,13 @@ void Client::updateDocument(const ConnectionConfig &config,
 void Client::deleteDocument(const ConnectionConfig &config, const QString &documentId) {
     QString path = QString("databases/%1/collections/%2/documents/%3")
                        .arg(config.dbId, config.collectionId, documentId);
-    QNetworkRequest req = createBaseRequest(config, path, false);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_USER);
     QNetworkReply *reply = m_network->deleteResource(req);
     connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
 }
 
 void Server::createDatabase(const ConnectionConfig &config, const QString &name) {
-    QNetworkRequest req = createBaseRequest(config, "databases", true);
+    QNetworkRequest req = createBaseRequest(config, "databases", APPCOMM_ADMIN);
     QJsonObject body;
     body["databaseId"] = config.dbId;
     body["name"] = name;
@@ -179,7 +179,7 @@ void Server::createDatabase(const ConnectionConfig &config, const QString &name)
 
 void Server::deleteDatabase(const ConnectionConfig &config) {
     QString path = QString("databases/%1").arg(config.dbId);
-    QNetworkRequest req = createBaseRequest(config, path, true);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->deleteResource(req);
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }
@@ -188,7 +188,7 @@ void Server::createCollection(const ConnectionConfig &config,
                               const QString &name,
                               const QJsonArray &permissions) {
     QString path = QString("databases/%1/collections").arg(config.dbId);
-    QNetworkRequest req = createBaseRequest(config, path, true);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QJsonObject body;
     body["collectionId"] = config.collectionId;
     body["name"] = name;
@@ -204,7 +204,7 @@ void Server::createCollection(const ConnectionConfig &config,
 void Server::deleteCollection(const ConnectionConfig &config) {
     QString path = QString("databases/%1/collections/%2")
                        .arg(config.dbId, config.collectionId);
-    QNetworkRequest req = createBaseRequest(config, path, true);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->deleteResource(req);
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }
@@ -213,7 +213,7 @@ void Server::updateCollectionPermissions(const ConnectionConfig &config,
                                          const QJsonArray &permissions) {
     QString path = QString("databases/%1/collections/%2")
                        .arg(config.dbId, config.collectionId);
-    QNetworkRequest req = createBaseRequest(config, path, true);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QJsonObject body;
     body["permissions"] = permissions;
     QNetworkReply *reply = m_network->sendCustomRequest(req, "PATCH", QJsonDocument(body).toJson());
@@ -227,7 +227,7 @@ void Server::createAttribute(const ConnectionConfig &config,
                              const QJsonObject &options) {
     QString path = QString("databases/%1/collections/%2/attributes/%3")
                        .arg(config.dbId, config.collectionId, type);
-    QNetworkRequest req = createBaseRequest(config, path, true);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QJsonObject body;
     body["key"] = key;
     body["required"] = required;
@@ -244,7 +244,7 @@ void Server::createIndex(const ConnectionConfig &config,
                         const QStringList &attributes) {
     QString path = QString("databases/%1/collections/%2/indexes")
                        .arg(config.dbId, config.collectionId);
-    QNetworkRequest req = createBaseRequest(config, path, true);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QJsonArray attrs;
     for (const QString &attr : attributes) {
         attrs.append(attr);
@@ -261,7 +261,7 @@ void Server::createUser(const ConnectionConfig &config,
                        const QString &email,
                        const QString &password,
                        const QString &name) {
-    QNetworkRequest req = createBaseRequest(config, "users", true);
+    QNetworkRequest req = createBaseRequest(config, "users", APPCOMM_ADMIN);
     QJsonObject body;
     body["userId"] = "unique()";
     body["email"] = email;
@@ -275,7 +275,7 @@ void Server::createUser(const ConnectionConfig &config,
 
 void Server::deleteUser(const ConnectionConfig &config, const QString &userId) {
     QString path = QString("users/%1").arg(userId);
-    QNetworkRequest req = createBaseRequest(config, path, true);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->deleteResource(req);
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }
@@ -289,7 +289,7 @@ void Server::listUsers(const ConnectionConfig &config, const QJsonArray &queries
         }
         url.setQuery(query);
     }
-    QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint + "/", ""), true);
+    QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint + "/", ""), APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }
@@ -306,8 +306,19 @@ void Server::listDocuments(const ConnectionConfig &config, const QJsonArray &que
         }
         url.setQuery(query);
     }
-    QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint, ""), true);
+    QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint, ""), APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->get(req);
+    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+}
+
+void Server::createDocument(const ConnectionConfig &config, const QJsonObject &data) {
+    QString path = QString("databases/%1/collections/%2/documents")
+                       .arg(config.dbId, config.collectionId);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
+    QJsonObject body;
+    body["documentId"] = "unique()";
+    body["data"] = data;
+    QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }
 
@@ -316,7 +327,7 @@ void Server::deleteDocument(const ConnectionConfig &config, const QString &docum
                        .arg(config.dbId)
                        .arg(config.collectionId)
                        .arg(documentId);
-    QNetworkRequest req = createBaseRequest(config, path, true);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->deleteResource(req);
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }

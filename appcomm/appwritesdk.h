@@ -328,6 +328,14 @@ public:
     void listDocuments(const ConnectionConfig &config, const QJsonArray &queries = QJsonArray());
 
     /*!
+     * @brief Creates a document in a collection (admin operation).
+     *
+     * @param config Connection configuration with database and collection IDs
+     * @param data JSON object containing document data
+     */
+    void createDocument(const ConnectionConfig &config, const QJsonObject &data);
+
+    /*!
      * @brief Deletes a document from a collection (admin operation).
      *
      * @param config Connection configuration with database and collection IDs

@@ -27,8 +27,9 @@ QJsonObject Message::toJson() const {
     obj["channelId"] = channelId;
     obj["senderId"] = senderId;
     obj["messageId"] = messageId;
+    obj["sequenceNumber"] = sequenceNumber;
     obj["timestamp"] = timestamp.toString(Qt::ISODate);
-    obj["payload"] = payload;
+    obj["payload"] = QString(QJsonDocument(payload).toJson(QJsonDocument::Compact));
     obj["isEcho"] = isEcho;
     return obj;
 }
@@ -39,6 +40,7 @@ Message Message::fromJson(const QJsonObject& obj) {
     const QJsonValue channelIdValue = obj.value("channelId");
     const QJsonValue senderIdValue = obj.value("senderId");
     const QJsonValue messageIdValue = obj.value("messageId");
+    const QJsonValue sequenceNumberValue = obj.value("sequenceNumber");
     const QJsonValue timestampValue = obj.value("timestamp");
     const QJsonValue payloadValue = obj.value("payload");
     const QJsonValue isEchoValue = obj.value("isEcho");
@@ -47,7 +49,6 @@ Message Message::fromJson(const QJsonObject& obj) {
         || !senderIdValue.isString()
         || !messageIdValue.isString()
         || !timestampValue.isString()
-        || !payloadValue.isObject()
         || !isEchoValue.isBool()) {
         return {};
     }
@@ -55,8 +56,18 @@ Message Message::fromJson(const QJsonObject& obj) {
     message.channelId = channelIdValue.toString().trimmed();
     message.senderId = senderIdValue.toString().trimmed();
     message.messageId = messageIdValue.toString().trimmed();
+    message.sequenceNumber = sequenceNumberValue.toInt(-1);
     message.timestamp = QDateTime::fromString(timestampValue.toString(), Qt::ISODate);
-    message.payload = payloadValue.toObject();
+    
+    if (payloadValue.isString()) {
+        QJsonDocument doc = QJsonDocument::fromJson(payloadValue.toString().toUtf8());
+        if (doc.isObject()) {
+            message.payload = doc.object();
+        }
+    } else if (payloadValue.isObject()) {
+        message.payload = payloadValue.toObject();
+    }
+    
     message.isEcho = isEchoValue.toBool();
 
     return message;

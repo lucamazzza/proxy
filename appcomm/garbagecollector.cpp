@@ -37,7 +37,7 @@ void GarbageCollector::onDocumentsListed(const QJsonObject &data) {
     disconnect(m_server, &appwritesdk::Server::requestSuccess, this, &GarbageCollector::onDocumentsListed);
     connect(m_server, &appwritesdk::Server::requestSuccess, this, &GarbageCollector::onDocumentDeleted);
     for (const QJsonValue &doc : std::as_const(documents)) {
-        QString docId = doc.toObject().value("documentId").toString();
+        QString docId = doc.toObject().value("$id").toString();
         if (!docId.isEmpty()) {
             m_docsToDelete.append(docId);
         }

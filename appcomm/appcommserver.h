@@ -12,6 +12,9 @@
 
 #include "model.h"
 
+#define APPCOMM_ATTR_REQUIRED true
+#define APPCOMM_ATTR_OPTIONAL false
+
 /*!
  * @namespace appcomm
  * @brief Main namespace for the application communication library
@@ -324,6 +327,11 @@ private slots:
      * @param message Error message
      */
     void onServerRequestError(int code, const QString &message);
+    
+    void onChannelDocumentsListed(const QJsonObject &data);
+    void onChannelDocumentDeleted(const QJsonObject &data);
+    void onMemberDocumentsListed(const QJsonObject &data);
+    void onMemberListingComplete(const QJsonObject &data);
 
 private:
     /*!
@@ -331,7 +339,12 @@ private:
      * @brief Private implementation class (PIMPL pattern)
      */
     class Private;
-    Private *d; /*!< Pointer to private implementation */
+    Private *d;                     ///< Pointer to private implementation
+    QString m_deletingChannelId;
+    QString m_originalCollectionId;
+    QString m_removingChannelId;
+    QString m_removingUserId;
+    QString m_queryingChannelId;
 };
 
 } // namespace server
