@@ -17,6 +17,7 @@
 #include <QJsonArray>
 #include "appwritesdk.h"
 #include "recentmessagecache.h"
+#include "irecoverymanager.h"
 
 namespace appcomm {
 
@@ -32,7 +33,7 @@ namespace client {
  *
  * After successful recovery, the client state is realigned with the server.
  */
-class RecoveryManager : public QObject {
+class RecoveryManager : public QObject, public IRecoveryManager {
     Q_OBJECT
 
 public:
@@ -50,6 +51,14 @@ public:
                            QObject *parent = nullptr);
 
     /*!
+     * @brief Destructor.
+     *
+     * Ensures proper cleanup of derived classes when deleting
+     * through a pointer to RecoveryManager.
+     */
+    ~RecoveryManager() override = default;
+
+    /*!
      * @brief Requests all messages that came after a specific message ID.
      *
      * First checks the local cache. If messages are found in cache, emits
@@ -58,7 +67,7 @@ public:
      *
      * @param messageId Starting point (exclusive) - get all messages after this
      */
-    void requestFrom(const QString &messageId);
+    void requestFrom(const QString &messageId) override;
 
     /*!
      * @brief Requests a single specific message by ID.
