@@ -2,7 +2,7 @@
 #define MESSAGEPROCESSOR_H
 
 #include "model.h"
-#include "irecoverymanager.h"
+#include "recoverymanager.h"
 #include "state.h"
 
 #include <QString>
