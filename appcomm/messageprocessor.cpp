@@ -4,7 +4,7 @@ namespace appcomm {
 
 namespace client {
 
-MessageProcessor::MessageProcessor(ClientState* clientState, RecoveryManager* recoveryManager)
+MessageProcessor::MessageProcessor(ClientState* clientState, IRecoveryManager* recoveryManager)
     : m_clientState(clientState)
     , m_recoveryManager(recoveryManager)
 {
@@ -53,6 +53,7 @@ bool MessageProcessor::hasGap(const model::Message& message) const {
 void MessageProcessor::reset(const QString& channelId) {
     m_clientState->activeChannelId = channelId;
     m_clientState->lastReceivedSequence = -1;
+    m_clientState->lastReceivedMessageId.clear();
 }
 
 } //namespace client
