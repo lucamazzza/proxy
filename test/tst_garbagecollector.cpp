@@ -17,7 +17,7 @@ using namespace appcomm::server;
 using namespace appcomm::model;
 using namespace appwritesdk;
 
-class TestGarbageCollector : public QObject {
+class tst_garbagecollector : public QObject {
     Q_OBJECT
 
 private slots:
@@ -43,7 +43,7 @@ private:
     ConnectionConfig m_config;
 };
 
-void TestGarbageCollector::initTestCase() {
+void tst_garbagecollector::initTestCase() {
     // Setup test configuration
     m_config.endpoint = "https://cloud.appwrite.io/v1";
     m_config.projectId = "test-project-123";
@@ -54,25 +54,25 @@ void TestGarbageCollector::initTestCase() {
     m_server = new Server(new QNetworkAccessManager(this), this);
 }
 
-void TestGarbageCollector::cleanupTestCase() {
+void tst_garbagecollector::cleanupTestCase() {
     // Server will be deleted by Qt parent-child relationship
 }
 
-void TestGarbageCollector::init() {
+void tst_garbagecollector::init() {
     // Reset before each test
 }
 
-void TestGarbageCollector::cleanup() {
+void tst_garbagecollector::cleanup() {
     // Clean up after each test
 }
 
-void TestGarbageCollector::testConstructor() {
+void tst_garbagecollector::testConstructor() {
     GarbageCollector gc(m_server, m_config);
     
     QVERIFY(true); // Constructor should not crash
 }
 
-void TestGarbageCollector::testRunCleanupWithZeroTTL() {
+void tst_garbagecollector::testRunCleanupWithZeroTTL() {
     GarbageCollector gc(m_server, m_config);
     
     QSignalSpy spyComplete(&gc, &GarbageCollector::cleanupComplete);
@@ -91,7 +91,7 @@ void TestGarbageCollector::testRunCleanupWithZeroTTL() {
     QCOMPARE(arguments.at(0).toInt(), 0);
 }
 
-void TestGarbageCollector::testRunCleanupWithNegativeTTL() {
+void tst_garbagecollector::testRunCleanupWithNegativeTTL() {
     GarbageCollector gc(m_server, m_config);
     
     QSignalSpy spyComplete(&gc, &GarbageCollector::cleanupComplete);
@@ -108,7 +108,7 @@ void TestGarbageCollector::testRunCleanupWithNegativeTTL() {
     QCOMPARE(arguments.at(0).toInt(), 0);
 }
 
-void TestGarbageCollector::testRunCleanupWithValidTTL() {
+void tst_garbagecollector::testRunCleanupWithValidTTL() {
     GarbageCollector gc(m_server, m_config);
     
     QSignalSpy spyComplete(&gc, &GarbageCollector::cleanupComplete);
@@ -124,7 +124,7 @@ void TestGarbageCollector::testRunCleanupWithValidTTL() {
     QVERIFY(true);
 }
 
-void TestGarbageCollector::testCleanupCompleteSignal() {
+void tst_garbagecollector::testCleanupCompleteSignal() {
     GarbageCollector gc(m_server, m_config);
     
     QSignalSpy spy(&gc, &GarbageCollector::cleanupComplete);
@@ -132,7 +132,7 @@ void TestGarbageCollector::testCleanupCompleteSignal() {
     QVERIFY(spy.isValid());
 }
 
-void TestGarbageCollector::testCleanupErrorSignal() {
+void tst_garbagecollector::testCleanupErrorSignal() {
     GarbageCollector gc(m_server, m_config);
     
     QSignalSpy spy(&gc, &GarbageCollector::cleanupError);
@@ -140,5 +140,5 @@ void TestGarbageCollector::testCleanupErrorSignal() {
     QVERIFY(spy.isValid());
 }
 
-QTEST_MAIN(TestGarbageCollector)
+QTEST_MAIN(tst_garbagecollector)
 #include "tst_garbagecollector.moc"

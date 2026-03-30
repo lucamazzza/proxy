@@ -1,3 +1,6 @@
+// TODO: implement Appwrite on-instance testing with a public one
+//       connection config (endpoint/api key) must be in secrets for pipeline testing
+
 #include <QTest>
 #include <QSignalSpy>
 #include <QNetworkAccessManager>

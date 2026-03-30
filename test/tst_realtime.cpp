@@ -16,7 +16,7 @@
 using namespace appcomm;
 using namespace appwritesdk;
 
-class TestRealtime : public QObject {
+class tst_realtime : public QObject {
     Q_OBJECT
 
 private slots:
@@ -43,7 +43,7 @@ private:
     ConnectionConfig m_config;
 };
 
-void TestRealtime::initTestCase() {
+void tst_realtime::initTestCase() {
     // Setup test configuration
     m_config.endpoint = "https://cloud.appwrite.io/v1";
     m_config.projectId = "test-project-123";
@@ -52,25 +52,25 @@ void TestRealtime::initTestCase() {
     m_config.collectionId = "test-collection";
 }
 
-void TestRealtime::cleanupTestCase() {
+void tst_realtime::cleanupTestCase() {
     // Nothing to clean up
 }
 
-void TestRealtime::init() {
+void tst_realtime::init() {
     // Reset before each test
 }
 
-void TestRealtime::cleanup() {
+void tst_realtime::cleanup() {
     // Clean up after each test
 }
 
-void TestRealtime::testConstructor() {
+void tst_realtime::testConstructor() {
     Realtime realtime(m_config);
     
     QVERIFY(true); // Constructor should not crash
 }
 
-void TestRealtime::testConstructorWithConfig() {
+void tst_realtime::testConstructorWithConfig() {
     ConnectionConfig config;
     config.endpoint = "https://example.com/v1";
     config.projectId = "project123";
@@ -80,7 +80,7 @@ void TestRealtime::testConstructorWithConfig() {
     QVERIFY(true); // Should accept custom config
 }
 
-void TestRealtime::testConnectBuildsCorrectUrl() {
+void tst_realtime::testConnectBuildsCorrectUrl() {
     Realtime realtime(m_config);
     
     QStringList channels;
@@ -94,7 +94,7 @@ void TestRealtime::testConnectBuildsCorrectUrl() {
     QVERIFY(true);
 }
 
-void TestRealtime::testDisconnect() {
+void tst_realtime::testDisconnect() {
     Realtime realtime(m_config);
     
     realtime.disconnect();
@@ -102,7 +102,7 @@ void TestRealtime::testDisconnect() {
     QVERIFY(true); // Should not crash when disconnecting unconnected socket
 }
 
-void TestRealtime::testConnectedSignal() {
+void tst_realtime::testConnectedSignal() {
     Realtime realtime(m_config);
     
     QSignalSpy spy(&realtime, &Realtime::connected);
@@ -111,7 +111,7 @@ void TestRealtime::testConnectedSignal() {
     QCOMPARE(spy.count(), 0); // No connection in tests
 }
 
-void TestRealtime::testDisconnectedSignal() {
+void tst_realtime::testDisconnectedSignal() {
     Realtime realtime(m_config);
     
     QSignalSpy spy(&realtime, &Realtime::disconnected);
@@ -119,7 +119,7 @@ void TestRealtime::testDisconnectedSignal() {
     QVERIFY(spy.isValid());
 }
 
-void TestRealtime::testEventReceivedSignal() {
+void tst_realtime::testEventReceivedSignal() {
     Realtime realtime(m_config);
     
     QSignalSpy spy(&realtime, &Realtime::eventReceived);
@@ -128,7 +128,7 @@ void TestRealtime::testEventReceivedSignal() {
     QCOMPARE(spy.count(), 0);
 }
 
-void TestRealtime::testErrorOccurredSignal() {
+void tst_realtime::testErrorOccurredSignal() {
     Realtime realtime(m_config);
     
     QSignalSpy spy(&realtime, &Realtime::errorOccurred);
@@ -136,5 +136,5 @@ void TestRealtime::testErrorOccurredSignal() {
     QVERIFY(spy.isValid());
 }
 
-QTEST_MAIN(TestRealtime)
+QTEST_MAIN(tst_realtime)
 #include "tst_realtime.moc"

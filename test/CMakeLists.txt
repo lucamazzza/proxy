@@ -26,6 +26,7 @@ set(TEST_FILES
     tst_garbagecollector.cpp
     tst_realtime.cpp
     tst_messageprocessor.cpp
+    tst_appcommserver.cpp
     # tst_appcommclient.cpp
 )
 
