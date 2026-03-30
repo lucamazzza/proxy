@@ -41,6 +41,7 @@ add_library(appcomm STATIC
   state.h
   messageprocessor.h
   messageprocessor.cpp
+  irecoverymanager.h
 )
 
 target_link_libraries(appcomm PRIVATE Qt${QT_VERSION_MAJOR}::Core)
