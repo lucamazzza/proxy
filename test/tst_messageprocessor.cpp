@@ -3,7 +3,6 @@
 #include "messageprocessor.h"
 #include "state.h"
 #include "model.h"
-#include "irecoverymanager.h"
 
 using namespace appcomm;
 using namespace appcomm::client;
