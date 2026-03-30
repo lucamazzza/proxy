@@ -49,6 +49,10 @@ private slots:
     void testMessageFromJson_invalidTimestampContent();
     void testMessageRoundTrip();
 
+    //Message - SequenceNumber
+    void testMessageFromJson_missingSequenceNumber();
+    void testMessageFromJson_invalidSequenceNumberType();
+
     //SessionInfo
     // SessionInfo
     void testSessionInfoIsExpired_true();
@@ -288,6 +292,7 @@ void tst_models::testMessageToJson()
     msg.channelId = "c1";
     msg.senderId = "u1";
     msg.messageId = "m1";
+    msg.sequenceNumber = 42;
     msg.timestamp = QDateTime::fromString("2026-03-20T12:00:00Z", Qt::ISODate);
     msg.payload = QJsonObject{
         {"text", "hello"},
@@ -300,8 +305,8 @@ void tst_models::testMessageToJson()
     QCOMPARE(obj.value("channelId").toString(), QString("c1"));
     QCOMPARE(obj.value("senderId").toString(), QString("u1"));
     QCOMPARE(obj.value("messageId").toString(), QString("m1"));
-    QCOMPARE(obj.value("timestamp").toString(), QString("2026-03-20T12:00:00Z"));
-    QCOMPARE(obj.value("payload").toObject(), msg.payload);
+    QCOMPARE(obj.value("sequenceNumber").toInt(), 42);
+    QCOMPARE(obj.value("payload").toString(), QString("{\"text\":\"hello\",\"value\":42}"));
     QCOMPARE(obj.value("isEcho").toBool(), true);
 }
 
@@ -311,6 +316,7 @@ void tst_models::testMessageFromJson_valid()
         {"channelId", "c1"},
         {"senderId", "u1"},
         {"messageId", "m1"},
+        {"sequenceNumber", 42},
         {"timestamp", "2026-03-20T12:00:00Z"},
         {"payload", QJsonObject{
                         {"text", "hello"},
@@ -324,6 +330,7 @@ void tst_models::testMessageFromJson_valid()
     QCOMPARE(msg.channelId, QString("c1"));
     QCOMPARE(msg.senderId, QString("u1"));
     QCOMPARE(msg.messageId, QString("m1"));
+    QCOMPARE(msg.sequenceNumber, 42LL);
     QCOMPARE(msg.timestamp, QDateTime::fromString("2026-03-20T12:00:00Z", Qt::ISODate));
     QCOMPARE(msg.payload, QJsonObject({
                               {"text", "hello"},
@@ -338,6 +345,7 @@ void tst_models::testMessageFromJson_invalidTypes()
         {"channelId", 123}, // dovrebbe essere string
         {"senderId", "u1"},
         {"messageId", "m1"},
+        {"sequenceNumber", "wrong-type"},
         {"timestamp", "2026-03-20T12:00:00Z"},
         {"payload", QJsonObject{{"text", "hello"}}},
         {"isEcho", false}
@@ -348,6 +356,7 @@ void tst_models::testMessageFromJson_invalidTypes()
     QVERIFY(msg.channelId.isEmpty());
     QVERIFY(msg.senderId.isEmpty());
     QVERIFY(msg.messageId.isEmpty());
+    QCOMPARE(msg.sequenceNumber, -1LL);
     QVERIFY(!msg.timestamp.isValid());
     QVERIFY(msg.payload.isEmpty());
     QCOMPARE(msg.isEcho, false);
@@ -359,6 +368,7 @@ void tst_models::testMessageFromJson_missingField()
         // manca channelId
         {"senderId", "u1"},
         {"messageId", "m1"},
+        {"sequenceNumber", 42},
         {"timestamp", "2026-03-20T12:00:00Z"},
         {"payload", QJsonObject{{"text", "hello"}}},
         {"isEcho", false}
@@ -369,6 +379,7 @@ void tst_models::testMessageFromJson_missingField()
     QVERIFY(msg.channelId.isEmpty());
     QVERIFY(msg.senderId.isEmpty());
     QVERIFY(msg.messageId.isEmpty());
+    QCOMPARE(msg.sequenceNumber, -1LL);
     QVERIFY(!msg.timestamp.isValid());
     QVERIFY(msg.payload.isEmpty());
     QCOMPARE(msg.isEcho, false);
@@ -380,6 +391,7 @@ void tst_models::testMessageFromJson_invalidTimestampContent()
         {"channelId", "c1"},
         {"senderId", "u1"},
         {"messageId", "m1"},
+        {"sequenceNumber", 42},
         {"timestamp", "not-a-date"}, // string valida come tipo, ma contenuto non parsabile
         {"payload", QJsonObject{{"text", "hello"}}},
         {"isEcho", true}
@@ -390,6 +402,7 @@ void tst_models::testMessageFromJson_invalidTimestampContent()
     QCOMPARE(msg.channelId, QString("c1"));
     QCOMPARE(msg.senderId, QString("u1"));
     QCOMPARE(msg.messageId, QString("m1"));
+    QCOMPARE(msg.sequenceNumber, 42LL);
     QVERIFY(!msg.timestamp.isValid()); // fromJson NON rifiuta il contenuto, solo il tipo
     QCOMPARE(msg.payload, QJsonObject({{"text", "hello"}}));
     QCOMPARE(msg.isEcho, true);
@@ -403,6 +416,7 @@ void tst_models::testMessageRoundTrip()
     original.channelId = "c1";
     original.senderId = "u1";
     original.messageId = "m1";
+    original.sequenceNumber = 42;
     original.timestamp = QDateTime::fromString("2026-03-20T12:00:00Z", Qt::ISODate);
     original.payload = QJsonObject{
         {"text", "hello"},
@@ -420,6 +434,51 @@ void tst_models::testMessageRoundTrip()
     QCOMPARE(copy.timestamp, original.timestamp);
     QCOMPARE(copy.payload, original.payload);
     QCOMPARE(copy.isEcho, original.isEcho);
+}
+
+void tst_models::testMessageFromJson_missingSequenceNumber()
+{
+    QJsonObject obj{
+        {"channelId", "c1"},
+        {"senderId", "u1"},
+        {"messageId", "m1"},
+        {"timestamp", "2026-03-20T12:00:00Z"},
+        {"payload", QJsonObject{{"text", "hello"}}},
+        {"isEcho", false}
+    };
+
+    Message msg = Message::fromJson(obj);
+
+    QCOMPARE(msg.channelId, QString("c1"));
+    QCOMPARE(msg.senderId, QString("u1"));
+    QCOMPARE(msg.messageId, QString("m1"));
+    QCOMPARE(msg.sequenceNumber, -1LL);
+    QCOMPARE(msg.timestamp, QDateTime::fromString("2026-03-20T12:00:00Z", Qt::ISODate));
+    QCOMPARE(msg.payload, QJsonObject({{"text", "hello"}}));
+    QCOMPARE(msg.isEcho, false);
+}
+
+void tst_models::testMessageFromJson_invalidSequenceNumberType()
+{
+    QJsonObject obj{
+        {"channelId", "c1"},
+        {"senderId", "u1"},
+        {"messageId", "m1"},
+        {"sequenceNumber", "abc"},
+        {"timestamp", "2026-03-20T12:00:00Z"},
+        {"payload", QJsonObject{{"text", "hello"}}},
+        {"isEcho", false}
+    };
+
+    Message msg = Message::fromJson(obj);
+
+    QCOMPARE(msg.channelId, QString("c1"));
+    QCOMPARE(msg.senderId, QString("u1"));
+    QCOMPARE(msg.messageId, QString("m1"));
+    QCOMPARE(msg.sequenceNumber, -1LL);
+    QCOMPARE(msg.timestamp, QDateTime::fromString("2026-03-20T12:00:00Z", Qt::ISODate));
+    QCOMPARE(msg.payload, QJsonObject({{"text", "hello"}}));
+    QCOMPARE(msg.isEcho, false);
 }
 
 void tst_models::testSessionInfoIsExpired_true()
