@@ -17,11 +17,22 @@
 #include <QJsonArray>
 #include "appwritesdk.h"
 #include "recentmessagecache.h"
-#include "irecoverymanager.h"
 
 namespace appcomm {
 
 namespace client {
+
+/*!
+ * @brief Interface for manual recovering
+ * includes requestFrom method to override, which is used to recover all messages
+ * after a specific message ID.
+ */
+
+class IRecoveryManager {
+public:
+    virtual ~IRecoveryManager() = default;
+    virtual void requestFrom(const QString& messageId) = 0;
+};
 
 /*!
  * @brief Manager for recovering missing messages and synchronizing client state.
