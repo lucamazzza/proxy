@@ -14,6 +14,8 @@ RecoveryManager::RecoveryManager(appwritesdk::Client *client,
     , m_config(config)
     , m_currentOperation(OperationType::None)
 {
+    Q_ASSERT(client != nullptr);
+    Q_ASSERT(cache != nullptr);
     connect(m_client, &appwritesdk::Client::requestSuccess,
             this, &RecoveryManager::onRequestSuccess);
     connect(m_client, &appwritesdk::Client::requestError,
@@ -71,7 +73,7 @@ void RecoveryManager::requestFullResync() {
     m_cache->clear();
     QJsonArray queries;
     queries.append("orderAsc(\"timestamp\")");
-    queries.append("limit(100)");
+    queries.append(QString("limit(%1)").arg(DEFAULT_RESYNC_LIMIT));
     m_client->listDocuments(m_config, queries);
 }
 

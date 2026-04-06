@@ -158,6 +158,8 @@ private:
      */
     void processRecoveredMessages(const QJsonArray &messages);
 
+    static constexpr int DEFAULT_RESYNC_LIMIT = 100; ///< Default limit for full resync
+
     appwritesdk::Client *m_client;           ///< Appwrite client for API calls
     RecentMessageCache *m_cache;             ///< Local message cache
     appwritesdk::ConnectionConfig m_config;  ///< Appwrite connection config

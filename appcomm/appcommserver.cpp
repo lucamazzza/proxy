@@ -33,10 +33,6 @@ public:
     {}
 
     ~Private() {
-        delete realtime;
-        delete membershipService;
-        delete server;
-        delete networkManager;
     }
 };
 
@@ -62,7 +58,6 @@ void AppcommServer::configure(const model::AppCommConfig &config) {
     d->sdkConfig.apiKey = config.apiKey;
     d->sdkConfig.dbId = config.databaseId;
     d->sdkConfig.collectionId = config.messagesCollectionId;
-    
     if (d->realtime) {
         delete d->realtime;
     }
@@ -80,7 +75,6 @@ void AppcommServer::configure(const model::AppCommConfig &config) {
         }
     });
     d->realtime->connect(channels);
-    
     emit configured();
 }
 

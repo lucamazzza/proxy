@@ -8,6 +8,8 @@ MessageProcessor::MessageProcessor(ClientState* clientState, IRecoveryManager* r
     : m_clientState(clientState)
     , m_recoveryManager(recoveryManager)
 {
+    Q_ASSERT(clientState != nullptr);
+    Q_ASSERT(recoveryManager != nullptr);
 }
 
 std::optional<model::Message> MessageProcessor::processIncoming(

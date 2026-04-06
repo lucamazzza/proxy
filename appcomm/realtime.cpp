@@ -2,7 +2,7 @@
 
 using namespace appcomm;
 
-Realtime::Realtime(const ConnectionConfig &config, QObject *parent)
+Realtime::Realtime(const appwritesdk::ConnectionConfig &config, QObject *parent)
     : QObject{parent}
     , m_config(config)
 {

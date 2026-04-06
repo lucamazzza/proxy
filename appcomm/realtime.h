@@ -17,8 +17,6 @@
 
 #include "appwritesdk.h"
 
-using namespace appwritesdk;
-
 namespace appcomm {
 
 /*!
@@ -38,7 +36,7 @@ namespace appcomm {
  * @code
  * Realtime realtime(config);
  * connect(&realtime, &Realtime::eventReceived, [](const QJsonObject &event) {
- *     qDebug() << "Event:" << event;
+ *     // Handle event
  * });
  * realtime.connect({"databases.mydb.collections.messages.documents"});
  * @endcode

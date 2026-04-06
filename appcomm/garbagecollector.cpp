@@ -10,6 +10,7 @@ GarbageCollector::GarbageCollector(appwritesdk::Server *server,
     , m_server(server)
     , m_config(config)
 {
+    Q_ASSERT(server != nullptr);
     connect(m_server, &appwritesdk::Server::requestSuccess, this, &GarbageCollector::onDocumentsListed);
     connect(m_server, &appwritesdk::Server::requestError, this, &GarbageCollector::onError);
 }
@@ -22,7 +23,7 @@ void GarbageCollector::runCleanup(const model::PersistencePolicy &policy) {
     QDateTime cutoffDate = QDateTime::currentDateTimeUtc().addDays(-policy.messageTTL);
     QJsonArray queries;
     queries.append(QString("lessThan(\"timestamp\", \"%1\")").arg(cutoffDate.toString(Qt::ISODate)));
-    queries.append("limit(100");
+    queries.append(QString("limit(%1)").arg(CLEANUP_BATCH_SIZE));
     m_deletedCount = 0;
     m_docsToDelete.clear();
     m_server->listDocuments(m_config, queries);
