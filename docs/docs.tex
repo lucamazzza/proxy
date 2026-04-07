@@ -1210,6 +1210,64 @@ il superamento di soglie di storage o in finestre di manutenzione programmate.
 La natura asincrona del modulo permette di eseguire la pulizia senza bloccare altre operazioni del server, mantenendo la
 reattività del sistema anche durante la rimozione di grandi quantità di dati.
 
+\newpage{}
+
+\section{API per Server}
+
+Il modulo \texttt{AppcommServer} è pensato per offrire un'interfaccia ad alto livello che astrae le operazioni
+amministrative richieste per il funzionamento del sistema di comunicazione. Seguendo la filosofia di semplicità
+applicata all'intera libreria, il punto d'entrata per server espone un set limitato di funzionalità pubbliche, che
+corrispondono alle fasi fondamentali del ciclo di vita di un backend.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.4\textwidth]{serverphases.png}
+\caption{Lifecycle di \texttt{AppcommServer}}
+\end{figure}
+
+Ogni operazione eseguita è asincrona e comunica l'esito tramite segnali, garantendo che l'applicazione chiamante possa
+reagire correttamente ad eventi di successo o di errore con un sistema di gestione standard.
+
+\subsection{Logica di Bootstrap}
+
+L'inizializzazione dell'infrastruttura rappresenta la fase più critica del modulo \texttt{AppcommServer}.
+A differenza di un database standard, il bootstrap per Appwrite richiede la creazione sequenziale di database, collezioni
+e attributi.
+
+Per gestire la natura asincrona delle chiamate all'API REST di Appwrite, è presente una logica di monitoraggio basata
+su un contatore di attributi. La procedura segue il flusso seguente:
+
+Viene dapprima creato il database che contiene tutta l'infrastruttura di persistenza dei dati\footnote{Per limitazioni
+dovute al piano gratuito si può avere al massimo un database}, tramite l'ID fornito dalla configurazione, per poi
+configurare le collezioni rappresentanti i messaggi e canali, ed infine viene definito lo schema di attributi per 
+i contenitori appena creati.
+Viene emesso un segnale \texttt{initialized()}, che notifica la creazione di tutti i componenti dello schema, dopo la
+conferma da parte del server remoto.
+
+\subsection{Gestione dei canali e della membership}
+
+Questo componente funge anche da autorità centrale per la gestione degli spazi di comunicazione. Questa responsabilità
+è suddivisa tra la creazione fisica di risorse e la gestione di relazioni tra utenti.
+
+\subsubsection{Creazione e permessi}
+
+All'invocazione del metodo \texttt{createChannel()}, il server non si limita solamente alla creazione di un documento, bensì
+definisce delle recole d'accesso, affinché i client possano interagire con il canale in modo sicuro. Questi permessi vengono
+configurati in modalità "broadcast", permettendo la lettura a tutti i membri autorizzati.
+
+\subsubsection{Gestione dei membri}
+
+Attraverso il modulo \texttt{MembershipService}, il server è in grado di gestire l'aggiunta e la rimozione degli utenti dai
+canali. L'operazione \texttt{addMember()} associa un utente, tramite il suo identificativo, ad un canale, sempre utilizzando
+l'ID di quest'ultimo, all'interno di una collezione dedicata. Ciò permette al sistema di filtrare correttamente i messaggi
+in tempo reale per gli utenti attualmente connessi.
+
+\subsubsection{Pulizia e manutenzione}
+
+Il server implementa altresì logiche di eliminazione a cascata: la rimozione di un canale comporta anche l'epurazione di tutti
+i dati associati, quindi i messaggi e i riferimenti di membership. Ciò garantisce l'integrità del database ed il rispetto
+delle politiche di persistenza.
+
 \chapter{Test e validazione}
 
 \section{Risultati}
