@@ -3,12 +3,9 @@
 
 #include <QObject>
 #include "state.h"
-#include "recentmessagecache.h"
-#include "recoverymanager.h"
-#include "messageprocessor.h"
-#include "ratelimiter.h"
+#include "model.h"
 #include "appwritesdk.h"
-#include "realtime.h"
+#include <memory>
 
 namespace appcomm {
 
@@ -34,28 +31,29 @@ class AppcommClient : public QObject {
     /*!
      * @brief Current connection state.
      */
-    Q_PROPERTY(client::ConnectionState connectionState
-                   READ connectionState
-                       NOTIFY connectionStateChanged)
+    Q_PROPERTY(ConnectionState connectionState
+               READ connectionState
+               NOTIFY connectionStateChanged
+               FINAL)
 
     /*!
      * @brief Human-readable connection state (for UI).
      */
     Q_PROPERTY(QString connectionStateText
-                   READ connectionStateText
-                       NOTIFY connectionStateChanged
-                           FINAL)
+               READ connectionStateText
+               NOTIFY connectionStateChanged
+               FINAL)
 
     /*!
      * @brief Whether the client is authenticated.
      */
     Q_PROPERTY(bool authenticated
-                   READ isAuthenticated
-                       NOTIFY authenticationChanged
-                           FINAL)
+               READ isAuthenticated
+               NOTIFY authenticationStateChanged
+               FINAL)
 public:
-    explicit AppcommClient(QObject *parent = nullptr);
-    ~AppcommClient() override = default;
+    explicit AppcommClient(const appwritesdk::ConnectionConfig &config, QObject *parent = nullptr);
+    ~AppcommClient() override;
 
     //Connection
     void connectToServer();
@@ -75,7 +73,6 @@ public:
     //Channel
     void joinChannel(const QString &channelId);
     void leaveChannel();
-
     QString activeChannel() const;
 
     //Messaging
@@ -185,15 +182,8 @@ private slots:
      */
     void onErrorOccurred(const QString &error);
 private:
-    RecentMessageCache m_recentMessageCache;
-    RecoveryManager m_recoveryManager;
-    RateLimiter m_rateLimiter;
-    MessageProcessor m_messageProcessor;
-    ClientState m_clientState;
-    ConnectionState m_connectionState = ConnectionState::Disconnected;
-    appwritesdk::Client m_client;
-    Realtime m_realtime;
-
+    class Private; //pimpl
+    std::unique_ptr<Private> d; //Data
     void setConnectionState(ConnectionState newState);
 };
 
