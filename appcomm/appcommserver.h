@@ -334,6 +334,15 @@ private slots:
     void onMemberListingComplete(const QJsonObject &data);
 
 private:
+    bool handleInitializationSuccess(const QJsonObject &data);
+    bool handleInitializationError(int code, const QString &message);
+    void continueInitializationAfterDatabase();
+    void requestNextBootstrapAttribute();
+    void requestNextBootstrapIndex();
+    void requestCurrentBootstrapIndex();
+    void completeInitialization();
+    void failInitialization(int code, const QString &message);
+
     /*!
      * @class Private
      * @brief Private implementation class (PIMPL pattern)
