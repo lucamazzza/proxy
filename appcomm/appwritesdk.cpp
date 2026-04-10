@@ -11,9 +11,54 @@
 
 #include "appwritesdk.h"
 #include <QJsonDocument>
+#include <QRegularExpression>
 #include <QUrlQuery>
 
 using namespace appwritesdk;
+
+namespace {
+
+QString unescapeQueryValue(const QString &value) {
+    QString unescaped = value;
+    unescaped.replace("\\\"", "\"");
+    unescaped.replace("\\\\", "\\");
+    return unescaped;
+}
+
+void appendListQueryItem(const QString &rawQuery, QUrlQuery *urlQuery, bool allowFunctionQueries) {
+    if (!urlQuery) {
+        return;
+    }
+    const QString query = rawQuery.trimmed();
+    if (query.isEmpty()) {
+        return;
+    }
+
+    static const QRegularExpression limitRegex("^limit\\((\\d+)\\)$");
+    static const QRegularExpression offsetRegex("^offset\\((\\d+)\\)$");
+    static const QRegularExpression searchRegex("^search\\(\"((?:\\\\.|[^\"])*)\"\\)$");
+
+    QRegularExpressionMatch match = limitRegex.match(query);
+    if (match.hasMatch()) {
+        urlQuery->addQueryItem("limit", match.captured(1));
+        return;
+    }
+    match = offsetRegex.match(query);
+    if (match.hasMatch()) {
+        urlQuery->addQueryItem("offset", match.captured(1));
+        return;
+    }
+    match = searchRegex.match(query);
+    if (match.hasMatch()) {
+        urlQuery->addQueryItem("search", unescapeQueryValue(match.captured(1)));
+        return;
+    }
+    if (allowFunctionQueries) {
+        urlQuery->addQueryItem("queries[]", query);
+    }
+}
+
+}
 
 BaseSDK::BaseSDK(QNetworkAccessManager *mgr, QObject *parent)
     : QObject(parent), m_network(mgr)
@@ -37,6 +82,8 @@ void BaseSDK::onResponseFinished() {
             QJsonObject wrapper;
             wrapper["documents"] = doc.array();
             emit requestSuccess(wrapper);
+        } else {
+            emit requestSuccess(QJsonObject());
         }
     } else {
         parseErrorResponse(reply);
@@ -120,6 +167,7 @@ void Client::createDocument(const ConnectionConfig &config, const QJsonObject &d
     QJsonObject body;
     body["documentId"] = "unique()";
     body["data"] = data;
+    body["permissions"] = QJsonArray{"read(\"any\")", "write(\"any\")"};
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
     connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
 }
@@ -127,15 +175,16 @@ void Client::createDocument(const ConnectionConfig &config, const QJsonObject &d
 void Client::listDocuments(const ConnectionConfig &config, const QJsonArray &queries) {
     QString path = QString("databases/%1/collections/%2/documents")
                        .arg(config.dbId, config.collectionId);
-    QUrl url(config.endpoint + "/" + path);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_USER);
+    QUrl url = req.url();
     if (!queries.isEmpty()) {
         QUrlQuery query;
         for (const QJsonValue &q : queries) {
-            query.addQueryItem("queries[]", q.toString());
+            appendListQueryItem(q.toString(), &query, true);
         }
         url.setQuery(query);
     }
-    QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint + "/", ""), APPCOMM_USER);
+    req.setUrl(url);
     QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
 }
@@ -181,6 +230,12 @@ void Server::deleteDatabase(const ConnectionConfig &config) {
     QString path = QString("databases/%1").arg(config.dbId);
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->deleteResource(req);
+    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+}
+
+void Server::listDatabases(const ConnectionConfig &config) {
+    QNetworkRequest req = createBaseRequest(config, "databases", APPCOMM_ADMIN);
+    QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }
 
@@ -281,32 +336,41 @@ void Server::deleteUser(const ConnectionConfig &config, const QString &userId) {
 }
 
 void Server::listUsers(const ConnectionConfig &config, const QJsonArray &queries) {
-    QUrl url(config.endpoint + "/users");
+    QNetworkRequest req = createBaseRequest(config, "users", APPCOMM_ADMIN);
+    QUrl url = req.url();
     if (!queries.isEmpty()) {
         QUrlQuery query;
         for (const QJsonValue &q : queries) {
-            query.addQueryItem("queries[]", q.toString());
+            appendListQueryItem(q.toString(), &query, false);
         }
         url.setQuery(query);
     }
-    QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint + "/", ""), APPCOMM_ADMIN);
+    req.setUrl(url);
+    QNetworkReply *reply = m_network->get(req);
+    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+}
+
+void Server::listCollections(const ConnectionConfig &config) {
+    QString path = QString("databases/%1/collections").arg(config.dbId);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }
 
 void Server::listDocuments(const ConnectionConfig &config, const QJsonArray &queries) {
-    QString path = QString("/databases/%1/collections/%2/documents")
-                       .arg(config.dbId)
-                       .arg(config.collectionId);
-    QUrl url(config.endpoint + path);
+    QString path = QString("databases/%1/collections/%2/documents")
+                        .arg(config.dbId)
+                        .arg(config.collectionId);
+    QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
+    QUrl url = req.url();
     if (!queries.isEmpty()) {
         QUrlQuery query;
         for (const QJsonValue &q : queries) {
-            query.addQueryItem("queries[]", q.toString());
+            appendListQueryItem(q.toString(), &query, true);
         }
         url.setQuery(query);
     }
-    QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint, ""), APPCOMM_ADMIN);
+    req.setUrl(url);
     QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }
@@ -318,6 +382,7 @@ void Server::createDocument(const ConnectionConfig &config, const QJsonObject &d
     QJsonObject body;
     body["documentId"] = "unique()";
     body["data"] = data;
+    body["permissions"] = QJsonArray{"read(\"any\")", "write(\"any\")"};
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }

@@ -237,6 +237,13 @@ public:
     void deleteDatabase(const ConnectionConfig &config);
 
     /*!
+     * @brief Lists databases in the current Appwrite project.
+     *
+     * @param config Connection configuration with API key
+     */
+    void listDatabases(const ConnectionConfig &config);
+
+    /*!
      * @brief Creates a new collection in the specified database.
      *
      * @param config Connection configuration with database ID and API key
@@ -318,6 +325,13 @@ public:
      * @param queries Optional query filters (e.g., limit, offset, search)
      */
     void listUsers(const ConnectionConfig &config, const QJsonArray &queries = QJsonArray());
+
+    /*!
+     * @brief Lists collections in the configured database.
+     *
+     * @param config Connection configuration with database ID and API key
+     */
+    void listCollections(const ConnectionConfig &config);
 
     /*!
      * @brief Lists documents in a collection (admin operation).
