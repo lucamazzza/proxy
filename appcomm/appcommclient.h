@@ -5,6 +5,9 @@
 #include "state.h"
 #include "model.h"
 #include "appwritesdk.h"
+#include "realtime.h"
+#include "recoverymanager.h"
+#include "ratelimiter.h"
 #include <memory>
 
 namespace appcomm {
@@ -55,6 +58,13 @@ public:
     explicit AppcommClient(const appwritesdk::ConnectionConfig &config, QObject *parent = nullptr);
     ~AppcommClient() override;
 
+    AppcommClient(const appwritesdk::ConnectionConfig &config,
+                  appwritesdk::IClientSdk *clientSdk,
+                  appcomm::IRealtime *realtime,
+                  IRecoveryManager *recoveryManager,
+                  IRateLimiter *rateLimiter,
+                  QObject *parent = nullptr);
+
     //Connection
     void connectToServer();
     void disconnectFromServer();
@@ -86,8 +96,9 @@ signals:
     void connectionStateChanged();
 
     //Channel
-    void joinedChannel(const QString &channelId);
+    void activeChannelChanged(const QString &channelId);
     void leftChannel(const QString &channelId);
+    void channelReady(const QString &channelId);
 
     //Messaging
     void messageReceived(const model::Message &message);
@@ -121,17 +132,19 @@ private slots:
     /*!
      * @brief Manages when an HTTP request completes successfully.
      *
+     * @param type Type of the request that completed successfully
      * @param data JSON response data from the server
      */
-    void onRequestSuccess(const QJsonObject &data);
+    void onRequestSuccess(appwritesdk::RequestType type, const QJsonObject &data);
 
     /*!
      * @brief Manages when an HTTP request fails.
      *
+     * @param type Type of request that failed
      * @param code HTTP status code or error code
      * @param message Error message description
      */
-    void onRequestError(int code, const QString &message);
+    void onRequestError(appwritesdk::RequestType type, int code, const QString &message);
 
     /*!
      * @brief Manages when WebSocket connection is successfully established.
@@ -185,6 +198,7 @@ private:
     class Private; //pimpl
     std::unique_ptr<Private> d; //Data
     void setConnectionState(ConnectionState newState);
+    void handleIncomingMessage(const model::Message &message);
 };
 
 } // namespace client
