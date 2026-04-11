@@ -17,87 +17,18 @@
 
 #include "appwritesdk.h"
 
-using namespace appwritesdk;
-
 namespace appcomm {
 
-/*!
- * @brief Real-time event subscription client using WebSockets.
- *
- * The Realtime class provides WebSocket-based communication with the Appwrite
- * backend to receive instant notifications about database changes, document
- * updates, authentication events, and other system events.
- *
- * Features:
- * - Automatic WebSocket connection management
- * - Channel-based subscriptions (databases, collections, documents)
- * - Event parsing and distribution via Qt signals
- * - Error handling and reconnection support
- *
- * Usage:
- * @code
- * Realtime realtime(config);
- * connect(&realtime, &Realtime::eventReceived, [](const QJsonObject &event) {
- *     qDebug() << "Event:" << event;
- * });
- * realtime.connect({"databases.mydb.collections.messages.documents"});
- * @endcode
- *
- * @see AppwriteSDK::ConnectionConfig for configuration details
- */
-class Realtime : public QObject {
+class IRealtime : public QObject {
     Q_OBJECT
 public:
+    explicit IRealtime(QObject *parent = nullptr) : QObject(parent) {}
+    ~IRealtime() override = default;
 
-    /*!
-     * @brief Constructs a Realtime client instance.
-     *
-     * Initializes the WebSocket client with the provided Appwrite configuration.
-     * The WebSocket is not connected until connect() is called.
-     *
-     * @param config Connection configuration (endpoint, projectId, etc.)
-     * @param parent Parent QObject for memory management
-     *
-     * @see connect()
-     */
-    explicit Realtime(const appwritesdk::ConnectionConfig &config, QObject *parent = nullptr);
-
-    /*!
-     * @brief Establishes WebSocket connection and subscribes to channels.
-     *
-     * Opens a WebSocket connection to the Appwrite real-time endpoint and
-     * subscribes to the specified channels. The connection URL is automatically
-     * constructed from the configuration endpoint, replacing http(s):// with
-     * ws(s)://.
-     *
-     * Channel format examples:
-     * - "databases.{databaseId}.collections.{collectionId}.documents"
-     * - "databases.{databaseId}.collections.{collectionId}.documents.{documentId}"
-     * - "account" (for current user events)
-     *
-     * @param channels List of channel patterns to subscribe to
-     *
-     * @note Multiple channels can be subscribed simultaneously
-     * @note Emits connected() signal when connection is established
-     * @note Emits errorOccurred() if connection fails
-     *
-     * @see connected()
-     * @see disconnect()
-     */
-    void connect(const QStringList &channels);
-
-    /*!
-     * @brief Closes the WebSocket connection.
-     *
-     * Gracefully closes the WebSocket connection to the Appwrite server.
-     * Emits disconnected() signal when the connection is fully closed.
-     *
-     * @see disconnected()
-     */
-    void disconnect();
+    virtual void connectToChannels(const QStringList &channels) = 0;
+    virtual void disconnectFromServer() = 0;
 
 signals:
-
     /*!
      * @brief Emitted when WebSocket connection is successfully established.
      *
@@ -146,6 +77,82 @@ signals:
      * @param error Human-readable error description
      */
     void errorOccurred(const QString &error);
+};
+
+/*!
+ * @brief Real-time event subscription client using WebSockets.
+ *
+ * The Realtime class provides WebSocket-based communication with the Appwrite
+ * backend to receive instant notifications about database changes, document
+ * updates, authentication events, and other system events.
+ *
+ * Features:
+ * - Automatic WebSocket connection management
+ * - Channel-based subscriptions (databases, collections, documents)
+ * - Event parsing and distribution via Qt signals
+ * - Error handling and reconnection support
+ *
+ * Usage:
+ * @code
+ * Realtime realtime(config);
+ * connect(&realtime, &Realtime::eventReceived, [](const QJsonObject &event) {
+ *     qDebug() << "Event:" << event;
+ * });
+ * realtime.connect({"databases.mydb.collections.messages.documents"});
+ * @endcode
+ *
+ * @see AppwriteSDK::ConnectionConfig for configuration details
+ */
+class Realtime : public IRealtime {
+    Q_OBJECT
+public:
+
+    /*!
+     * @brief Constructs a Realtime client instance.
+     *
+     * Initializes the WebSocket client with the provided Appwrite configuration.
+     * The WebSocket is not connected until connect() is called.
+     *
+     * @param config Connection configuration (endpoint, projectId, etc.)
+     * @param parent Parent QObject for memory management
+     *
+     * @see connect()
+     */
+    explicit Realtime(const appwritesdk::ConnectionConfig &config, QObject *parent = nullptr);
+
+    /*!
+     * @brief Establishes WebSocket connection and subscribes to channels.
+     *
+     * Opens a WebSocket connection to the Appwrite real-time endpoint and
+     * subscribes to the specified channels. The connection URL is automatically
+     * constructed from the configuration endpoint, replacing http(s):// with
+     * ws(s)://.
+     *
+     * Channel format examples:
+     * - "databases.{databaseId}.collections.{collectionId}.documents"
+     * - "databases.{databaseId}.collections.{collectionId}.documents.{documentId}"
+     * - "account" (for current user events)
+     *
+     * @param channels List of channel patterns to subscribe to
+     *
+     * @note Multiple channels can be subscribed simultaneously
+     * @note Emits connected() signal when connection is established
+     * @note Emits errorOccurred() if connection fails
+     *
+     * @see connected()
+     * @see disconnect()
+     */
+    void connectToChannels(const QStringList &channels) override;
+
+    /*!
+     * @brief Closes the WebSocket connection.
+     *
+     * Gracefully closes the WebSocket connection to the Appwrite server.
+     * Emits disconnected() signal when the connection is fully closed.
+     *
+     * @see disconnected()
+     */
+    void disconnectFromServer() override;
 
 private slots:
 
