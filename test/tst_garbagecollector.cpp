@@ -109,19 +109,7 @@ void tst_garbagecollector::testRunCleanupWithNegativeTTL() {
 }
 
 void tst_garbagecollector::testRunCleanupWithValidTTL() {
-    GarbageCollector gc(m_server, m_config);
-    
-    QSignalSpy spyComplete(&gc, &GarbageCollector::cleanupComplete);
-    QSignalSpy spyError(&gc, &GarbageCollector::cleanupError);
-    
-    PersistencePolicy policy;
-    policy.messageTTL = 30; // 30 days
-    
-    gc.runCleanup(policy);
-    
-    // In real scenario, this would make a network request
-    // For unit tests without network, we just verify no crash
-    QVERIFY(true);
+    QSKIP("Requires a mocked Appwrite server response to validate cleanup batching deterministically.");
 }
 
 void tst_garbagecollector::testCleanupCompleteSignal() {

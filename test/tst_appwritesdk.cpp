@@ -124,14 +124,12 @@ void tst_appwritesdk::testBaseSDKConstruction()
 
 void tst_appwritesdk::testCreateBaseRequest()
 {
-    // Tested indirectly through public operations
-    QVERIFY(true);
+    QSKIP("Requires exposing request internals or HTTP request interception to assert base request construction.");
 }
 
 void tst_appwritesdk::testCreateBaseRequestWithAdmin()
 {
-    // Tested indirectly through server operations
-    QVERIFY(true);
+    QSKIP("Requires exposing request internals or HTTP request interception to assert admin header behavior.");
 }
 
 // Client Tests

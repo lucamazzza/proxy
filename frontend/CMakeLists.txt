@@ -5,8 +5,9 @@ project(frontend VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick)
+find_package(Qt6 REQUIRED COMPONENTS Quick Core Network WebSockets)
 
+qt_policy(SET QTP0001 NEW)
 
 qt_add_executable(appfrontend
     main.cpp
@@ -31,7 +32,7 @@ set_target_properties(appfrontend PROPERTIES
 )
 
 target_link_libraries(appfrontend
-    PRIVATE Qt6::Quick
+    PRIVATE Qt6::Quick appcomm
 )
 
 include(GNUInstallDirs)

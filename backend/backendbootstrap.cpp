@@ -246,6 +246,7 @@ bool BackendBootstrapper::bootstrap(QString *errorMessage) {
         {"idx_timestamp", "key", {"timestamp"}},
         {"idx_sequence", "key", {"sequenceNumber"}},
         {"idx_message_unique", "unique", {"messageId"}},
+        {"idx_channel_sequence_unique", "unique", {"channelId", "sequenceNumber"}},
         {"idx_channel_timestamp", "key", {"channelId", "timestamp"}}
     };
     if (!ensureCollection(m_config.messagesCollectionId,

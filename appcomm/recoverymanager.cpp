@@ -38,16 +38,14 @@ void RecoveryManager::requestFrom(const QString &messageId) {
     }
     model::Message startMsg = m_cache->getMessage(messageId);
     if (startMsg.messageId.isEmpty()) {
-        emit recoveryError(-1, "Message not found in cache and cannot determine timestamp");
+        m_currentOperation = OperationType::ResolveAnchor;
+        m_currentMessageId = messageId;
+        m_client->getDocument(m_config, messageId);
         return;
     }
     m_currentOperation = OperationType::RequestFrom;
     m_currentMessageId = messageId;
-    QJsonArray queries;
-    queries.append(QString("greaterThan(\"timestamp\",\"%1\")").arg(startMsg.timestamp.toString(Qt::ISODate)));
-    queries.append("orderAsc(\"timestamp\")");
-    queries.append(QString("limit(%1)").arg(m_cache->size()));
-    m_client->listDocuments(m_config, queries);
+    requestMessagesAfterTimestamp(startMsg.timestamp);
 }
 
 void RecoveryManager::request(const QString &messageId) {
@@ -79,6 +77,18 @@ void RecoveryManager::requestFullResync() {
 
 void RecoveryManager::onRequestSuccess(const QJsonObject &data) {
     switch (m_currentOperation) {
+        case OperationType::ResolveAnchor: {
+            const model::Message anchor = model::Message::fromJson(data);
+            if (!anchor.isValid()) {
+                emit recoveryError(-1, "Anchor message not found or invalid");
+                m_currentOperation = OperationType::None;
+                m_currentMessageId.clear();
+                return;
+            }
+            m_currentOperation = OperationType::RequestFrom;
+            requestMessagesAfterTimestamp(anchor.timestamp);
+            return;
+        }
         case OperationType::RequestFrom:
         case OperationType::FullResync: {
             QJsonArray documents = data.value("documents").toArray();
@@ -118,4 +128,12 @@ void RecoveryManager::processRecoveredMessages(const QJsonArray &messages) {
             m_cache->addMessage(msg);
         }
     }
+}
+
+void RecoveryManager::requestMessagesAfterTimestamp(const QDateTime &timestamp) {
+    QJsonArray queries;
+    queries.append(QString("greaterThan(\"timestamp\",\"%1\")").arg(timestamp.toString(Qt::ISODate)));
+    queries.append("orderAsc(\"timestamp\")");
+    queries.append(QString("limit(%1)").arg(DEFAULT_REQUEST_FROM_LIMIT));
+    m_client->listDocuments(m_config, queries);
 }

@@ -58,6 +58,14 @@ QStringList deduplicateUsers(const QStringList &users) {
     return deduplicated;
 }
 
+bool isAlreadyExistsError(const BackendRequestResult &result) {
+    if (result.code == 409) {
+        return true;
+    }
+    const QString message = result.message.toLower();
+    return message.contains("already exists") || message.contains("duplicate");
+}
+
 }
 
 bool Session::isValid() const {
@@ -309,111 +317,221 @@ bool BackendService::listDocuments(const QString &collectionId,
         }
         return false;
     }
-    QJsonArray allDocuments;
-    if (!listAllDocuments(collectionId, &allDocuments, errorMessage)) {
-        return false;
-    }
-    QList<QPair<QString, QString>> equalsFilters;
-    QString orderingField;
-    bool descendingOrder = false;
-    int limit = -1;
-    const QRegularExpression equalArrayRegex(
-        "^equal\\(\"([^\"]+)\",\\[\"((?:\\\\.|[^\"])*)\"\\]\\)$");
-    const QRegularExpression equalLegacyRegex(
-        "^equal\\(\"([^\"]+)\",\"((?:\\\\.|[^\"])*)\"\\)$");
-    const QRegularExpression orderAscRegex("^orderAsc\\(\"([^\"]+)\"\\)$");
-    const QRegularExpression orderDescRegex("^orderDesc\\(\"([^\"]+)\"\\)$");
+
+    const auto runLegacyFiltering = [&]() -> bool {
+        QJsonArray allDocuments;
+        if (!listAllDocuments(collectionId, &allDocuments, errorMessage)) {
+            return false;
+        }
+
+        QList<QPair<QString, QString>> equalsFilters;
+        QString orderingField;
+        bool descendingOrder = false;
+        int limit = -1;
+        int offset = 0;
+        const QRegularExpression equalArrayRegex(
+            "^equal\\(\"([^\"]+)\",\\[\"((?:\\\\.|[^\"])*)\"\\]\\)$");
+        const QRegularExpression equalLegacyRegex(
+            "^equal\\(\"([^\"]+)\",\"((?:\\\\.|[^\"])*)\"\\)$");
+        const QRegularExpression orderAscRegex("^orderAsc\\(\"([^\"]+)\"\\)$");
+        const QRegularExpression orderDescRegex("^orderDesc\\(\"([^\"]+)\"\\)$");
+        const QRegularExpression limitRegex("^limit\\((\\d+)\\)$");
+        const QRegularExpression offsetRegex("^offset\\((\\d+)\\)$");
+
+        for (const QJsonValue &queryValue : queries) {
+            const QString query = queryValue.toString().trimmed();
+            if (query.isEmpty()) {
+                continue;
+            }
+            QRegularExpressionMatch match = equalArrayRegex.match(query);
+            if (match.hasMatch()) {
+                equalsFilters.append(qMakePair(match.captured(1), unescapeQueryValue(match.captured(2))));
+                continue;
+            }
+            match = equalLegacyRegex.match(query);
+            if (match.hasMatch()) {
+                equalsFilters.append(qMakePair(match.captured(1), unescapeQueryValue(match.captured(2))));
+                continue;
+            }
+            match = orderAscRegex.match(query);
+            if (match.hasMatch()) {
+                orderingField = match.captured(1);
+                descendingOrder = false;
+                continue;
+            }
+            match = orderDescRegex.match(query);
+            if (match.hasMatch()) {
+                orderingField = match.captured(1);
+                descendingOrder = true;
+                continue;
+            }
+            match = limitRegex.match(query);
+            if (match.hasMatch()) {
+                limit = match.captured(1).toInt();
+                continue;
+            }
+            match = offsetRegex.match(query);
+            if (match.hasMatch()) {
+                offset = match.captured(1).toInt();
+                continue;
+            }
+        }
+
+        QList<QJsonObject> filteredDocuments;
+        filteredDocuments.reserve(allDocuments.size());
+        for (const QJsonValue &docValue : allDocuments) {
+            filteredDocuments.append(docValue.toObject());
+        }
+        for (const auto &equalsFilter : equalsFilters) {
+            const QString field = equalsFilter.first;
+            const QString expectedValue = equalsFilter.second;
+            QList<QJsonObject> remainingDocuments;
+            remainingDocuments.reserve(filteredDocuments.size());
+            for (const QJsonObject &doc : filteredDocuments) {
+                const QJsonValue value = doc.value(field);
+                if (value.isString()) {
+                    if (value.toString() == expectedValue) {
+                        remainingDocuments.append(doc);
+                    }
+                } else if (value.isDouble()) {
+                    if (QString::number(value.toDouble()) == expectedValue) {
+                        remainingDocuments.append(doc);
+                    }
+                } else if (value.isBool()) {
+                    const QString booleanValue = value.toBool() ? "true" : "false";
+                    if (booleanValue == expectedValue.toLower()) {
+                        remainingDocuments.append(doc);
+                    }
+                }
+            }
+            filteredDocuments = remainingDocuments;
+        }
+        if (!orderingField.trimmed().isEmpty()) {
+            std::sort(filteredDocuments.begin(),
+                      filteredDocuments.end(),
+                      [&](const QJsonObject &left, const QJsonObject &right) {
+                          const QJsonValue leftValue = left.value(orderingField);
+                          const QJsonValue rightValue = right.value(orderingField);
+                          if (leftValue.isDouble() && rightValue.isDouble()) {
+                              if (descendingOrder) {
+                                  return leftValue.toDouble() > rightValue.toDouble();
+                              }
+                              return leftValue.toDouble() < rightValue.toDouble();
+                          }
+                          const QString leftString = leftValue.toString();
+                          const QString rightString = rightValue.toString();
+                          if (descendingOrder) {
+                              return leftString > rightString;
+                          }
+                          return leftString < rightString;
+                      });
+        }
+
+        if (offset > 0) {
+            if (offset >= filteredDocuments.size()) {
+                filteredDocuments.clear();
+            } else {
+                filteredDocuments = filteredDocuments.mid(offset);
+            }
+        }
+        if (limit >= 0 && filteredDocuments.size() > limit) {
+            filteredDocuments = filteredDocuments.mid(0, limit);
+        }
+
+        QJsonArray outputDocuments;
+        for (const QJsonObject &doc : filteredDocuments) {
+            outputDocuments.append(doc);
+        }
+        *documents = outputDocuments;
+        return true;
+    };
+
+    int requestedLimit = -1;
+    int baseOffset = 0;
+    QJsonArray baseQueries;
     const QRegularExpression limitRegex("^limit\\((\\d+)\\)$");
+    const QRegularExpression offsetRegex("^offset\\((\\d+)\\)$");
+
     for (const QJsonValue &queryValue : queries) {
         const QString query = queryValue.toString().trimmed();
         if (query.isEmpty()) {
             continue;
         }
-        QRegularExpressionMatch match = equalArrayRegex.match(query);
+        QRegularExpressionMatch match = limitRegex.match(query);
         if (match.hasMatch()) {
-            equalsFilters.append(qMakePair(match.captured(1), unescapeQueryValue(match.captured(2))));
+            requestedLimit = match.captured(1).toInt();
             continue;
         }
-        match = equalLegacyRegex.match(query);
+        match = offsetRegex.match(query);
         if (match.hasMatch()) {
-            equalsFilters.append(qMakePair(match.captured(1), unescapeQueryValue(match.captured(2))));
+            baseOffset = match.captured(1).toInt();
             continue;
         }
-        match = orderAscRegex.match(query);
-        if (match.hasMatch()) {
-            orderingField = match.captured(1);
-            descendingOrder = false;
-            continue;
-        }
-        match = orderDescRegex.match(query);
-        if (match.hasMatch()) {
-            orderingField = match.captured(1);
-            descendingOrder = true;
-            continue;
-        }
-        match = limitRegex.match(query);
-        if (match.hasMatch()) {
-            limit = match.captured(1).toInt();
-            continue;
-        }
+        baseQueries.append(query);
     }
-    QList<QJsonObject> filteredDocuments;
-    filteredDocuments.reserve(allDocuments.size());
-    for (const QJsonValue &docValue : allDocuments) {
-        filteredDocuments.append(docValue.toObject());
+
+    if (requestedLimit == 0) {
+        *documents = QJsonArray();
+        return true;
     }
-    for (const auto &equalsFilter : equalsFilters) {
-        const QString field = equalsFilter.first;
-        const QString expectedValue = equalsFilter.second;
-        QList<QJsonObject> remainingDocuments;
-        remainingDocuments.reserve(filteredDocuments.size());
-        for (const QJsonObject &doc : filteredDocuments) {
-            const QJsonValue value = doc.value(field);
-            if (value.isString()) {
-                if (value.toString() == expectedValue) {
-                    remainingDocuments.append(doc);
-                }
-            } else if (value.isDouble()) {
-                if (QString::number(value.toDouble()) == expectedValue) {
-                    remainingDocuments.append(doc);
-                }
-            } else if (value.isBool()) {
-                const QString booleanValue = value.toBool() ? "true" : "false";
-                if (booleanValue == expectedValue.toLower()) {
-                    remainingDocuments.append(doc);
-                }
+
+    QJsonArray collectedDocuments;
+    const int initialOffset = std::max(0, baseOffset);
+    int currentOffset = initialOffset;
+    int remaining = requestedLimit;
+    constexpr int maxPageSize = 100;
+    const appwritesdk::ConnectionConfig sdkConfig = configForCollection(collectionId);
+
+    while (true) {
+        int pageSize = maxPageSize;
+        if (remaining > 0) {
+            pageSize = std::min(pageSize, remaining);
+        }
+
+        QJsonArray pageQueries = baseQueries;
+        pageQueries.append(QString("limit(%1)").arg(pageSize));
+        pageQueries.append(QString("offset(%1)").arg(currentOffset));
+
+        const BackendRequestResult result = performRequest([&]() {
+            m_server.listDocuments(sdkConfig, pageQueries);
+        });
+        if (!result.success) {
+            const QString normalizedMessage = result.message.toLower();
+            const bool querySyntaxUnsupported =
+                normalizedMessage.contains("invalid query")
+                || normalizedMessage.contains("syntax error");
+            if (querySyntaxUnsupported && currentOffset == initialOffset) {
+                return runLegacyFiltering();
+            }
+            if (errorMessage) {
+                *errorMessage = toError(QString("listDocuments(%1)").arg(collectionId), result);
+            }
+            return false;
+        }
+
+        const QJsonArray page = result.data.value("documents").toArray();
+        for (const QJsonValue &doc : page) {
+            collectedDocuments.append(doc);
+        }
+        if (page.isEmpty()) {
+            break;
+        }
+
+        currentOffset += page.size();
+        if (remaining > 0) {
+            remaining -= page.size();
+            if (remaining <= 0) {
+                break;
             }
         }
-        filteredDocuments = remainingDocuments;
+
+        const int total = result.data.value("total").toInt(-1);
+        if ((total >= 0 && currentOffset >= total) || page.size() < pageSize) {
+            break;
+        }
     }
-    if (!orderingField.trimmed().isEmpty()) {
-        std::sort(filteredDocuments.begin(),
-                  filteredDocuments.end(),
-                  [&](const QJsonObject &left, const QJsonObject &right) {
-                      const QJsonValue leftValue = left.value(orderingField);
-                      const QJsonValue rightValue = right.value(orderingField);
-                      if (leftValue.isDouble() && rightValue.isDouble()) {
-                          if (descendingOrder) {
-                              return leftValue.toDouble() > rightValue.toDouble();
-                          }
-                          return leftValue.toDouble() < rightValue.toDouble();
-                      }
-                      const QString leftString = leftValue.toString();
-                      const QString rightString = rightValue.toString();
-                      if (descendingOrder) {
-                          return leftString > rightString;
-                      }
-                      return leftString < rightString;
-                  });
-    }
-    if (limit >= 0 && filteredDocuments.size() > limit) {
-        filteredDocuments = filteredDocuments.mid(0, limit);
-    }
-    QJsonArray outputDocuments;
-    for (const QJsonObject &doc : filteredDocuments) {
-        outputDocuments.append(doc);
-    }
-    *documents = outputDocuments;
+
+    *documents = collectedDocuments;
     return true;
 }
 
@@ -1098,43 +1216,64 @@ bool BackendService::createMessage(const QString &channelId,
     if (!ensureChannelExists(normalizedChannelId, errorMessage)) {
         return false;
     }
-    qint64 nextSequenceNumber = 0;
-    const QJsonArray sequenceQueries = {
-        equalQuery("channelId", normalizedChannelId),
-        "orderDesc(\"sequenceNumber\")",
-        "limit(1)"
-    };
-    QJsonArray latestMessages;
-    if (!listDocuments(m_config.messagesCollectionId, sequenceQueries, &latestMessages, errorMessage)) {
+    constexpr int maxSequenceAttempts = 5;
+    const appwritesdk::ConnectionConfig sdkConfig = configForCollection(m_config.messagesCollectionId);
+
+    for (int attempt = 0; attempt < maxSequenceAttempts; ++attempt) {
+        qint64 nextSequenceNumber = 0;
+        const QJsonArray sequenceQueries = {
+            equalQuery("channelId", normalizedChannelId),
+            "orderDesc(\"sequenceNumber\")",
+            "limit(1)"
+        };
+        QJsonArray latestMessages;
+        if (!listDocuments(m_config.messagesCollectionId, sequenceQueries, &latestMessages, errorMessage)) {
+            return false;
+        }
+        if (!latestMessages.isEmpty()) {
+            nextSequenceNumber = static_cast<qint64>(
+                latestMessages.first().toObject().value("sequenceNumber").toDouble(0.0)) + 1;
+        }
+
+        appcomm::model::Message message;
+        message.channelId = normalizedChannelId;
+        message.senderId = normalizedSenderId;
+        message.messageId = makeUuid();
+        message.sequenceNumber = nextSequenceNumber;
+        message.timestamp = QDateTime::currentDateTimeUtc();
+        message.payload = payload;
+        message.isEcho = false;
+
+        const BackendRequestResult createResult = performRequest([&]() {
+            m_server.createDocument(sdkConfig, message.toJson());
+        });
+        if (createResult.success) {
+            if (createdMessage) {
+                QJsonObject outputMessage;
+                outputMessage["channelId"] = message.channelId;
+                outputMessage["senderId"] = message.senderId;
+                outputMessage["messageId"] = message.messageId;
+                outputMessage["sequenceNumber"] = message.sequenceNumber;
+                outputMessage["timestamp"] = message.timestamp.toString(Qt::ISODate);
+                outputMessage["payload"] = message.payload;
+                outputMessage["isEcho"] = message.isEcho;
+                *createdMessage = outputMessage;
+            }
+            return true;
+        }
+        if (isAlreadyExistsError(createResult) && attempt < (maxSequenceAttempts - 1)) {
+            continue;
+        }
+        if (errorMessage) {
+            *errorMessage = toError("createMessage", createResult);
+        }
         return false;
     }
-    if (!latestMessages.isEmpty()) {
-        nextSequenceNumber = static_cast<qint64>(
-            latestMessages.first().toObject().value("sequenceNumber").toDouble(0.0)) + 1;
+
+    if (errorMessage) {
+        *errorMessage = "Unable to create message after multiple sequence retries";
     }
-    appcomm::model::Message message;
-    message.channelId = normalizedChannelId;
-    message.senderId = normalizedSenderId;
-    message.messageId = makeUuid();
-    message.sequenceNumber = nextSequenceNumber;
-    message.timestamp = QDateTime::currentDateTimeUtc();
-    message.payload = payload;
-    message.isEcho = false;
-    if (!createDocument(m_config.messagesCollectionId, message.toJson(), nullptr, errorMessage)) {
-        return false;
-    }
-    if (createdMessage) {
-        QJsonObject outputMessage;
-        outputMessage["channelId"] = message.channelId;
-        outputMessage["senderId"] = message.senderId;
-        outputMessage["messageId"] = message.messageId;
-        outputMessage["sequenceNumber"] = message.sequenceNumber;
-        outputMessage["timestamp"] = message.timestamp.toString(Qt::ISODate);
-        outputMessage["payload"] = message.payload;
-        outputMessage["isEcho"] = message.isEcho;
-        *createdMessage = outputMessage;
-    }
-    return true;
+    return false;
 }
 
 bool BackendService::removeMessage(const QString &messageId, QString *errorMessage) {

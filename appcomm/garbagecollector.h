@@ -13,6 +13,7 @@
 #define GARBAGECOLLECTOR_H
 
 #include <QObject>
+#include <QString>
 
 #include "appwritesdk.h"
 #include "model.h"
@@ -132,12 +133,16 @@ private slots:
     void onError(int code, const QString &message);
 
 private:
+    QJsonArray cleanupQueries() const;
+
     static constexpr int CLEANUP_BATCH_SIZE = 100; ///< Number of documents to delete per batch
 
     appwritesdk::Server *m_server;          ///< Server SDK for admin operations
     appwritesdk::ConnectionConfig m_config; ///< Connection config for messages collection
     QStringList m_docsToDelete;             ///< Queue of document IDs to delete
     int m_deletedCount;                     ///< Counter of deleted messages
+    QString m_cutoffTimestamp;              ///< ISO timestamp used for the current cleanup run
+    bool m_cleanupInProgress = false;       ///< True while a cleanup run is active
 };
 
 } // namespace server

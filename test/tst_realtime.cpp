@@ -81,17 +81,7 @@ void tst_realtime::testConstructorWithConfig() {
 }
 
 void tst_realtime::testConnectBuildsCorrectUrl() {
-    Realtime realtime(m_config);
-    
-    QStringList channels;
-    channels << "databases.test-db.collections.messages.documents";
-    
-    // Note: This will attempt to connect to real server, which will fail in tests
-    // In a real scenario, you'd mock the QWebSocket
-    // For now, just verify the method doesn't crash
-    realtime.connect(channels);
-    
-    QVERIFY(true);
+    QSKIP("Requires injectable/mocked QWebSocket to assert URL construction without external network.");
 }
 
 void tst_realtime::testDisconnect() {

@@ -341,7 +341,7 @@ void Server::listUsers(const ConnectionConfig &config, const QJsonArray &queries
     if (!queries.isEmpty()) {
         QUrlQuery query;
         for (const QJsonValue &q : queries) {
-            appendListQueryItem(q.toString(), &query, false);
+            appendListQueryItem(q.toString(), &query, true);
         }
         url.setQuery(query);
     }

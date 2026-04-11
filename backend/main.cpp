@@ -38,6 +38,9 @@ void printUsage()
         << "  members list <channelId>\n"
         << "  members add <channelId> <userId> [displayName]\n"
         << "  members remove <channelId> <userId>\n"
+        << "  sessions list\n"
+        << "  sessions add <channelId> <userId> [userId ...]\n"
+        << "  sessions close <sessionId>\n"
         << "  messages list <channelId> [limit]\n"
         << "  messages find <channelId> <messageId> [limit]\n"
         << "  messages add <channelId> <senderId> <payloadJsonOrText>\n"
@@ -238,6 +241,7 @@ int main(int argc, char *argv[])
          || command == "collections"
          || command == "channels"
          || command == "members"
+         || command == "sessions"
          || command == "messages");
 
     if (requiresBootstrap) {
@@ -613,6 +617,76 @@ int main(int argc, char *argv[])
         }
 
         printError(QString("Unknown messages action: %1").arg(action));
+        return 1;
+    }
+
+    if (command == "sessions") {
+        if (!ensureNoOptions(parsed, &error)) {
+            printError(error);
+            return 1;
+        }
+        if (parsed.positionals.isEmpty()) {
+            printError("sessions command requires an action: list | add | close");
+            return 1;
+        }
+
+        const QString action = parsed.positionals.at(0).trimmed().toLower();
+        if (action == "list") {
+            if (parsed.positionals.size() != 1) {
+                printError("Usage: backend sessions list");
+                return 1;
+            }
+            QJsonArray sessions;
+            if (!service.listSessions(&sessions, &error)) {
+                printError(error);
+                return 1;
+            }
+            printJsonArray(sessions);
+            return 0;
+        }
+
+        if (action == "add") {
+            if (parsed.positionals.size() < 3) {
+                printError("Usage: backend sessions add <channelId> <userId> [userId ...]");
+                return 1;
+            }
+            const QString channelId = parsed.positionals.at(1).trimmed();
+            QStringList userIds;
+            for (int i = 2; i < parsed.positionals.size(); ++i) {
+                const QString userId = parsed.positionals.at(i).trimmed();
+                if (!userId.isEmpty()) {
+                    userIds.append(userId);
+                }
+            }
+            if (userIds.isEmpty()) {
+                printError("At least one non-empty userId is required");
+                return 1;
+            }
+
+            QJsonObject createdSession;
+            if (!service.createSession(channelId, userIds, &createdSession, &error)) {
+                printError(error);
+                return 1;
+            }
+            printJsonObject(createdSession);
+            return 0;
+        }
+
+        if (action == "close") {
+            if (parsed.positionals.size() != 2) {
+                printError("Usage: backend sessions close <sessionId>");
+                return 1;
+            }
+            const QString sessionId = parsed.positionals.at(1).trimmed();
+            if (!service.closeSession(sessionId, &error)) {
+                printError(error);
+                return 1;
+            }
+            printJsonObject(QJsonObject{{"status", "closed"}, {"sessionId", sessionId}});
+            return 0;
+        }
+
+        printError(QString("Unknown sessions action: %1").arg(action));
         return 1;
     }
 

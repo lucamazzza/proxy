@@ -13,7 +13,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(TEST_FILES
@@ -45,4 +45,3 @@ foreach(TEST_SOURCE ${TEST_FILES})
     target_link_libraries(${TEST_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::WebSockets)
     target_include_directories(${TEST_NAME} PRIVATE ../appcomm)
 endforeach()
-

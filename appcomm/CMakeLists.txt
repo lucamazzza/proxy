@@ -43,7 +43,10 @@ add_library(appcomm STATIC
   messageprocessor.cpp
 )
 
-target_link_libraries(appcomm PRIVATE Qt${QT_VERSION_MAJOR}::Core)
-target_link_libraries(appcomm PRIVATE Qt${QT_VERSION_MAJOR}::Network)
-target_link_libraries(appcomm PRIVATE Qt${QT_VERSION_MAJOR}::WebSockets)
+target_link_libraries(appcomm
+  PUBLIC
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::Network
+    Qt${QT_VERSION_MAJOR}::WebSockets
+)
 target_compile_definitions(appcomm PRIVATE APPCOMM_LIBRARY)

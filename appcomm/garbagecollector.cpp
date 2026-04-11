@@ -17,21 +17,29 @@ GarbageCollector::GarbageCollector(appwritesdk::Server *server,
 
 void GarbageCollector::runCleanup(const model::PersistencePolicy &policy) {
     if (policy.messageTTL <= 0) {
+        m_cleanupInProgress = false;
+        m_cutoffTimestamp.clear();
+        m_docsToDelete.clear();
+        m_deletedCount = 0;
         emit cleanupComplete(0);
         return;
     }
-    QDateTime cutoffDate = QDateTime::currentDateTimeUtc().addDays(-policy.messageTTL);
-    QJsonArray queries;
-    queries.append(QString("lessThan(\"timestamp\", \"%1\")").arg(cutoffDate.toString(Qt::ISODate)));
-    queries.append(QString("limit(%1)").arg(CLEANUP_BATCH_SIZE));
+    const QDateTime cutoffDate = QDateTime::currentDateTimeUtc().addDays(-policy.messageTTL);
+    m_cutoffTimestamp = cutoffDate.toString(Qt::ISODate);
+    m_cleanupInProgress = true;
     m_deletedCount = 0;
     m_docsToDelete.clear();
-    m_server->listDocuments(m_config, queries);
+    m_server->listDocuments(m_config, cleanupQueries());
 }
 
 void GarbageCollector::onDocumentsListed(const QJsonObject &data) {
+    if (!m_cleanupInProgress) {
+        return;
+    }
     QJsonArray documents = data.value("documents").toArray();
     if (documents.isEmpty()) {
+        m_cleanupInProgress = false;
+        m_cutoffTimestamp.clear();
         emit cleanupComplete(m_deletedCount);
         return;
     }
@@ -50,6 +58,9 @@ void GarbageCollector::onDocumentsListed(const QJsonObject &data) {
 }
 
 void GarbageCollector::onDocumentDeleted(const QJsonObject &data) {
+    if (!m_cleanupInProgress) {
+        return;
+    }
     Q_UNUSED(data);
     m_deletedCount++;
     if (!m_docsToDelete.isEmpty()) {
@@ -58,10 +69,20 @@ void GarbageCollector::onDocumentDeleted(const QJsonObject &data) {
     } else {
         disconnect(m_server, &appwritesdk::Server::requestSuccess, this, &GarbageCollector::onDocumentDeleted);
         connect(m_server, &appwritesdk::Server::requestSuccess, this, &GarbageCollector::onDocumentsListed);
-        emit cleanupComplete(m_deletedCount);
+        m_server->listDocuments(m_config, cleanupQueries());
     }
 }
 
 void GarbageCollector::onError(int code, const QString &message) {
+    m_cleanupInProgress = false;
+    m_cutoffTimestamp.clear();
+    m_docsToDelete.clear();
     emit cleanupError(QString("Cleanup failed (code %1): %2").arg(code).arg(message));
+}
+
+QJsonArray GarbageCollector::cleanupQueries() const {
+    QJsonArray queries;
+    queries.append(QString("lessThan(\"timestamp\", \"%1\")").arg(m_cutoffTimestamp));
+    queries.append(QString("limit(%1)").arg(CLEANUP_BATCH_SIZE));
+    return queries;
 }

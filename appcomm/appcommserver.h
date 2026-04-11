@@ -327,13 +327,10 @@ private slots:
      * @param message Error message
      */
     void onServerRequestError(int code, const QString &message);
-    
-    void onChannelDocumentsListed(const QJsonObject &data);
-    void onChannelDocumentDeleted(const QJsonObject &data);
-    void onMemberDocumentsListed(const QJsonObject &data);
-    void onMemberListingComplete(const QJsonObject &data);
 
 private:
+    bool handleOperationSuccess(const QJsonObject &data);
+    bool handleOperationError(int code, const QString &message);
     bool handleInitializationSuccess(const QJsonObject &data);
     bool handleInitializationError(int code, const QString &message);
     void continueInitializationAfterDatabase();

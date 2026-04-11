@@ -182,11 +182,36 @@ void tst_recoverymanager::requestFromCacheMiss()
     msg.payload = QJsonObject{{"text", "First"}};
     m_cache->addMessage(msg);
     
+    QSignalSpy recoverSpy(m_manager, &RecoveryManager::messagesRecovered);
     QSignalSpy errorSpy(m_manager, &RecoveryManager::recoveryError);
     
     m_manager->requestFrom("nonexistent");
-    
-    QCOMPARE(errorSpy.count(), 1);
+
+    QJsonObject anchorResponse;
+    anchorResponse["messageId"] = "nonexistent";
+    anchorResponse["channelId"] = "channel1";
+    anchorResponse["senderId"] = "user1";
+    anchorResponse["timestamp"] = QDateTime::currentDateTimeUtc().addSecs(-10).toString(Qt::ISODate);
+    anchorResponse["payload"] = QJsonObject{{"text", "Anchor"}};
+    anchorResponse["isEcho"] = false;
+    m_client->simulateSuccess(anchorResponse);
+
+    QJsonObject listResponse;
+    QJsonArray documents;
+    QJsonObject newDoc;
+    newDoc["messageId"] = "msg2";
+    newDoc["channelId"] = "channel1";
+    newDoc["senderId"] = "user1";
+    newDoc["timestamp"] = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    newDoc["payload"] = QJsonObject{{"text", "Recovered"}};
+    newDoc["isEcho"] = false;
+    documents.append(newDoc);
+    listResponse["documents"] = documents;
+    m_client->simulateSuccess(listResponse);
+
+    QCOMPARE(errorSpy.count(), 0);
+    QCOMPARE(recoverSpy.count(), 1);
+    QVERIFY(m_cache->contains("msg2"));
 }
 
 void tst_recoverymanager::requestSingleCacheHit()
@@ -305,6 +330,7 @@ void tst_recoverymanager::requestFromInvalidMessageId()
     QSignalSpy errorSpy(m_manager, &RecoveryManager::recoveryError);
     
     m_manager->requestFrom("invalid-id");
+    m_client->simulateError(404, "Document not found");
     
     QCOMPARE(errorSpy.count(), 1);
 }

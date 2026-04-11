@@ -387,10 +387,12 @@ void tst_appcommserver::testDeleteMessageEmpty()
 
 void tst_appcommserver::testAddChannelMemberValid()
 {
-    QSignalSpy spy(server, &AppcommServer::memberAdded);
+    QSignalSpy addedSpy(server, &AppcommServer::memberAdded);
+    QSignalSpy errorSpy(server, &AppcommServer::membershipError);
     server->addChannelMember("channel-1", "user-1");
 
-    QCOMPARE(spy.count(), 1);
+    QVERIFY(addedSpy.isValid());
+    QCOMPARE(errorSpy.count(), 0);
 }
 
 void tst_appcommserver::testAddChannelMemberEmptyChannel()

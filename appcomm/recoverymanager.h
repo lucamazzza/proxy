@@ -146,6 +146,7 @@ private:
      */
     enum class OperationType {
         None,
+        ResolveAnchor,
         RequestFrom,
         RequestSingle,
         FullResync
@@ -158,7 +159,10 @@ private:
      */
     void processRecoveredMessages(const QJsonArray &messages);
 
+    void requestMessagesAfterTimestamp(const QDateTime &timestamp);
+
     static constexpr int DEFAULT_RESYNC_LIMIT = 100; ///< Default limit for full resync
+    static constexpr int DEFAULT_REQUEST_FROM_LIMIT = 1000; ///< Default limit for requestFrom
 
     appwritesdk::Client *m_client;           ///< Appwrite client for API calls
     RecentMessageCache *m_cache;             ///< Local message cache

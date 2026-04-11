@@ -86,7 +86,8 @@ The core communication library providing:
 Qt/QML application demonstrating client-side usage:
 
 - QML-based user interface
-- Integration with appcomm library
+- Starter UI scaffold (current `Main.qml` is a minimal placeholder)
+- CMake target links with `appcomm` for incremental integration work
 - Designed for desktop and WebAssembly deployment
 
 #### backend
@@ -152,10 +153,11 @@ The CMake configuration supports the following options:
 
 - `BUILD_FRONTEND`: Build frontend application (default: ON)
 - `BUILD_BACKEND`: Build backend application (default: ON)
+- `BUILD_TESTING`: Build test executables (default: ON)
 
 Example:
 ```bash
-cmake .. -DBUILD_FRONTEND=OFF -DBUILD_BACKEND=ON
+cmake .. -DBUILD_FRONTEND=OFF -DBUILD_BACKEND=ON -DBUILD_TESTING=ON
 ```
 
 ## Integration with Appwrite
@@ -194,7 +196,9 @@ cmake .. -DBUILD_FRONTEND=OFF -DBUILD_BACKEND=ON
    - channelId (string, 36, required, indexed)
    - senderId (string, 36, required)
    - timestamp (datetime, required, indexed)
-   - payload (json, required)
+   - messageId (string, 128, required, indexed unique)
+   - sequenceNumber (integer, required, indexed)
+   - payload (stringified JSON, required)
 
    Permissions:
    - Read: Channel members
@@ -202,7 +206,7 @@ cmake .. -DBUILD_FRONTEND=OFF -DBUILD_BACKEND=ON
    ```
 
 > [!NOTE]
-> The library has is designed to provide commands to bootstrap the required Appwrite database and collection structure.
+> The library is designed to provide commands to bootstrap the required Appwrite database and collection structure.
 
 ### Configuration
 
