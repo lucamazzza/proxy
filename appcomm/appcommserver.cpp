@@ -45,7 +45,7 @@ AppcommServer::AppcommServer(QObject *parent)
     , d(new Private())
 {
     d->networkManager = new QNetworkAccessManager(this);
-    d->server = new appwritesdk::Server(this);
+    d->server = new appwritesdk::Server(d->networkManager, this);
     d->membershipService = new MembershipService(this);
     connect(d->server, &appwritesdk::Server::requestSuccess, this, &AppcommServer::onServerRequestSuccess);
     connect(d->server, &appwritesdk::Server::requestError, this, &AppcommServer::onServerRequestError);

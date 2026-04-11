@@ -105,13 +105,13 @@ QNetworkRequest BaseSDK::createBaseRequest(const ConnectionConfig &config,
     return req;
 }
 
-Client::Client(QObject *parent)
-    : BaseSDK(nullptr, parent)
+Client::Client(QNetworkAccessManager *mgr, QObject *parent)
+    : BaseSDK(mgr, parent)
 {
 }
 
-Server::Server(QObject *parent)
-    : BaseSDK(nullptr, parent)
+Server::Server(QNetworkAccessManager *mgr, QObject *parent)
+    : BaseSDK(mgr, parent)
 {
 }
 

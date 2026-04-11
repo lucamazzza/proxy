@@ -181,7 +181,7 @@ protected:
 class Client : public BaseSDK, public IClientSdk {
     Q_OBJECT
 public:
-    explicit Client(QObject *parent = nullptr);
+    explicit Client(QNetworkAccessManager *mgr = nullptr, QObject *parent = nullptr);
 
     /*!
      * @brief Creates an anonymous user session.
@@ -275,7 +275,7 @@ public:
 class Server : public BaseSDK {
     Q_OBJECT
 public:
-    explicit Server(QObject *parent = nullptr);
+    explicit Server(QNetworkAccessManager *mgr = nullptr, QObject *parent = nullptr);
 
     /*!
      * @brief Creates a new database in the Appwrite project.
