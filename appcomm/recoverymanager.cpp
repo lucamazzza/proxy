@@ -75,7 +75,8 @@ void RecoveryManager::requestFullResync() {
     m_client->listDocuments(m_config, queries);
 }
 
-void RecoveryManager::onRequestSuccess(const QJsonObject &data) {
+void RecoveryManager::onRequestSuccess(appwritesdk::RequestType type, const QJsonObject &data) {
+    Q_UNUSED(type);
     switch (m_currentOperation) {
         case OperationType::RequestFrom:
         case OperationType::FullResync: {
@@ -102,7 +103,8 @@ void RecoveryManager::onRequestSuccess(const QJsonObject &data) {
     m_currentMessageId.clear();
 }
 
-void RecoveryManager::onRequestError(int code, const QString &message) {
+void RecoveryManager::onRequestError(appwritesdk::RequestType type, int code, const QString &message) {
+    Q_UNUSED(type);
     emit recoveryError(code, message);
     m_currentOperation = OperationType::None;
     m_currentMessageId.clear();

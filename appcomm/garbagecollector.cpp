@@ -28,7 +28,8 @@ void GarbageCollector::runCleanup(const model::PersistencePolicy &policy) {
     m_server->listDocuments(m_config, queries);
 }
 
-void GarbageCollector::onDocumentsListed(const QJsonObject &data) {
+void GarbageCollector::onDocumentsListed(appwritesdk::RequestType type, const QJsonObject &data) {
+    Q_UNUSED(type);
     QJsonArray documents = data.value("documents").toArray();
     if (documents.isEmpty()) {
         emit cleanupComplete(m_deletedCount);
@@ -48,7 +49,8 @@ void GarbageCollector::onDocumentsListed(const QJsonObject &data) {
     }
 }
 
-void GarbageCollector::onDocumentDeleted(const QJsonObject &data) {
+void GarbageCollector::onDocumentDeleted(appwritesdk::RequestType type, const QJsonObject &data) {
+    Q_UNUSED(type);
     Q_UNUSED(data);
     m_deletedCount++;
     if (!m_docsToDelete.isEmpty()) {
@@ -61,6 +63,7 @@ void GarbageCollector::onDocumentDeleted(const QJsonObject &data) {
     }
 }
 
-void GarbageCollector::onError(int code, const QString &message) {
+void GarbageCollector::onError(appwritesdk::RequestType type, int code, const QString &message) {
+    Q_UNUSED(type);
     emit cleanupError(QString("Cleanup failed (code %1): %2").arg(code).arg(message));
 }
