@@ -32,6 +32,40 @@
 namespace appwritesdk {
 
 /*!
+ * @brief Enumeration of supported Appwrite request types.
+ *
+ * This enum identifies the type of operation performed by the Appwrite SDK.
+ * It is primarily used to track outgoing requests and associate incoming
+ * responses or errors with the corresponding action.
+ *
+ * @note The value Unknown is used as a default or fallback when the request
+ *       type is not set or cannot be determined.
+ */
+enum class RequestType {
+    Unknown = 0,                 ///< Undefined or uninitialized request type
+    CreateAnonymousSession,      ///< Create a guest (anonymous) session
+    CreateEmailSession,          ///< Create a session using email/password
+    DeleteSession,               ///< Delete a specific session
+    DeleteSessions,              ///< Delete all sessions (global logout)
+    GetAccount,                  ///< Retrieve current account information
+    CreateDocument,              ///< Create a new document in a collection
+    ListDocuments,               ///< Retrieve a list of documents
+    GetDocument,                 ///< Retrieve a single document by ID
+    UpdateDocument,              ///< Update an existing document
+    DeleteDocument,              ///< Delete a document
+    CreateDatabase,              ///< Create a new database (admin)
+    DeleteDatabase,              ///< Delete a database (admin)
+    CreateCollection,            ///< Create a new collection (admin)
+    DeleteCollection,            ///< Delete a collection (admin)
+    UpdateCollectionPermissions, ///< Update collection permissions (admin)
+    CreateAttribute,             ///< Create a collection attribute (admin)
+    CreateIndex,                 ///< Create an index on collection attributes (admin)
+    CreateUser,                  ///< Create a new user (admin)
+    DeleteUser,                  ///< Delete a user (admin)
+    ListUsers                    ///< Retrieve a list of users (admin)
+};
+
+/*!
  * @brief Configuration structure for Appwrite connections.
  *
  * Contains all necessary credentials and identifiers for connecting to
@@ -43,6 +77,23 @@ struct ConnectionConfig {
     QString apiKey;       ///< API key for server-side operations
     QString dbId;         ///< Database identifier
     QString collectionId; ///< Collection identifier
+};
+
+/*!
+ * @brief Abstract interface for client-side Appwrite operations used by AppcommClient.
+ */
+class IClientSdk {
+public:
+    virtual ~IClientSdk() = default;
+
+    virtual void createAnonymousSession(const ConnectionConfig &config) = 0;
+    virtual void createEmailSession(const ConnectionConfig &config,
+                                    const QString &email,
+                                    const QString &password) = 0;
+    virtual void deleteSession(const ConnectionConfig &config,
+                               const QString &sessionId) = 0;
+    virtual void createDocument(const ConnectionConfig &config,
+                                const QJsonObject &data) = 0;
 };
 
 /*!
@@ -60,24 +111,27 @@ public:
      * @param mgr Network access manager for handling HTTP requests
      * @param parent Parent QObject for memory management
      */
-    explicit BaseSDK(QNetworkAccessManager *mgr, QObject *parent = nullptr);
+    explicit BaseSDK(QNetworkAccessManager *mgr = nullptr, QObject *parent = nullptr);
+    ~BaseSDK() override = default;
 
 signals:
 
     /*!
      * @brief Emitted when an HTTP request completes successfully.
      *
+     * @param type Type of the request that completed successfully
      * @param data JSON response data from the server
      */
-    void requestSuccess(const QJsonObject &data);
+    void requestSuccess(RequestType type, const QJsonObject &data);
 
     /*!
      * @brief Emitted when an HTTP request fails.
      *
+     * @param type Type of request that failed
      * @param code HTTP status code or error code
      * @param message Error message description
      */
-    void requestError(int code, const QString &message);
+    void requestError(RequestType type, int code, const QString &message);
 
 protected slots:
 
@@ -114,6 +168,8 @@ protected:
      * @param reply The reply received.
      */
     void parseErrorResponse(QNetworkReply *reply);
+
+    void trackReply(QNetworkReply *reply, RequestType type);
 };
 
 /*!
@@ -122,10 +178,10 @@ protected:
  * Provides methods for creating user sessions and managing documents
  * without requiring administrative privileges.
  */
-class Client : public BaseSDK {
+class Client : public BaseSDK, public IClientSdk {
     Q_OBJECT
 public:
-    using BaseSDK::BaseSDK;
+    explicit Client(QObject *parent = nullptr);
 
     /*!
      * @brief Creates an anonymous user session.
@@ -135,7 +191,7 @@ public:
      *
      * @param config Connection configuration
      */
-    void createAnonymousSession(const ConnectionConfig &config);
+    void createAnonymousSession(const ConnectionConfig &config) override;
 
     /*!
      * @brief Creates a session using email and password authentication.
@@ -144,7 +200,7 @@ public:
      * @param email User email address
      * @param password User password
      */
-    void createEmailSession(const ConnectionConfig &config, const QString &email, const QString &password);
+    void createEmailSession(const ConnectionConfig &config, const QString &email, const QString &password) override;
 
     /*!
      * @brief Deletes a given session.
@@ -152,7 +208,7 @@ public:
      * @param config The config of the connection currently standing.
      * @param sessionId The ID of the session to destroy.
      */
-    void deleteSession(const ConnectionConfig &config, const QString &sessionId);
+    void deleteSession(const ConnectionConfig &config, const QString &sessionId) override;
 
     /*!
      * @brief Deletes all the sessions in the system (Broadcast logout).
@@ -174,7 +230,7 @@ public:
      * @param config Connection configuration with database and collection IDs
      * @param data JSON object containing document data
      */
-    void createDocument(const ConnectionConfig &config, const QJsonObject &data);
+    void createDocument(const ConnectionConfig &config, const QJsonObject &data) override;
 
     /*!
      * @brief Lists documents in the configured collection with optional query filters.
@@ -219,7 +275,7 @@ public:
 class Server : public BaseSDK {
     Q_OBJECT
 public:
-    using BaseSDK::BaseSDK;
+    explicit Server(QObject *parent = nullptr);
 
     /*!
      * @brief Creates a new database in the Appwrite project.
