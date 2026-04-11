@@ -19,6 +19,13 @@ namespace appcomm {
 
 namespace client {
 
+class IRateLimiter {
+public:
+    virtual ~IRateLimiter() = default;
+    virtual bool allowRequest() = 0;
+    virtual void reset() = 0;
+};
+
 /*!
  * @brief Token bucket rate limiter.
  *
@@ -26,7 +33,7 @@ namespace client {
  * Tokens are refilled at a constant rate and consumed by requests.
  * When no tokens are available, requests are denied.
  */
-class RateLimiter : public QObject {
+class RateLimiter : public QObject, public IRateLimiter {
     Q_OBJECT
 public:
     /*!
@@ -46,7 +53,7 @@ public:
      *
      * @return true if request is allowed, false if limit exceeded.
      */
-    bool allowRequest();
+    bool allowRequest() override;
 
     /*!
      * @brief Resets the rate limiter state.
@@ -54,7 +61,7 @@ public:
      * Restores available tokens to maximum capacity and resets
      * the last refill timestamp to current time.
      */
-    void reset();
+    void reset() override;
 
     /*!
      * @brief Gets the current available tokens.
