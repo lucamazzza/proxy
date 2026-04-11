@@ -45,7 +45,7 @@ AppcommServer::AppcommServer(QObject *parent)
     , d(new Private())
 {
     d->networkManager = new QNetworkAccessManager(this);
-    d->server = new appwritesdk::Server(d->networkManager, this);
+    d->server = new appwritesdk::Server(this);
     d->membershipService = new MembershipService(this);
     connect(d->server, &appwritesdk::Server::requestSuccess, this, &AppcommServer::onServerRequestSuccess);
     connect(d->server, &appwritesdk::Server::requestError, this, &AppcommServer::onServerRequestError);
@@ -79,7 +79,7 @@ void AppcommServer::configure(const model::AppCommConfig &config) {
             }
         }
     });
-    d->realtime->connect(channels);
+    d->realtime->connectToChannels(channels);
     
     emit configured();
 }
@@ -139,7 +139,8 @@ void AppcommServer::deleteChannel(const QString &channelId) {
     d->server->listDocuments(d->sdkConfig, queries);
 }
 
-void AppcommServer::onChannelDocumentsListed(const QJsonObject &data) {
+void AppcommServer::onChannelDocumentsListed(appwritesdk::RequestType type, const QJsonObject &data) {
+    Q_UNUSED(type);
     QJsonArray docs = data.value("documents").toArray();
     if (docs.isEmpty()) {
         disconnect(d->server, &appwritesdk::Server::requestSuccess, this, &AppcommServer::onChannelDocumentsListed);
@@ -163,7 +164,8 @@ void AppcommServer::onChannelDocumentsListed(const QJsonObject &data) {
     }
 }
 
-void AppcommServer::onChannelDocumentDeleted(const QJsonObject &data) {
+void AppcommServer::onChannelDocumentDeleted(appwritesdk::RequestType type, const QJsonObject &data) {
+    Q_UNUSED(type);
     Q_UNUSED(data);
     if (!d->docsToDeleteInChannel.isEmpty()) {
         QString docId = d->docsToDeleteInChannel.takeFirst();
@@ -292,7 +294,8 @@ void AppcommServer::getChannelMembers(const QString &channelId) {
     d->server->listDocuments(d->sdkConfig, queries);
 }
 
-void AppcommServer::onMemberDocumentsListed(const QJsonObject &data) {
+void AppcommServer::onMemberDocumentsListed(appwritesdk::RequestType type, const QJsonObject &data) {
+    Q_UNUSED(type);
     QJsonArray docs = data.value("documents").toArray();
     if (!docs.isEmpty()) {
         QString docId = docs.first().toObject().value("$id").toString();
@@ -306,7 +309,8 @@ void AppcommServer::onMemberDocumentsListed(const QJsonObject &data) {
     emit memberRemoved(m_removingChannelId, m_removingUserId);
 }
 
-void AppcommServer::onMemberListingComplete(const QJsonObject &data) {
+void AppcommServer::onMemberListingComplete(appwritesdk::RequestType type, const QJsonObject &data) {
+    Q_UNUSED(type);
     QJsonArray docs = data.value("documents").toArray();
     QList<model::ChannelMember> members;
     for (const QJsonValue &docValue : docs) {
@@ -333,7 +337,8 @@ appcomm::model::Channel AppcommServer::getChannel(const QString &channelId) cons
     return d->channels.value(channelId);
 }
 
-void AppcommServer::onServerRequestSuccess(const QJsonObject &data) {
+void AppcommServer::onServerRequestSuccess(appwritesdk::RequestType type, const QJsonObject &data) {
+    Q_UNUSED(type);
     // DB Creation
     if (data.contains("$id") && data.contains("name")) {
         QString name = data.value("name").toString();
@@ -408,7 +413,8 @@ void AppcommServer::onServerRequestSuccess(const QJsonObject &data) {
     }
 }
 
-void AppcommServer::onServerRequestError(int code, const QString &message) {
+void AppcommServer::onServerRequestError(appwritesdk::RequestType type, int code, const QString &message) {
+    Q_UNUSED(type);
     if (!d->initialized) {
         emit initializationError(code, message);
     } else {
