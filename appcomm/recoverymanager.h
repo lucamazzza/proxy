@@ -128,17 +128,19 @@ private slots:
     /*!
      * @brief Handles successful response from Appwrite client.
      *
+     * @param type Type of the request that completed successfully
      * @param data JSON response data from server
      */
-    void onRequestSuccess(const QJsonObject &data);
+    void onRequestSuccess(appwritesdk::RequestType type, const QJsonObject &data);
 
     /*!
      * @brief Handles error response from Appwrite client.
      *
+     * @param type Type of request that failed
      * @param code Error code
      * @param message Error message
      */
-    void onRequestError(int code, const QString &message);
+    void onRequestError(appwritesdk::RequestType type, int code, const QString &message);
 
 private:
     /*!
