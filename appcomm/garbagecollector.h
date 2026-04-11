@@ -107,7 +107,7 @@ private slots:
      *
      * @param data JSON response containing "documents" array with document metadata
      */
-    void onDocumentsListed(const QJsonObject &data);
+    void onDocumentsListed(appwritesdk::RequestType type, const QJsonObject &data);
 
     /*!
      * @brief Handles response from document deletion.
@@ -118,7 +118,7 @@ private slots:
      *
      * @param data JSON response from deletion operation (unused)
      */
-    void onDocumentDeleted(const QJsonObject &data);
+    void onDocumentDeleted(appwritesdk::RequestType type, const QJsonObject &data);
 
     /*!
      * @brief Handles errors during cleanup operation.
@@ -129,7 +129,7 @@ private slots:
      * @param code HTTP error code
      * @param message Error message from server
      */
-    void onError(int code, const QString &message);
+    void onError(appwritesdk::RequestType type, int code, const QString &message);
 
 private:
     appwritesdk::Server *m_server;          ///< Server SDK for admin operations
