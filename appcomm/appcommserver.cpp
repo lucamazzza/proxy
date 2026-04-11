@@ -1,6 +1,7 @@
 #include "appcommserver.h"
 #include "appwritesdk.h"
 #include "membershipservice.h"
+#include "messagequeryservice.h"
 #include "realtime.h"
 #include "model.h"
 #include <QJsonDocument>
@@ -10,17 +11,6 @@
 using namespace appcomm::server;
 
 namespace {
-
-QString escapeQueryValue(const QString &value) {
-    QString escaped = value;
-    escaped.replace("\\", "\\\\");
-    escaped.replace("\"", "\\\"");
-    return escaped;
-}
-
-QString equalQuery(const QString &key, const QString &value) {
-    return QString("equal(\"%1\",[\"%2\"])").arg(key, escapeQueryValue(value));
-}
 
 struct BootstrapAttributeDef {
     QString type;
@@ -120,6 +110,7 @@ public:
     QNetworkAccessManager *networkManager;
     appwritesdk::Server *server;
     MembershipService *membershipService;
+    MessageQueryService *messageQueryService;
     Realtime *realtime;
     bool initialized;
     QHash<QString, model::Channel> channels;
@@ -140,6 +131,7 @@ public:
         : networkManager(nullptr)
         , server(nullptr)
         , membershipService(nullptr)
+        , messageQueryService(nullptr)
         , realtime(nullptr)
         , initialized(false)
     {}
@@ -155,6 +147,7 @@ AppcommServer::AppcommServer(QObject *parent)
     d->networkManager = new QNetworkAccessManager(this);
     d->server = new appwritesdk::Server(d->networkManager, this);
     d->membershipService = new MembershipService(this);
+    d->messageQueryService = new MessageQueryService(this);
     connect(d->server, &appwritesdk::Server::requestSuccess, this, &AppcommServer::onServerRequestSuccess);
     connect(d->server, &appwritesdk::Server::requestError, this, &AppcommServer::onServerRequestError);
 }
@@ -319,9 +312,7 @@ void AppcommServer::deleteChannel(const QString &channelId) {
     }
     m_deletingChannelId = channelId;
     m_originalCollectionId = d->sdkConfig.collectionId;
-    QJsonArray queries;
-    queries.append(equalQuery("channelId", channelId));
-    queries.append("limit(100)");
+    const QJsonArray queries = d->messageQueryService->channelDocuments(channelId, 100);
     d->docsToDeleteInChannel.clear();
     d->activeOperation = Private::AsyncOperation::DeletingChannelListingDocs;
     d->sdkConfig.collectionId = d->config.messagesCollectionId;
@@ -378,10 +369,7 @@ void AppcommServer::getChannelMessages(const QString &channelId, int limit) {
         emit messageError(400, "Channel ID cannot be empty");
         return;
     }
-    QJsonArray queries;
-    queries.append(equalQuery("channelId", channelId));
-    queries.append("orderDesc(\"timestamp\")");
-    queries.append(QString("limit(%1)").arg(limit));
+    const QJsonArray queries = d->messageQueryService->channelMessages(channelId, limit);
     auto oldCollectionId = d->sdkConfig.collectionId;
     d->sdkConfig.collectionId = d->config.messagesCollectionId;
     d->server->listDocuments(d->sdkConfig, queries);
@@ -401,9 +389,7 @@ void AppcommServer::deleteMessage(const QString &messageId) {
     d->activeOperation = Private::AsyncOperation::DeletingMessageListingDoc;
     d->pendingDeletedMessageId = messageId;
     d->sdkConfig.collectionId = d->config.messagesCollectionId;
-    QJsonArray queries;
-    queries.append(equalQuery("messageId", messageId));
-    queries.append("limit(1)");
+    const QJsonArray queries = d->messageQueryService->messageDocuments(messageId, 1);
     d->server->listDocuments(d->sdkConfig, queries);
 }
 
@@ -416,12 +402,10 @@ void AppcommServer::addChannelMember(const QString &channelId, const QString &us
         emit membershipError(409, "Another server operation is already in progress");
         return;
     }
-    model::ChannelMember member;
-    member.channelId = channelId;
-    member.userId = userId;
-    member.joinedAt = QDateTime::currentDateTimeUtc();
-    member.lastSeenAt = QDateTime::currentDateTimeUtc();
-    member.isActive = true;
+    const model::ChannelMember member = d->membershipService->createActiveMember(
+        channelId,
+        userId,
+        QDateTime::currentDateTimeUtc());
     d->pendingMemberToAdd = member;
     d->activeOperation = Private::AsyncOperation::AddingMember;
     auto oldCollectionId = d->sdkConfig.collectionId;
@@ -442,9 +426,7 @@ void AppcommServer::removeChannelMember(const QString &channelId, const QString 
     m_removingChannelId = channelId;
     m_removingUserId = userId;
     m_originalCollectionId = d->sdkConfig.collectionId;
-    QJsonArray queries;
-    queries.append(equalQuery("channelId", channelId));
-    queries.append(equalQuery("userId", userId));
+    const QJsonArray queries = d->messageQueryService->channelMemberDocuments(channelId, userId, 1);
     d->activeOperation = Private::AsyncOperation::RemovingMemberListingDocs;
     d->sdkConfig.collectionId = d->config.membersCollectionId;
     d->server->listDocuments(d->sdkConfig, queries);
@@ -461,8 +443,7 @@ void AppcommServer::getChannelMembers(const QString &channelId) {
     }
     m_queryingChannelId = channelId;
     m_originalCollectionId = d->sdkConfig.collectionId;
-    QJsonArray queries;
-    queries.append(equalQuery("channelId", channelId));
+    const QJsonArray queries = d->messageQueryService->channelDocuments(channelId);
     d->activeOperation = Private::AsyncOperation::ListingMembers;
     d->sdkConfig.collectionId = d->config.membersCollectionId;
     d->server->listDocuments(d->sdkConfig, queries);
@@ -519,9 +500,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
             return true;
         } else {
             d->activeOperation = Private::AsyncOperation::DeletingChannelListingDocs;
-            QJsonArray queries;
-            queries.append(equalQuery("channelId", m_deletingChannelId));
-            queries.append("limit(100)");
+            const QJsonArray queries = d->messageQueryService->channelDocuments(m_deletingChannelId, 100);
             d->server->listDocuments(d->sdkConfig, queries);
             return true;
         }
@@ -543,7 +522,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
             emit memberRemoved(m_removingChannelId, m_removingUserId);
             return true;
         }
-        const QString docId = docs.first().toObject().value("$id").toString().trimmed();
+        const QString docId = d->membershipService->resolveDocumentId(docs.first().toObject());
         if (docId.isEmpty()) {
             d->sdkConfig.collectionId = m_originalCollectionId;
             d->activeOperation = Private::AsyncOperation::None;
@@ -561,13 +540,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
         return true;
     case Private::AsyncOperation::ListingMembers: {
         const QJsonArray docs = data.value("documents").toArray();
-        QList<model::ChannelMember> members;
-        for (const QJsonValue &docValue : docs) {
-            const model::ChannelMember member = model::ChannelMember::fromJson(docValue.toObject());
-            if (!member.userId.trimmed().isEmpty()) {
-                members.append(member);
-            }
-        }
+        const QList<model::ChannelMember> members = d->membershipService->parseMembers(docs);
         d->sdkConfig.collectionId = m_originalCollectionId;
         d->activeOperation = Private::AsyncOperation::None;
         emit membersListed(m_queryingChannelId, members);

@@ -24,6 +24,8 @@ namespace appcomm {
  */
 namespace client {
 
+Q_NAMESPACE
+
 /*!
  * @brief Represents the current state of the client session.
  *
@@ -52,6 +54,7 @@ enum class ConnectionState {
     Reconnecting,     ///< Attempting to restore a lost connection
     Failed            ///< Connection attempt failed
 };
+Q_ENUM_NS(ConnectionState)
 
 } // namespace client
 

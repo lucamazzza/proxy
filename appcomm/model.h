@@ -113,7 +113,7 @@ struct Message {
 struct SessionInfo {
     QString userId;      ///< ID of the associated user
     QString sessionId;   ///< Unique session identifier
-    AuthType authType;   ///< Authentication method used
+    AuthType authType = AuthType::Guest; ///< Authentication method used
     QDateTime createdAt; ///< Session creation timestamp (UTC)
     QDateTime expiresAt; ///< Session expiration timestamp (UTC)
 
