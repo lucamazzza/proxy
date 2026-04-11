@@ -2,8 +2,8 @@
 
 using namespace appcomm;
 
-Realtime::Realtime(const ConnectionConfig &config, QObject *parent)
-    : QObject{parent}
+Realtime::Realtime(const appwritesdk::ConnectionConfig &config, QObject *parent)
+    : IRealtime(parent)
     , m_config(config)
 {
     m_webSocket = new QWebSocket(QString(), QWebSocketProtocol::VersionLatest, this);
@@ -13,7 +13,7 @@ Realtime::Realtime(const ConnectionConfig &config, QObject *parent)
     QObject::connect(m_webSocket, &QWebSocket::errorOccurred, this, &Realtime::onErrorOccurred);
 }
 
-void Realtime::connect(const QStringList &channels) {
+void Realtime::connectToChannels(const QStringList &channels) {
     QString endpoint = m_config.endpoint;
     if (endpoint.startsWith("https://")) endpoint.replace("https://", "wss://");
     else if (endpoint.startsWith("http://")) endpoint.replace("http://", "ws://");
@@ -23,7 +23,7 @@ void Realtime::connect(const QStringList &channels) {
     m_webSocket->open(QUrl(urlStr));
 }
 
-void Realtime::disconnect() {
+void Realtime::disconnectFromServer() {
     m_webSocket->close();
 }
 
