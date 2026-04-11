@@ -26,20 +26,19 @@ set(TEST_FILES
     tst_garbagecollector.cpp
     tst_realtime.cpp
     tst_messageprocessor.cpp
+    tst_messagequeryservice.cpp
+    tst_membershipservice.cpp
     tst_appcommserver.cpp
-    # tst_appcommclient.cpp
+    tst_appcommclient.cpp
 )
-
-file(GLOB APPCOMM_SOURCES ../appcomm/*.cpp)
-file(GLOB APPCOMM_HEADERS ../appcomm/*.h)
 
 foreach(TEST_SOURCE ${TEST_FILES})
     get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
-    add_executable(${TEST_NAME} 
+    add_executable(${TEST_NAME}
         ${TEST_SOURCE}
-        ${APPCOMM_SOURCES}
     )
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+    target_link_libraries(${TEST_NAME} PRIVATE appcomm)
     target_link_libraries(${TEST_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Test)
     target_link_libraries(${TEST_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Network)
     target_link_libraries(${TEST_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::WebSockets)
