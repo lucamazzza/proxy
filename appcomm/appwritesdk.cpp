@@ -18,32 +18,50 @@ using namespace appwritesdk;
 BaseSDK::BaseSDK(QNetworkAccessManager *mgr, QObject *parent)
     : QObject(parent), m_network(mgr)
 {
-    if (!m_network->cookieJar()) {
+    if (m_network == nullptr) {
+        m_network = new QNetworkAccessManager(this);
+    }
+
+    if (m_network->cookieJar() == nullptr) {
         m_network->setCookieJar(new QNetworkCookieJar(m_network));
     }
 }
 
-void BaseSDK::onResponseFinished() {
+void BaseSDK::onResponseFinished()
+{
     QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
-    if (!reply) return;
-    reply->deleteLater();
+    if (!reply) {
+        return;
+    }
+
+    const auto type = static_cast<appwritesdk::RequestType>(
+        reply->property("requestType").toInt()
+        );
+
     if (reply->error() == QNetworkReply::NoError) {
-        QByteArray data = reply->readAll();
-        QJsonDocument doc = QJsonDocument::fromJson(data);
+        const QByteArray data = reply->readAll();
+        const QJsonDocument doc = QJsonDocument::fromJson(data);
 
         if (doc.isObject()) {
-            emit requestSuccess(doc.object());
+            emit requestSuccess(type, doc.object());
         } else if (doc.isArray()) {
             QJsonObject wrapper;
             wrapper["documents"] = doc.array();
-            emit requestSuccess(wrapper);
+            emit requestSuccess(type, wrapper);
+        } else {
+            QJsonObject emptyObject;
+            emit requestSuccess(type, emptyObject);
         }
     } else {
         parseErrorResponse(reply);
     }
+
+    reply->deleteLater();
 }
 
 void BaseSDK::parseErrorResponse(QNetworkReply *reply) {
+    const auto type = static_cast<appwritesdk::RequestType>(
+        reply->property("requestType").toInt());
     int httpCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     QByteArray data = reply->readAll();
     QJsonDocument doc = QJsonDocument::fromJson(data);
@@ -58,7 +76,17 @@ void BaseSDK::parseErrorResponse(QNetworkReply *reply) {
     if (errorMessage.isEmpty()) {
         errorMessage = reply->errorString();
     }
-    emit requestError(httpCode, errorMessage);
+    emit requestError(type, httpCode, errorMessage);
+}
+
+void BaseSDK::trackReply(QNetworkReply *reply, appwritesdk::RequestType type)
+{
+    if (!reply) {
+        return;
+    }
+
+    reply->setProperty("requestType", static_cast<int>(type));
+    connect(reply, &QNetworkReply::finished, this, &BaseSDK::onResponseFinished);
 }
 
 QNetworkRequest BaseSDK::createBaseRequest(const ConnectionConfig &config,
@@ -77,10 +105,20 @@ QNetworkRequest BaseSDK::createBaseRequest(const ConnectionConfig &config,
     return req;
 }
 
+Client::Client(QObject *parent)
+    : BaseSDK(nullptr, parent)
+{
+}
+
+Server::Server(QObject *parent)
+    : BaseSDK(nullptr, parent)
+{
+}
+
 void Client::createAnonymousSession(const ConnectionConfig &config) {
     QNetworkRequest req = createBaseRequest(config, "account/sessions/anonymous", APPCOMM_USER);
     QNetworkReply *reply = m_network->post(req, QByteArray());
-    connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
+    trackReply(reply, RequestType::CreateAnonymousSession);
 }
 
 void Client::createEmailSession(const ConnectionConfig &config,
@@ -91,26 +129,26 @@ void Client::createEmailSession(const ConnectionConfig &config,
     body["email"] = email;
     body["password"] = password;
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
+    trackReply(reply, RequestType::CreateEmailSession);
 }
 
 void Client::deleteSession(const ConnectionConfig &config, const QString &sessionId) {
     QString path = QString("account/sessions/%1").arg(sessionId);
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_USER);
     QNetworkReply *reply = m_network->deleteResource(req);
-    connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
+    trackReply(reply, RequestType::DeleteSession);
 }
 
 void Client::deleteSessions(const ConnectionConfig &config) {
     QNetworkRequest req = createBaseRequest(config, "account/sessions", APPCOMM_USER);
     QNetworkReply *reply = m_network->deleteResource(req);
-    connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
+    trackReply(reply, RequestType::DeleteSessions);
 }
 
 void Client::getAccount(const ConnectionConfig &config) {
     QNetworkRequest req = createBaseRequest(config, "account", APPCOMM_USER);
     QNetworkReply *reply = m_network->get(req);
-    connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
+    trackReply(reply, RequestType::GetAccount);
 }
 
 void Client::createDocument(const ConnectionConfig &config, const QJsonObject &data) {
@@ -121,7 +159,7 @@ void Client::createDocument(const ConnectionConfig &config, const QJsonObject &d
     body["documentId"] = "unique()";
     body["data"] = data;
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
+    trackReply(reply, RequestType::CreateDocument);
 }
 
 void Client::listDocuments(const ConnectionConfig &config, const QJsonArray &queries) {
@@ -137,7 +175,7 @@ void Client::listDocuments(const ConnectionConfig &config, const QJsonArray &que
     }
     QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint + "/", ""), APPCOMM_USER);
     QNetworkReply *reply = m_network->get(req);
-    connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
+    trackReply(reply, RequestType::ListDocuments);
 }
 
 void Client::getDocument(const ConnectionConfig &config, const QString &documentId) {
@@ -145,7 +183,7 @@ void Client::getDocument(const ConnectionConfig &config, const QString &document
                        .arg(config.dbId, config.collectionId, documentId);
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_USER);
     QNetworkReply *reply = m_network->get(req);
-    connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
+    trackReply(reply, RequestType::GetDocument);
 }
 
 void Client::updateDocument(const ConnectionConfig &config,
@@ -157,7 +195,7 @@ void Client::updateDocument(const ConnectionConfig &config,
     QJsonObject body;
     body["data"] = data;
     QNetworkReply *reply = m_network->put(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
+    trackReply(reply, RequestType::UpdateDocument);
 }
 
 void Client::deleteDocument(const ConnectionConfig &config, const QString &documentId) {
@@ -165,7 +203,7 @@ void Client::deleteDocument(const ConnectionConfig &config, const QString &docum
                        .arg(config.dbId, config.collectionId, documentId);
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_USER);
     QNetworkReply *reply = m_network->deleteResource(req);
-    connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
+    trackReply(reply, RequestType::DeleteDocument);
 }
 
 void Server::createDatabase(const ConnectionConfig &config, const QString &name) {
@@ -174,14 +212,14 @@ void Server::createDatabase(const ConnectionConfig &config, const QString &name)
     body["databaseId"] = config.dbId;
     body["name"] = name;
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::CreateDatabase);
 }
 
 void Server::deleteDatabase(const ConnectionConfig &config) {
     QString path = QString("databases/%1").arg(config.dbId);
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->deleteResource(req);
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::DeleteDatabase);
 }
 
 void Server::createCollection(const ConnectionConfig &config,
@@ -198,7 +236,7 @@ void Server::createCollection(const ConnectionConfig &config,
         body["permissions"] = QJsonArray{"read(\"any\")", "create(\"any\")"};
     }
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::CreateCollection);
 }
 
 void Server::deleteCollection(const ConnectionConfig &config) {
@@ -206,7 +244,7 @@ void Server::deleteCollection(const ConnectionConfig &config) {
                        .arg(config.dbId, config.collectionId);
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->deleteResource(req);
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::DeleteCollection);
 }
 
 void Server::updateCollectionPermissions(const ConnectionConfig &config,
@@ -217,7 +255,7 @@ void Server::updateCollectionPermissions(const ConnectionConfig &config,
     QJsonObject body;
     body["permissions"] = permissions;
     QNetworkReply *reply = m_network->sendCustomRequest(req, "PATCH", QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::UpdateCollectionPermissions);
 }
 
 void Server::createAttribute(const ConnectionConfig &config,
@@ -235,7 +273,7 @@ void Server::createAttribute(const ConnectionConfig &config,
         body[it.key()] = it.value();
     }
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::CreateAttribute);
 }
 
 void Server::createIndex(const ConnectionConfig &config,
@@ -254,7 +292,7 @@ void Server::createIndex(const ConnectionConfig &config,
     body["type"] = type;
     body["attributes"] = attrs;
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::CreateIndex);
 }
 
 void Server::createUser(const ConnectionConfig &config,
@@ -270,14 +308,14 @@ void Server::createUser(const ConnectionConfig &config,
         body["name"] = name;
     }
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::CreateUser);
 }
 
 void Server::deleteUser(const ConnectionConfig &config, const QString &userId) {
     QString path = QString("users/%1").arg(userId);
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->deleteResource(req);
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::DeleteUser);
 }
 
 void Server::listUsers(const ConnectionConfig &config, const QJsonArray &queries) {
@@ -291,7 +329,7 @@ void Server::listUsers(const ConnectionConfig &config, const QJsonArray &queries
     }
     QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint + "/", ""), APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->get(req);
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::ListUsers);
 }
 
 void Server::listDocuments(const ConnectionConfig &config, const QJsonArray &queries) {
@@ -308,7 +346,7 @@ void Server::listDocuments(const ConnectionConfig &config, const QJsonArray &que
     }
     QNetworkRequest req = createBaseRequest(config, url.toString().replace(config.endpoint, ""), APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->get(req);
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::ListDocuments);
 }
 
 void Server::createDocument(const ConnectionConfig &config, const QJsonObject &data) {
@@ -319,7 +357,7 @@ void Server::createDocument(const ConnectionConfig &config, const QJsonObject &d
     body["documentId"] = "unique()";
     body["data"] = data;
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::CreateDocument);
 }
 
 void Server::deleteDocument(const ConnectionConfig &config, const QString &documentId) {
@@ -329,5 +367,5 @@ void Server::deleteDocument(const ConnectionConfig &config, const QString &docum
                        .arg(documentId);
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QNetworkReply *reply = m_network->deleteResource(req);
-    connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
+    trackReply(reply, RequestType::DeleteDocument);
 }

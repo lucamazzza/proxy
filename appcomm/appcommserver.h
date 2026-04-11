@@ -10,6 +10,7 @@
 
 #include <QObject>
 
+#include "appwritesdk.h"
 #include "model.h"
 
 #define APPCOMM_ATTR_REQUIRED true
@@ -319,19 +320,19 @@ private slots:
      * @brief Handles successful server request responses
      * @param data Response data from the server
      */
-    void onServerRequestSuccess(const QJsonObject &data);
+    void onServerRequestSuccess(appwritesdk::RequestType type, const QJsonObject &data);
     
     /*!
      * @brief Handles server request errors
      * @param code Error code
      * @param message Error message
      */
-    void onServerRequestError(int code, const QString &message);
+    void onServerRequestError(appwritesdk::RequestType type, int code, const QString &message);
     
-    void onChannelDocumentsListed(const QJsonObject &data);
-    void onChannelDocumentDeleted(const QJsonObject &data);
-    void onMemberDocumentsListed(const QJsonObject &data);
-    void onMemberListingComplete(const QJsonObject &data);
+    void onChannelDocumentsListed(appwritesdk::RequestType type, const QJsonObject &data);
+    void onChannelDocumentDeleted(appwritesdk::RequestType type, const QJsonObject &data);
+    void onMemberDocumentsListed(appwritesdk::RequestType type, const QJsonObject &data);
+    void onMemberListingComplete(appwritesdk::RequestType type, const QJsonObject &data);
 
 private:
     /*!
