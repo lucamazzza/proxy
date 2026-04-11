@@ -84,9 +84,9 @@ void tst_appwritesdk::initTestCase()
     m_config.dbId = "test-db";
     m_config.collectionId = "test-collection";
     
-    m_network = new QNetworkAccessManager(this);
-    m_client = new appwritesdk::Client(m_network, this);
-    m_server = new appwritesdk::Server(m_network, this);
+    //m_network = new QNetworkAccessManager(this);
+    m_client = new appwritesdk::Client(this);
+    m_server = new appwritesdk::Server(this);
 }
 
 void tst_appwritesdk::cleanupTestCase()
@@ -135,7 +135,7 @@ void tst_appwritesdk::testCreateBaseRequestWithAdmin()
 
 void tst_appwritesdk::testClientConstruction()
 {
-    appwritesdk::Client client(m_network);
+    appwritesdk::Client client(this);
     QVERIFY(true);
 }
 
@@ -259,7 +259,7 @@ void tst_appwritesdk::testDeleteDocument()
 
 void tst_appwritesdk::testServerConstruction()
 {
-    appwritesdk::Server server(m_network);
+    appwritesdk::Server server(this);
     QVERIFY(true);
 }
 

@@ -51,7 +51,7 @@ void TestGarbageCollector::initTestCase() {
     m_config.dbId = "test-db";
     m_config.collectionId = "messages";
     
-    m_server = new Server(new QNetworkAccessManager(this), this);
+    m_server = new Server(this);
 }
 
 void TestGarbageCollector::cleanupTestCase() {

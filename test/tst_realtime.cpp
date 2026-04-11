@@ -89,7 +89,7 @@ void TestRealtime::testConnectBuildsCorrectUrl() {
     // Note: This will attempt to connect to real server, which will fail in tests
     // In a real scenario, you'd mock the QWebSocket
     // For now, just verify the method doesn't crash
-    realtime.connect(channels);
+    realtime.connectToChannels(channels);
     
     QVERIFY(true);
 }

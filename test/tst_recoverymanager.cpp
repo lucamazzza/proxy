@@ -17,12 +17,12 @@ class MockClient : public Client {
 public:
     using Client::Client;
     
-    void simulateSuccess(const QJsonObject &data) {
-        emit requestSuccess(data);
+    void simulateSuccess(appwritesdk::RequestType type, const QJsonObject &data) {
+        emit requestSuccess(type, data);
     }
-    
-    void simulateError(int code, const QString &message) {
-        emit requestError(code, message);
+
+    void simulateError(appwritesdk::RequestType type, int code, const QString &message) {
+        emit requestError(type, code, message);
     }
 };
 
@@ -81,8 +81,8 @@ void tst_recoverymanager::cleanupTestCase() {}
 
 void tst_recoverymanager::init()
 {
-    m_networkManager = new QNetworkAccessManager(this);
-    m_client = new MockClient(m_networkManager, this);
+    //m_networkManager = new QNetworkAccessManager(this);
+    m_client = new MockClient(this);
     m_cache = new RecentMessageCache(100, this);
     
     m_config.endpoint = "http://localhost/v1";
@@ -99,7 +99,7 @@ void tst_recoverymanager::cleanup()
     delete m_manager;
     delete m_cache;
     delete m_client;
-    delete m_networkManager;
+    //delete m_networkManager;
     
     m_manager = nullptr;
     m_cache = nullptr;
@@ -223,7 +223,7 @@ void tst_recoverymanager::requestSingleCacheMiss()
     serverResponse["payload"] = QJsonObject{{"text", "From server"}};
     serverResponse["isEcho"] = false;
     
-    m_client->simulateSuccess(serverResponse);
+    m_client->simulateSuccess(appwritesdk::RequestType::GetDocument, serverResponse);
     
     QCOMPARE(spy.count(), 1);
     QJsonArray messages = spy.at(0).at(0).toJsonArray();
@@ -269,7 +269,7 @@ void tst_recoverymanager::requestFullResync()
     }
     serverResponse["documents"] = documents;
     
-    m_client->simulateSuccess(serverResponse);
+    m_client->simulateSuccess(appwritesdk::RequestType::ListDocuments, serverResponse);
     
     QCOMPARE(recoverSpy.count(), 1);
     QCOMPARE(resyncSpy.count(), 1);
@@ -315,7 +315,7 @@ void tst_recoverymanager::serverError()
     
     m_manager->request("msg1");
     
-    m_client->simulateError(404, "Document not found");
+    m_client->simulateError(appwritesdk::RequestType::GetDocument, 404, "Document not found");
     
     QCOMPARE(errorSpy.count(), 1);
     QCOMPARE(errorSpy.at(0).at(0).toInt(), 404);
@@ -348,7 +348,7 @@ void tst_recoverymanager::stateAlignedAfterRequestFrom()
     documents.append(doc1);
     serverResponse["documents"] = documents;
     
-    m_client->simulateSuccess(serverResponse);
+    m_client->simulateSuccess(appwritesdk::RequestType::ListDocuments, serverResponse);
     
     QCOMPARE(spy.count(), 1);
     QVERIFY(m_cache->contains("msg2"));
@@ -368,7 +368,7 @@ void tst_recoverymanager::stateAlignedAfterRequest()
     serverResponse["payload"] = QJsonObject{{"text", "Retrieved message"}};
     serverResponse["isEcho"] = false;
     
-    m_client->simulateSuccess(serverResponse);
+    m_client->simulateSuccess(appwritesdk::RequestType::GetDocument, serverResponse);
     
     QVERIFY(m_cache->contains("msg1"));
     model::Message msg = m_cache->getMessage("msg1");
@@ -401,7 +401,7 @@ void tst_recoverymanager::stateAlignedAfterFullResync()
     }
     serverResponse["documents"] = documents;
     
-    m_client->simulateSuccess(serverResponse);
+    m_client->simulateSuccess(appwritesdk::RequestType::ListDocuments, serverResponse);
     
     QVERIFY(!m_cache->contains("old1"));
     QVERIFY(m_cache->contains("new0"));
@@ -436,7 +436,7 @@ void tst_recoverymanager::requestFromLastMessage()
     QJsonArray documents;
     serverResponse["documents"] = documents;
     
-    m_client->simulateSuccess(serverResponse);
+    m_client->simulateSuccess(appwritesdk::RequestType::ListDocuments, serverResponse);
     
     QCOMPARE(spy.count(), 1);
     QJsonArray messages = spy.at(0).at(0).toJsonArray();
@@ -480,7 +480,7 @@ void tst_recoverymanager::multipleSequentialRequests()
     response1["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     response1["payload"] = QJsonObject();
     response1["isEcho"] = false;
-    m_client->simulateSuccess(response1);
+    m_client->simulateSuccess(appwritesdk::RequestType::GetDocument, response1);
     
     m_manager->request("msg2");
     QJsonObject response2;
@@ -490,7 +490,7 @@ void tst_recoverymanager::multipleSequentialRequests()
     response2["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     response2["payload"] = QJsonObject();
     response2["isEcho"] = false;
-    m_client->simulateSuccess(response2);
+    m_client->simulateSuccess(appwritesdk::RequestType::GetDocument, response2);
     
     QCOMPARE(spy.count(), 2);
     QVERIFY(m_cache->contains("msg1"));
