@@ -9,6 +9,7 @@
 
 #include <QtTest>
 #include <QSignalSpy>
+#include <QNetworkAccessManager>
 #include "../appcomm/garbagecollector.h"
 #include "../appcomm/appwritesdk.h"
 #include "../appcomm/model.h"
@@ -39,7 +40,8 @@ private slots:
     void testCleanupErrorSignal();
 
 private:
-    Server *m_server;
+    QNetworkAccessManager *m_network = nullptr;
+    Server *m_server = nullptr;
     ConnectionConfig m_config;
 };
 
@@ -51,7 +53,8 @@ void TestGarbageCollector::initTestCase() {
     m_config.dbId = "test-db";
     m_config.collectionId = "messages";
     
-    m_server = new Server(this);
+    m_network = new QNetworkAccessManager(this);
+    m_server = new Server(m_network, this);
 }
 
 void TestGarbageCollector::cleanupTestCase() {

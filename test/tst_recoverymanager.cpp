@@ -81,8 +81,8 @@ void tst_recoverymanager::cleanupTestCase() {}
 
 void tst_recoverymanager::init()
 {
-    //m_networkManager = new QNetworkAccessManager(this);
-    m_client = new MockClient(this);
+    m_networkManager = new QNetworkAccessManager(this);
+    m_client = new MockClient(m_networkManager, this);
     m_cache = new RecentMessageCache(100, this);
     
     m_config.endpoint = "http://localhost/v1";
@@ -99,7 +99,7 @@ void tst_recoverymanager::cleanup()
     delete m_manager;
     delete m_cache;
     delete m_client;
-    //delete m_networkManager;
+    delete m_networkManager;
     
     m_manager = nullptr;
     m_cache = nullptr;
