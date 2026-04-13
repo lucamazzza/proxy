@@ -1,3 +1,10 @@
+/*!
+ * @file garbagecollector.cpp
+ * @brief Implementation of stale message cleanup routines.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "garbagecollector.h"
 
 using namespace appcomm;

@@ -1,3 +1,10 @@
+/*!
+ * @file realtime.cpp
+ * @brief Implementation of Appwrite realtime websocket integration.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "realtime.h"
 
 using namespace appcomm;

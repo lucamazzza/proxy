@@ -1,3 +1,10 @@
+/*!
+ * @file ratelimiter.cpp
+ * @brief Implementation of token-bucket style client rate limiting.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "ratelimiter.h"
 
 using namespace appcomm::client;

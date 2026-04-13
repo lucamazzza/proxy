@@ -1,3 +1,10 @@
+/*!
+ * @file appcommserver.cpp
+ * @brief Implementation of server-side channel, user, message, and membership flows.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "appcommserver.h"
 #include "appwritesdk.h"
 #include "membershipservice.h"

@@ -1,3 +1,10 @@
+/*!
+ * @file messagequeryservice.cpp
+ * @brief Implementation of Appwrite query builder helpers.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "messagequeryservice.h"
 
 namespace appcomm {

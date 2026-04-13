@@ -1,3 +1,10 @@
+/*!
+ * @file appcommclient.h
+ * @brief Public facade for client-side AppComm communication operations.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #ifndef APPCOMMCLIENT_H
 #define APPCOMMCLIENT_H
 

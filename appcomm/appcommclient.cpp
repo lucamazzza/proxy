@@ -1,3 +1,10 @@
+/*!
+ * @file appcommclient.cpp
+ * @brief Implementation of the high-level AppComm client facade.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "appcommclient.h"
 
 #include "recentmessagecache.h"
@@ -18,6 +25,11 @@ using namespace appcomm::client;
 
 namespace {
 
+/*!
+ * @brief Checks whether a JSON response contains session information.
+ * @param data Response payload.
+ * @return True when the payload contains non-empty `$id` and `userId` fields.
+ */
 bool isSessionResponse(const QJsonObject &data) {
     const QJsonValue sessionIdValue = data.value("$id");
     const QJsonValue userIdValue = data.value("userId");
@@ -27,6 +39,11 @@ bool isSessionResponse(const QJsonObject &data) {
         && !userIdValue.toString().trimmed().isEmpty();
 }
 
+/*!
+ * @brief Extracts a realtime event payload across supported envelope shapes.
+ * @param event Raw realtime event object.
+ * @return Message payload object, or an empty object when unavailable.
+ */
 QJsonObject extractRealtimePayload(const QJsonObject &event) {
     QJsonObject envelope = event;
     const QJsonValue dataValue = event.value("data");

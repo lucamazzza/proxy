@@ -1,3 +1,10 @@
+/*!
+ * @file membershipservice.cpp
+ * @brief Implementation of membership parsing and normalization helpers.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "membershipservice.h"
 
 using namespace appcomm::server;

@@ -1,3 +1,10 @@
+/*!
+ * @file messageprocessor.cpp
+ * @brief Implementation of client-side message processing rules.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "messageprocessor.h"
 
 namespace appcomm {

@@ -1,3 +1,10 @@
+/*!
+ * @file recoverymanager.cpp
+ * @brief Implementation of message recovery and resynchronization logic.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "recoverymanager.h"
 #include <QJsonArray>
 #include <QJsonDocument>

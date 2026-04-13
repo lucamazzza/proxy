@@ -1,3 +1,10 @@
+/*!
+ * @file messageprocessor.h
+ * @brief Message sequencing and recovery trigger logic for the client.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #ifndef MESSAGEPROCESSOR_H
 #define MESSAGEPROCESSOR_H
 

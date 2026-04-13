@@ -1,3 +1,10 @@
+/*!
+ * @file recentmessagecache.cpp
+ * @brief Implementation of bounded in-memory recent message cache behavior.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "recentmessagecache.h"
 
 using namespace appcomm;

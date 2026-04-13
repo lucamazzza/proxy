@@ -1,3 +1,10 @@
+/*!
+ * @file errormodel.cpp
+ * @brief Implementation of AppComm error model helpers.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "errormodel.h"
 
 using namespace appcomm::errormodel;

@@ -1,3 +1,10 @@
+/*!
+ * @file model.cpp
+ * @brief Serialization, deserialization, and validation for AppComm models.
+ *
+ * @copyright Copyright (c) 2026 SUPSI
+ */
+
 #include "model.h"
 
 using namespace appcomm::model;
