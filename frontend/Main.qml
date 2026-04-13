@@ -1,8 +1,27 @@
 import QtQuick
+import QtQuick.Controls
 
-Window {
-    width: 640
-    height: 480
+ApplicationWindow {
+    width: 1000
+    height: 700
     visible: true
-    title: qsTr("Hello World")
+    title: "Appcomm Demo"
+
+    StackView {
+        id: stackView
+        anchors.fill: parent
+        initialItem: LoginChoicePage {
+            onEmailLoginRequested: {
+                stackView.push("EmailLoginPage.qml")
+            }
+        }
+    }
+
+    Connections {
+        target: controller
+
+        function onLoginSucceeded() {
+            stackView.push("ChatPage.qml")
+        }
+    }
 }
