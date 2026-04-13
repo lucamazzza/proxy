@@ -5,7 +5,7 @@
 #include <QString>
 
 #include "../appcomm/appcommclient.h"
-#include "model/MessageListModel.h"
+#include "messagelistmodel.h"
 
 class DemoController : public QObject
 {

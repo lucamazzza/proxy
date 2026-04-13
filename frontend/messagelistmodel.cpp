@@ -1,4 +1,4 @@
-#include "MessageListModel.h"
+#include "messagelistmodel.h"
 
 MessageListModel::MessageListModel(QObject *parent)
     : QAbstractListModel(parent)
