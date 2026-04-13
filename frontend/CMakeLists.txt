@@ -19,21 +19,21 @@ qt_policy(SET QTP0001 NEW)
 
 qt_add_executable(appfrontend
     main.cpp
-    controller/DemoController.cpp
-    controller/DemoController.h
-    model/MessageListModel.cpp
-    model/MessageListModel.h
+    democontroller.cpp
+    democontroller.h
+    messagelistmodel.cpp
+    messagelistmodel.h
 )
 
 qt_add_qml_module(appfrontend
     URI frontend
     VERSION 1.0
     QML_FILES
-        qml/Main.qml
-        qml/LoginChoicePage.qml
-        qml/ChatPage.qml
-        qml/MessageDelegate.qml
-        qml/EmailLoginPage.qml
+        Main.qml
+        LoginChoicePage.qml
+        ChatPage.qml
+        MessageDelegate.qml
+        EmailLoginPage.qml
 )
 
 set_target_properties(appfrontend PROPERTIES
