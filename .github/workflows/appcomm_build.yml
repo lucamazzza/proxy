@@ -34,11 +34,15 @@ jobs:
         run: |
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_TESTING=ON
+            -DBUILD_TESTING=ON
 
       - name: Build appcomm
         run: cmake --build build --parallel $(nproc)
 
       - name: Run tests
+        env:
+          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
         run: |
           ctest --test-dir build/test --output-on-failure

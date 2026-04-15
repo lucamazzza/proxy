@@ -160,6 +160,17 @@ Example:
 cmake .. -DBUILD_FRONTEND=OFF -DBUILD_BACKEND=ON -DBUILD_TESTING=ON
 ```
 
+### Appwrite SDK integration test
+
+`test/tst_appwritesdk.cpp` runs against a real Appwrite instance and requires:
+
+- `APPWRITE_ENDPOINT`
+- `APPWRITE_PROJECT_ID`
+- `APPWRITE_API_KEY`
+
+For GitHub Actions, define repository secrets with the same names.  
+If these variables are missing, the integration suite is skipped.
+
 ## Integration with Appwrite
 
 ### Appwrite Setup

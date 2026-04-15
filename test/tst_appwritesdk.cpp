@@ -1,438 +1,267 @@
-// TODO: implement Appwrite on-instance testing with a public one
-//       connection config (endpoint/api key) must be in secrets for pipeline testing
-
-#include <QTest>
-#include <QSignalSpy>
-#include <QNetworkAccessManager>
-#include <QJsonObject>
 #include <QJsonArray>
+#include <QJsonObject>
+#include <QNetworkAccessManager>
+#include <QSignalSpy>
+#include <QTimer>
+#include <QEventLoop>
+#include <QTest>
+#include <QUuid>
+#include <functional>
+
 #include "appwritesdk.h"
 
 class tst_appwritesdk : public QObject
 {
     Q_OBJECT
 
-public:
-    tst_appwritesdk();
-    ~tst_appwritesdk();
+private:
+    struct RequestResult {
+        bool ok = false;
+        QJsonObject data;
+        int code = 0;
+        QString message;
+    };
 
 private slots:
     void initTestCase();
     void cleanupTestCase();
-    
-    // ConnectionConfig tests
-    void testConnectionConfig();
-    
-    // BaseSDK tests
-    void testBaseSDKConstruction();
-    void testCreateBaseRequest();
-    void testCreateBaseRequestWithAdmin();
-    
-    // Client tests
-    void testClientConstruction();
-    void testCreateAnonymousSession();
-    void testCreateEmailSession();
-    void testDeleteSession();
-    void testDeleteSessions();
-    void testGetAccount();
-    void testCreateDocument();
-    void testListDocuments();
-    void testListDocumentsWithQueries();
-    void testGetDocument();
-    void testUpdateDocument();
-    void testDeleteDocument();
-    
-    // Server tests
-    void testServerConstruction();
-    void testCreateDatabase();
-    void testDeleteDatabase();
-    void testCreateCollection();
-    void testCreateCollectionWithPermissions();
-    void testDeleteCollection();
-    void testUpdateCollectionPermissions();
-    void testCreateAttributeString();
-    void testCreateAttributeInteger();
-    void testCreateAttributeBoolean();
-    void testCreateAttributeDatetime();
-    void testCreateIndex();
-    void testCreateUser();
-    void testCreateUserWithName();
-    void testDeleteUser();
-    void testListUsers();
-    void testListUsersWithQueries();
-    
+    void testIncrementalProvisioningFlow();
+
 private:
-    QNetworkAccessManager *m_network;
-    appwritesdk::Client *m_client;
-    appwritesdk::Server *m_server;
+    RequestResult waitForServerRequest(const std::function<void()> &request, int timeoutMs = 30000);
+    RequestResult waitForServerRequestWithRetry(const std::function<void()> &request,
+                                                int attempts,
+                                                int retryDelayMs,
+                                                int timeoutMs = 30000);
+    QString formatFailure(const QString &operation, const RequestResult &result) const;
+    void runCleanupRequest(const std::function<void()> &request);
+
+    QNetworkAccessManager *m_network = nullptr;
+    appwritesdk::Server *m_server = nullptr;
     appwritesdk::ConnectionConfig m_config;
+    QString m_suffix;
+    QString m_userId;
+    QString m_documentId;
+    bool m_databaseCreated = false;
+    bool m_collectionCreated = false;
+    bool m_userCreated = false;
 };
-
-tst_appwritesdk::tst_appwritesdk()
-    : m_network(nullptr)
-    , m_client(nullptr)
-    , m_server(nullptr)
-{
-}
-
-tst_appwritesdk::~tst_appwritesdk()
-{
-}
 
 void tst_appwritesdk::initTestCase()
 {
-    m_config.endpoint = "http://localhost/v1";
-    m_config.projectId = "test-project";
-    m_config.apiKey = "test-api-key";
-    m_config.dbId = "test-db";
-    m_config.collectionId = "test-collection";
-    
+    const QString endpoint = qEnvironmentVariable("APPWRITE_ENDPOINT").trimmed();
+    const QString projectId = qEnvironmentVariable("APPWRITE_PROJECT_ID").trimmed();
+    const QString apiKey = qEnvironmentVariable("APPWRITE_API_KEY").trimmed();
+
+    if (endpoint.isEmpty() || projectId.isEmpty() || apiKey.isEmpty()) {
+        QSKIP("Set APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, and APPWRITE_API_KEY to run Appwrite integration tests.");
+    }
+
+    m_suffix = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    m_suffix.remove('-');
+    m_suffix = m_suffix.left(12);
+
+    m_config.endpoint = endpoint;
+    m_config.projectId = projectId;
+    m_config.apiKey = apiKey;
+    m_config.dbId = QString("sdkdb_%1").arg(m_suffix);
+    m_config.collectionId = QString("sdkcol_%1").arg(m_suffix);
+
     m_network = new QNetworkAccessManager(this);
-    m_client = new appwritesdk::Client(m_network, this);
     m_server = new appwritesdk::Server(m_network, this);
+    QVERIFY2(m_network != nullptr, "Failed to allocate QNetworkAccessManager.");
+    QVERIFY2(m_server != nullptr, "Failed to allocate appwritesdk::Server.");
 }
 
 void tst_appwritesdk::cleanupTestCase()
 {
+    if (!m_server) {
+        return;
+    }
+
+    if (!m_documentId.isEmpty()) {
+        runCleanupRequest([this]() { m_server->deleteDocument(m_config, m_documentId); });
+    }
+
+    if (m_collectionCreated) {
+        runCleanupRequest([this]() { m_server->deleteCollection(m_config); });
+    }
+
+    if (m_databaseCreated) {
+        runCleanupRequest([this]() { m_server->deleteDatabase(m_config); });
+    }
+
+    if (m_userCreated && !m_userId.isEmpty()) {
+        runCleanupRequest([this]() { m_server->deleteUser(m_config, m_userId); });
+    }
 }
 
-// ConnectionConfig Tests
-
-void tst_appwritesdk::testConnectionConfig()
+void tst_appwritesdk::testIncrementalProvisioningFlow()
 {
-    appwritesdk::ConnectionConfig config;
-    config.endpoint = "http://test.com/v1";
-    config.projectId = "proj123";
-    config.apiKey = "key456";
-    config.dbId = "db789";
-    config.collectionId = "coll012";
-    
-    QCOMPARE(config.endpoint, QString("http://test.com/v1"));
-    QCOMPARE(config.projectId, QString("proj123"));
-    QCOMPARE(config.apiKey, QString("key456"));
-    QCOMPARE(config.dbId, QString("db789"));
-    QCOMPARE(config.collectionId, QString("coll012"));
+    QVERIFY2(m_network != nullptr, "Network manager is null.");
+    QVERIFY2(m_server != nullptr, "Server SDK is null.");
+
+    const QString userEmail = QString("sdk.%1@example.com").arg(m_suffix);
+    const QString userPassword = QString("ProxySdk%1!").arg(m_suffix.left(6));
+
+    const RequestResult userResult = waitForServerRequest([&]() {
+        m_server->createUser(m_config, userEmail, userPassword, "SDK integration user");
+    });
+    QVERIFY2(userResult.ok, qPrintable(formatFailure("createUser", userResult)));
+    m_userId = userResult.data.value("$id").toString();
+    QVERIFY2(!m_userId.isEmpty(), "createUser response did not include user id.");
+    m_userCreated = true;
+
+    QJsonArray userQueries;
+    userQueries.append(QString("search(\"%1\")").arg(userEmail));
+    const RequestResult listUsersResult = waitForServerRequest([&]() {
+        m_server->listUsers(m_config, userQueries);
+    });
+    QVERIFY2(listUsersResult.ok, qPrintable(formatFailure("listUsers", listUsersResult)));
+
+    const QJsonArray users = listUsersResult.data.value("users").toArray();
+    bool userFound = false;
+    for (const QJsonValue &value : users) {
+        if (value.toObject().value("$id").toString() == m_userId) {
+            userFound = true;
+            break;
+        }
+    }
+    QVERIFY2(userFound, "The created user was not found in listUsers response.");
+
+    const RequestResult dbResult = waitForServerRequest([&]() {
+        m_server->createDatabase(m_config, QString("SDK Integration %1").arg(m_suffix));
+    });
+    QVERIFY2(dbResult.ok, qPrintable(formatFailure("createDatabase", dbResult)));
+    m_databaseCreated = true;
+
+    const RequestResult collectionResult = waitForServerRequest([&]() {
+        m_server->createCollection(m_config, QString("SDK Collection %1").arg(m_suffix));
+    });
+    QVERIFY2(collectionResult.ok, qPrintable(formatFailure("createCollection", collectionResult)));
+    m_collectionCreated = true;
+
+    QJsonObject stringOptions;
+    stringOptions["size"] = 255;
+    const RequestResult stringAttributeResult = waitForServerRequest([&]() {
+        m_server->createAttribute(m_config, "string", "message", true, stringOptions);
+    });
+    QVERIFY2(stringAttributeResult.ok, qPrintable(formatFailure("createAttribute(message)", stringAttributeResult)));
+
+    QJsonObject integerOptions;
+    integerOptions["min"] = 0;
+    integerOptions["max"] = 1000000;
+    const RequestResult integerAttributeResult = waitForServerRequest([&]() {
+        m_server->createAttribute(m_config, "integer", "sequence", true, integerOptions);
+    });
+    QVERIFY2(integerAttributeResult.ok, qPrintable(formatFailure("createAttribute(sequence)", integerAttributeResult)));
+
+    const QJsonObject documentData {
+        {"message", "hello from integration test"},
+        {"sequence", 1}
+    };
+    const RequestResult documentResult = waitForServerRequestWithRetry(
+        [&]() { m_server->createDocument(m_config, documentData); }, 20, 1000, 15000);
+    QVERIFY2(documentResult.ok, qPrintable(formatFailure("createDocument", documentResult)));
+    m_documentId = documentResult.data.value("$id").toString();
+    QVERIFY2(!m_documentId.isEmpty(), "createDocument response did not include document id.");
+
+    const RequestResult listDocumentsResult = waitForServerRequest([&]() {
+        m_server->listDocuments(m_config);
+    });
+    QVERIFY2(listDocumentsResult.ok, qPrintable(formatFailure("listDocuments", listDocumentsResult)));
+
+    const QJsonArray documents = listDocumentsResult.data.value("documents").toArray();
+    bool documentFound = false;
+    for (const QJsonValue &value : documents) {
+        if (value.toObject().value("$id").toString() == m_documentId) {
+            documentFound = true;
+            break;
+        }
+    }
+    QVERIFY2(documentFound, "The created document was not found in listDocuments response.");
+
+    const QString indexKey = QString("idx_msg_seq_%1").arg(m_suffix.left(6));
+    const RequestResult indexResult = waitForServerRequest([&]() {
+        m_server->createIndex(m_config, indexKey, "key", QStringList {"message", "sequence"});
+    });
+    QVERIFY2(indexResult.ok, qPrintable(formatFailure("createIndex", indexResult)));
+    QVERIFY2(indexResult.data.contains("key") || indexResult.data.contains("$id"),
+             "createIndex response did not include index metadata.");
 }
 
-// BaseSDK Tests
-
-void tst_appwritesdk::testBaseSDKConstruction()
+tst_appwritesdk::RequestResult tst_appwritesdk::waitForServerRequest(const std::function<void()> &request,
+                                                                      int timeoutMs)
 {
-    QVERIFY(m_client != nullptr);
-    QVERIFY(m_server != nullptr);
+    if (!m_server) {
+        RequestResult result;
+        result.message = "Server SDK instance is null.";
+        return result;
+    }
+
+    RequestResult result;
+    QEventLoop loop;
+    QTimer timer;
+    timer.setSingleShot(true);
+
+    QMetaObject::Connection successConn = connect(
+        m_server, &appwritesdk::Server::requestSuccess, &loop, [&](const QJsonObject &data) {
+            result.ok = true;
+            result.data = data;
+            loop.quit();
+        });
+    QMetaObject::Connection errorConn = connect(
+        m_server, &appwritesdk::Server::requestError, &loop, [&](int code, const QString &message) {
+            result.code = code;
+            result.message = message;
+            loop.quit();
+        });
+    connect(&timer, &QTimer::timeout, &loop, [&]() {
+        result.message = QString("Timed out after %1 ms").arg(timeoutMs);
+        loop.quit();
+    });
+
+    request();
+    timer.start(timeoutMs);
+    loop.exec();
+
+    disconnect(successConn);
+    disconnect(errorConn);
+    return result;
 }
 
-void tst_appwritesdk::testCreateBaseRequest()
+tst_appwritesdk::RequestResult tst_appwritesdk::waitForServerRequestWithRetry(
+    const std::function<void()> &request,
+    int attempts,
+    int retryDelayMs,
+    int timeoutMs)
 {
-    QSKIP("Requires exposing request internals or HTTP request interception to assert base request construction.");
+    RequestResult lastResult;
+    for (int attempt = 0; attempt < attempts; ++attempt) {
+        lastResult = waitForServerRequest(request, timeoutMs);
+        if (lastResult.ok) {
+            return lastResult;
+        }
+        if (attempt + 1 < attempts) {
+            QTest::qWait(retryDelayMs);
+        }
+    }
+    return lastResult;
 }
 
-void tst_appwritesdk::testCreateBaseRequestWithAdmin()
+QString tst_appwritesdk::formatFailure(const QString &operation, const RequestResult &result) const
 {
-    QSKIP("Requires exposing request internals or HTTP request interception to assert admin header behavior.");
+    return QString("%1 failed (%2): %3").arg(operation).arg(result.code).arg(result.message);
 }
 
-// Client Tests
-
-void tst_appwritesdk::testClientConstruction()
+void tst_appwritesdk::runCleanupRequest(const std::function<void()> &request)
 {
-    appwritesdk::Client client(m_network);
-    QVERIFY(true);
+    const RequestResult result = waitForServerRequest(request, 15000);
+    if (!result.ok) {
+        qWarning() << "Cleanup request failed:" << result.code << result.message;
+    }
 }
 
-void tst_appwritesdk::testCreateAnonymousSession()
-{
-    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
-    QSignalSpy errorSpy(m_client, &appwritesdk::Client::requestError);
-    
-    m_client->createAnonymousSession(m_config);
-    
-    QVERIFY(successSpy.isValid());
-    QVERIFY(errorSpy.isValid());
-}
-
-void tst_appwritesdk::testCreateEmailSession()
-{
-    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
-    QSignalSpy errorSpy(m_client, &appwritesdk::Client::requestError);
-    
-    m_client->createEmailSession(m_config, "test@example.com", "password123");
-    
-    QVERIFY(successSpy.isValid());
-    QVERIFY(errorSpy.isValid());
-}
-
-void tst_appwritesdk::testDeleteSession()
-{
-    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
-    
-    m_client->deleteSession(m_config, "session123");
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testDeleteSessions()
-{
-    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
-    
-    m_client->deleteSessions(m_config);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testGetAccount()
-{
-    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
-    
-    m_client->getAccount(m_config);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-// Client Tests
-
-void tst_appwritesdk::testCreateDocument()
-{
-    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
-    
-    QJsonObject data;
-    data["text"] = "Hello World";
-    data["channelId"] = "general";
-    
-    m_client->createDocument(m_config, data);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testListDocuments()
-{
-    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
-    
-    m_client->listDocuments(m_config);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testListDocumentsWithQueries()
-{
-    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
-    
-    QJsonArray queries;
-    queries.append("equal(\"channelId\",\"general\")");
-    queries.append("limit(50)");
-    
-    m_client->listDocuments(m_config, queries);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testGetDocument()
-{
-    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
-    
-    m_client->getDocument(m_config, "doc123");
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testUpdateDocument()
-{
-    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
-    
-    QJsonObject data;
-    data["text"] = "Updated text";
-    
-    m_client->updateDocument(m_config, "doc123", data);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testDeleteDocument()
-{
-    QSignalSpy successSpy(m_client, &appwritesdk::Client::requestSuccess);
-    
-    m_client->deleteDocument(m_config, "doc123");
-    
-    QVERIFY(successSpy.isValid());
-}
-
-// Server Tests
-
-void tst_appwritesdk::testServerConstruction()
-{
-    appwritesdk::Server server(m_network);
-    QVERIFY(true);
-}
-
-void tst_appwritesdk::testCreateDatabase()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    m_server->createDatabase(m_config, "TestDatabase");
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testDeleteDatabase()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    m_server->deleteDatabase(m_config);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testCreateCollection()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    m_server->createCollection(m_config, "Messages");
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testCreateCollectionWithPermissions()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    QJsonArray permissions;
-    permissions.append("read(\"any\")");
-    permissions.append("write(\"users\")");
-    
-    m_server->createCollection(m_config, "SecureMessages", permissions);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testDeleteCollection()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    m_server->deleteCollection(m_config);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testUpdateCollectionPermissions()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    QJsonArray permissions;
-    permissions.append("read(\"any\")");
-    permissions.append("create(\"users\")");
-    
-    m_server->updateCollectionPermissions(m_config, permissions);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testCreateAttributeString()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    QJsonObject options;
-    options["size"] = 255;
-    
-    m_server->createAttribute(m_config, "string", "channelId", true, options);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testCreateAttributeInteger()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    QJsonObject options;
-    options["min"] = 0;
-    options["max"] = 100;
-    
-    m_server->createAttribute(m_config, "integer", "priority", false, options);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testCreateAttributeBoolean()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    QJsonObject options;
-    options["default"] = false;
-    
-    m_server->createAttribute(m_config, "boolean", "isEcho", false, options);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testCreateAttributeDatetime()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    m_server->createAttribute(m_config, "datetime", "timestamp", true);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testCreateIndex()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    QStringList attributes;
-    attributes << "channelId" << "timestamp";
-    
-    m_server->createIndex(m_config, "channel_timestamp_idx", "key", attributes);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testCreateUser()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    m_server->createUser(m_config, "user@example.com", "password123");
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testCreateUserWithName()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    m_server->createUser(m_config, "user@example.com", "password123", "John Doe");
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testDeleteUser()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    m_server->deleteUser(m_config, "user123");
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testListUsers()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    m_server->listUsers(m_config);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-void tst_appwritesdk::testListUsersWithQueries()
-{
-    QSignalSpy successSpy(m_server, &appwritesdk::Server::requestSuccess);
-    
-    QJsonArray queries;
-    queries.append("limit(10)");
-    queries.append("search(\"email\", \"example.com\")");
-    
-    m_server->listUsers(m_config, queries);
-    
-    QVERIFY(successSpy.isValid());
-}
-
-QTEST_APPLESS_MAIN(tst_appwritesdk)
+QTEST_MAIN(tst_appwritesdk)
 
 #include "tst_appwritesdk.moc"
