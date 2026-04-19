@@ -26,6 +26,7 @@ void printUsage()
         << "  start                                 # start long-running backend service\n"
         << "  configure <endpoint> <projectId> <apiKey> <databaseId>\n"
         << "            [messagesCollection] [membersCollection] [channelsCollection] [sessionsCollection]\n"
+        << "            [--guest-access <true|false>]\n"
         << "  users list\n"
         << "  users add <email> <password> [name]\n"
         << "  users remove <userId>\n"
@@ -118,6 +119,71 @@ bool ensureNoOptions(const ParsedArguments &parsed, QString *errorMessage)
     return true;
 }
 
+bool parseBooleanOptionValue(const QString &value, bool *result, QString *errorMessage)
+{
+    if (!result) {
+        if (errorMessage) {
+            *errorMessage = "Internal error: boolean output pointer is null";
+        }
+        return false;
+    }
+    const QString normalized = value.trimmed().toLower();
+    if (normalized == "true" || normalized == "1" || normalized == "yes" || normalized == "on") {
+        *result = true;
+        return true;
+    }
+    if (normalized == "false" || normalized == "0" || normalized == "no" || normalized == "off") {
+        *result = false;
+        return true;
+    }
+    if (errorMessage) {
+        *errorMessage = QString("Invalid boolean value '%1'. Use true/false").arg(value);
+    }
+    return false;
+}
+
+bool parseConfigureOptions(const ParsedArguments &parsed, bool *guestAccessEnabled, QString *errorMessage)
+{
+    if (!guestAccessEnabled) {
+        if (errorMessage) {
+            *errorMessage = "Internal error: guest access output pointer is null";
+        }
+        return false;
+    }
+
+    bool value = false;
+    bool valueSet = false;
+    const auto parseGuestOption = [&](const QString &optionName) -> bool {
+        if (!parsed.options.contains(optionName)) {
+            return true;
+        }
+        if (valueSet) {
+            if (errorMessage) {
+                *errorMessage = "Specify only one of --guest-access or --guestAccess";
+            }
+            return false;
+        }
+        valueSet = true;
+        return parseBooleanOptionValue(parsed.options.value(optionName), &value, errorMessage);
+    };
+
+    if (!parseGuestOption("guest-access") || !parseGuestOption("guestAccess")) {
+        return false;
+    }
+
+    for (auto it = parsed.options.constBegin(); it != parsed.options.constEnd(); ++it) {
+        if (it.key() != "guest-access" && it.key() != "guestAccess") {
+            if (errorMessage) {
+                *errorMessage = QString("Unexpected option --%1 for configure command").arg(it.key());
+            }
+            return false;
+        }
+    }
+
+    *guestAccessEnabled = valueSet ? value : false;
+    return true;
+}
+
 QString joinPositionals(const QStringList &positionals, int startIndex)
 {
     if (startIndex >= positionals.size()) {
@@ -160,13 +226,14 @@ int main(int argc, char *argv[])
          || command == "config");
 
     if (isConfigureCommand) {
-        QString configureError;
-        if (!ensureNoOptions(parsed, &configureError)) {
-            printError(configureError);
+        bool guestAccessEnabled = false;
+        QString configureOptionsError;
+        if (!parseConfigureOptions(parsed, &guestAccessEnabled, &configureOptionsError)) {
+            printError(configureOptionsError);
             return 1;
         }
         if (parsed.positionals.size() < 4 || parsed.positionals.size() > 8) {
-            printError("Usage: backend configure <endpoint> <projectId> <apiKey> <databaseId> [messagesCollection] [membersCollection] [channelsCollection] [sessionsCollection]");
+            printError("Usage: backend configure <endpoint> <projectId> <apiKey> <databaseId> [messagesCollection] [membersCollection] [channelsCollection] [sessionsCollection] [--guest-access <true|false>]");
             return 1;
         }
 
@@ -175,6 +242,7 @@ int main(int argc, char *argv[])
         config.projectId = parsed.positionals.at(1).trimmed();
         config.apiKey = parsed.positionals.at(2).trimmed();
         config.databaseId = parsed.positionals.at(3).trimmed();
+        config.guestAccessEnabled = guestAccessEnabled;
 
         if (parsed.positionals.size() >= 5) {
             config.messagesCollectionId = parsed.positionals.at(4).trimmed();
@@ -220,6 +288,7 @@ int main(int argc, char *argv[])
         output["databaseId"] = finalConfig.databaseId;
         output["requestedDatabaseId"] = requestedDatabaseId;
         output["usedExistingDatabase"] = (finalConfig.databaseId != requestedDatabaseId);
+        output["guestAccessEnabled"] = finalConfig.guestAccessEnabled;
         printJsonObject(output);
         return 0;
     }

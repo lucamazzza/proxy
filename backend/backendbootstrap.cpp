@@ -16,6 +16,23 @@ void waitMilliseconds(int milliseconds) {
     loop.exec();
 }
 
+QJsonArray collectionPermissions(bool guestAccessEnabled) {
+    if (guestAccessEnabled) {
+        return {
+            "read(\"any\")",
+            "create(\"any\")",
+            "update(\"any\")",
+            "delete(\"any\")"
+        };
+    }
+    return {
+        "read(\"users\")",
+        "create(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+    };
+}
+
 }
 
 BackendBootstrapper::BackendBootstrapper(const BackendConfig &config,
@@ -226,12 +243,7 @@ bool BackendBootstrapper::bootstrap(QString *errorMessage) {
             return false;
         }
     }
-    const QJsonArray collectionPermissions = {
-        "read(\"any\")",
-        "create(\"any\")",
-        "update(\"any\")",
-        "delete(\"any\")"
-    };
+    const QJsonArray collectionPermissions = ::collectionPermissions(m_config.guestAccessEnabled);
     const QList<AttributeDef> messageAttributes = {
         {"string", "channelId", true, QJsonObject{{"size", 128}}},
         {"string", "senderId", true, QJsonObject{{"size", 128}}},

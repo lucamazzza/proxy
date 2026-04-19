@@ -11,6 +11,7 @@ struct BackendConfig {
     QString projectId;
     QString apiKey;
     QString databaseId;
+    bool guestAccessEnabled = false;
     QString messagesCollectionId = "messages";
     QString membersCollectionId = "members";
     QString channelsCollectionId = "channels";

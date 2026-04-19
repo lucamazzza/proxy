@@ -17,6 +17,24 @@ QString readString(const QJsonObject &obj, const QString &key, const QString &fa
     return value.toString();
 }
 
+bool readBool(const QJsonObject &obj, const QString &key, bool fallback = false) {
+    const QJsonValue value = obj.value(key);
+    if (value.isBool()) {
+        return value.toBool();
+    }
+    if (!value.isString()) {
+        return fallback;
+    }
+    const QString normalized = value.toString().trimmed().toLower();
+    if (normalized == "true" || normalized == "1" || normalized == "yes" || normalized == "on") {
+        return true;
+    }
+    if (normalized == "false" || normalized == "0" || normalized == "no" || normalized == "off") {
+        return false;
+    }
+    return fallback;
+}
+
 }
 
 bool BackendConfig::isValid() const {
@@ -36,6 +54,7 @@ QJsonObject BackendConfig::toJson() const {
     obj["projectId"] = projectId;
     obj["apiKey"] = apiKey;
     obj["databaseId"] = databaseId;
+    obj["guestAccessEnabled"] = guestAccessEnabled;
     obj["messagesCollectionId"] = messagesCollectionId;
     obj["membersCollectionId"] = membersCollectionId;
     obj["channelsCollectionId"] = channelsCollectionId;
@@ -49,6 +68,7 @@ BackendConfig BackendConfig::fromJson(const QJsonObject &obj) {
     config.projectId = readString(obj, "projectId");
     config.apiKey = readString(obj, "apiKey");
     config.databaseId = readString(obj, "databaseId");
+    config.guestAccessEnabled = readBool(obj, "guestAccessEnabled", false);
     config.messagesCollectionId = readString(obj, "messagesCollectionId", "messages");
     config.membersCollectionId = readString(obj, "membersCollectionId", "members");
     config.channelsCollectionId = readString(obj, "channelsCollectionId", "channels");

@@ -66,6 +66,23 @@ bool isAlreadyExistsError(const BackendRequestResult &result) {
     return message.contains("already exists") || message.contains("duplicate");
 }
 
+QJsonArray collectionPermissions(bool guestAccessEnabled) {
+    if (guestAccessEnabled) {
+        return {
+            "read(\"any\")",
+            "create(\"any\")",
+            "update(\"any\")",
+            "delete(\"any\")"
+        };
+    }
+    return {
+        "read(\"users\")",
+        "create(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+    };
+}
+
 }
 
 bool Session::isValid() const {
@@ -735,12 +752,7 @@ bool BackendService::addCollection(const QString &collectionId,
     }
     const QString normalizedName =
         name.trimmed().isEmpty() ? normalizedCollectionId : name.trimmed();
-    const QJsonArray permissions = {
-        "read(\"any\")",
-        "create(\"any\")",
-        "update(\"any\")",
-        "delete(\"any\")"
-    };
+    const QJsonArray permissions = collectionPermissions(m_config.guestAccessEnabled);
     appwritesdk::ConnectionConfig sdkConfig = configForCollection(normalizedCollectionId);
     const BackendRequestResult result = performRequest([&]() {
         m_server.createCollection(sdkConfig, normalizedName, permissions);
