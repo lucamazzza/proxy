@@ -19,6 +19,7 @@ public:
                                       const QString &userId,
                                       int limit = 1) const;
     QJsonArray messageDocuments(const QString &messageId, int limit = 1) const;
+    QJsonArray lastSequenceForChannel(const QString &channelId) const;
 
     static QString equalQuery(const QString &key, const QString &value);
 

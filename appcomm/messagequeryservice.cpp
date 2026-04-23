@@ -26,7 +26,7 @@ QJsonArray MessageQueryService::channelMessages(const QString &channelId, int li
         return queries;
     }
     queries.append(equalQuery("channelId", trimmedChannelId));
-    queries.append("orderDesc(\"timestamp\")");
+    queries.append("orderDesc(\"sequenceNumber\")");
     if (limit > 0) {
         queries.append(QString("limit(%1)").arg(limit));
     }
@@ -73,6 +73,19 @@ QJsonArray MessageQueryService::messageDocuments(const QString &messageId, int l
     if (limit > 0) {
         queries.append(QString("limit(%1)").arg(limit));
     }
+    return queries;
+}
+
+QJsonArray MessageQueryService::lastSequenceForChannel(const QString &channelId) const {
+    QJsonArray queries;
+    const QString trimmedChannelId = channelId.trimmed();
+    if (trimmedChannelId.isEmpty()) {
+        return queries;
+    }
+
+    queries.append(equalQuery("channelId", trimmedChannelId));
+    queries.append("orderDesc(\"sequenceNumber\")");
+    queries.append("limit(1)");
     return queries;
 }
 
