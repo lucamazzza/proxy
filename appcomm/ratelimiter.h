@@ -20,14 +20,28 @@ namespace appcomm {
 namespace client {
 
 /*!
+ * @brief Interface for request rate limiting.
+ *
+ * Allows AppcommClient to use fake rate limiters during unit tests.
+ */
+class IRateLimiter
+{
+public:
+    virtual ~IRateLimiter() = default;
+
+    virtual bool allowRequest() = 0;
+    virtual void reset() = 0;
+};
+
+/*!
  * @brief Token bucket rate limiter.
  *
  * Controls request throughput using a token bucket algorithm.
- * Tokens are refilled at a constant rate and consumed by requests.
- * When no tokens are available, requests are denied.
  */
-class RateLimiter : public QObject {
+class RateLimiter : public QObject, public IRateLimiter
+{
     Q_OBJECT
+
 public:
     /*!
      * @brief Constructs a RateLimiter instance.
@@ -46,7 +60,7 @@ public:
      *
      * @return true if request is allowed, false if limit exceeded.
      */
-    bool allowRequest();
+    bool allowRequest() override;
 
     /*!
      * @brief Resets the rate limiter state.
@@ -54,7 +68,7 @@ public:
      * Restores available tokens to maximum capacity and resets
      * the last refill timestamp to current time.
      */
-    void reset();
+    void reset() override;
 
     /*!
      * @brief Gets the current available tokens.
