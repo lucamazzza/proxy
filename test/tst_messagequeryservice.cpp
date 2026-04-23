@@ -22,7 +22,7 @@ void tst_messagequeryservice::channelMessages_buildsChannelFilterOrderAndLimit()
 
     QCOMPARE(queries.size(), 3);
     QCOMPARE(queries.at(0).toString(), QString("equal(\"channelId\",[\"room-1\"])"));
-    QCOMPARE(queries.at(1).toString(), QString("orderDesc(\"timestamp\")"));
+    QCOMPARE(queries.at(1).toString(), QString("orderDesc(\"sequenceNumber\")"));
     QCOMPARE(queries.at(2).toString(), QString("limit(25)"));
 }
 
