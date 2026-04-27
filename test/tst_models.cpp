@@ -79,6 +79,7 @@ private slots:
     void testAppCommConfigIsValid_missingDatabaseId();
     void testAppCommConfigIsValid_missingMessagesCollectionId();
     void testAppCommConfigIsValid_missingMembersCollectionId();
+    void testAppCommConfigIsValid_missingIncomingMessagesCollectionId();
     void testAppCommConfigIsValid_trimmedEndpoint();
     void testAppCommConfigIsValid_trimmedApiKey();
 };
@@ -712,6 +713,7 @@ void tst_models::testAppCommConfigIsValid_valid()
     config.apiKey = "apikey";
     config.databaseId = "db1";
     config.messagesCollectionId = "messages";
+    config.incomingMessagesCollectionId = "pendingmessages";
     config.membersCollectionId = "members";
 
     QVERIFY(config.isValid());
@@ -791,6 +793,20 @@ void tst_models::testAppCommConfigIsValid_missingMembersCollectionId()
     config.databaseId = "db1";
     config.messagesCollectionId = "messages";
     config.membersCollectionId = "";
+
+    QVERIFY(!config.isValid());
+}
+
+void tst_models::testAppCommConfigIsValid_missingIncomingMessagesCollectionId()
+{
+    AppCommConfig config;
+    config.endpoint = "https://example.com/v1";
+    config.projectId = "project123";
+    config.apiKey = "apikey";
+    config.databaseId = "db1";
+    config.messagesCollectionId = "messages";
+    config.incomingMessagesCollectionId = "";
+    config.membersCollectionId = "members";
 
     QVERIFY(!config.isValid());
 }

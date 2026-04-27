@@ -63,9 +63,11 @@ Message Message::fromJson(const QJsonObject& obj) {
     message.channelId = channelIdValue.toString().trimmed();
     message.senderId = senderIdValue.toString().trimmed();
     message.messageId = messageIdValue.toString().trimmed();
-    message.sequenceNumber = sequenceNumberValue.toInt(-1);
+    message.sequenceNumber = sequenceNumberValue.isDouble()
+                                 ? sequenceNumberValue.toInteger(-1)
+                                 : -1;
     message.timestamp = QDateTime::fromString(timestampValue.toString(), Qt::ISODate);
-    
+
     if (payloadValue.isString()) {
         QJsonDocument doc = QJsonDocument::fromJson(payloadValue.toString().toUtf8());
         if (doc.isObject()) {
@@ -74,8 +76,59 @@ Message Message::fromJson(const QJsonObject& obj) {
     } else if (payloadValue.isObject()) {
         message.payload = payloadValue.toObject();
     }
-    
+
     message.isEcho = isEchoValue.toBool();
+
+    return message;
+}
+
+// PendingMessage
+bool PendingMessage::isValid() const {
+    return !channelId.trimmed().isEmpty()
+    && !senderId.trimmed().isEmpty()
+        && !messageId.trimmed().isEmpty()
+        && timestamp.isValid();
+}
+
+QJsonObject PendingMessage::toJson() const {
+    QJsonObject obj;
+    obj["channelId"] = channelId;
+    obj["senderId"] = senderId;
+    obj["messageId"] = messageId;
+    obj["timestamp"] = timestamp.toString(Qt::ISODate);
+    obj["payload"] = QString(QJsonDocument(payload).toJson(QJsonDocument::Compact));
+    return obj;
+}
+
+PendingMessage PendingMessage::fromJson(const QJsonObject &obj) {
+    PendingMessage message;
+
+    const QJsonValue channelIdValue = obj.value("channelId");
+    const QJsonValue senderIdValue = obj.value("senderId");
+    const QJsonValue messageIdValue = obj.value("messageId");
+    const QJsonValue timestampValue = obj.value("timestamp");
+    const QJsonValue payloadValue = obj.value("payload");
+
+    if (!channelIdValue.isString()
+        || !senderIdValue.isString()
+        || !messageIdValue.isString()
+        || !timestampValue.isString()) {
+        return {};
+    }
+
+    message.channelId = channelIdValue.toString().trimmed();
+    message.senderId = senderIdValue.toString().trimmed();
+    message.messageId = messageIdValue.toString().trimmed();
+    message.timestamp = QDateTime::fromString(timestampValue.toString(), Qt::ISODate);
+
+    if (payloadValue.isString()) {
+        const QJsonDocument doc = QJsonDocument::fromJson(payloadValue.toString().toUtf8());
+        if (doc.isObject()) {
+            message.payload = doc.object();
+        }
+    } else if (payloadValue.isObject()) {
+        message.payload = payloadValue.toObject();
+    }
 
     return message;
 }
@@ -160,5 +213,6 @@ bool AppCommConfig::isValid() const {
         && !apiKey.trimmed().isEmpty()
         && !databaseId.trimmed().isEmpty()
         && !messagesCollectionId.trimmed().isEmpty()
-        && !membersCollectionId.trimmed().isEmpty();
+        && !membersCollectionId.trimmed().isEmpty()
+        && !incomingMessagesCollectionId.trimmed().isEmpty();
 }

@@ -13,6 +13,7 @@
 #include <QJsonDocument>
 #include <QRegularExpression>
 #include <QUrlQuery>
+#include <QUrl>
 
 using namespace appwritesdk;
 
@@ -174,17 +175,30 @@ void Client::createDocument(const ConnectionConfig &config, const QJsonObject &d
 
 void Client::listDocuments(const ConnectionConfig &config, const QJsonArray &queries) {
     QString path = QString("databases/%1/collections/%2/documents")
-                       .arg(config.dbId, config.collectionId);
+    .arg(config.dbId, config.collectionId);
+
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_USER);
     QUrl url = req.url();
+
     if (!queries.isEmpty()) {
-        QUrlQuery query;
+        QStringList encodedQueries;
+
         for (const QJsonValue &q : queries) {
-            appendListQueryItem(q.toString(), &query, true);
+            const QString queryString = q.toString().trimmed();
+            if (!queryString.isEmpty()) {
+                encodedQueries.append(
+                    "queries[]=" + QUrl::toPercentEncoding(queryString)
+                    );
+            }
         }
-        url.setQuery(query);
+
+        url.setQuery(encodedQueries.join("&"), QUrl::TolerantMode);
     }
+
     req.setUrl(url);
+
+    qDebug() << "[Client] listDocuments URL:" << url.toString();
+
     QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);
 }
@@ -359,18 +373,31 @@ void Server::listCollections(const ConnectionConfig &config) {
 
 void Server::listDocuments(const ConnectionConfig &config, const QJsonArray &queries) {
     QString path = QString("databases/%1/collections/%2/documents")
-                        .arg(config.dbId)
-                        .arg(config.collectionId);
+    .arg(config.dbId)
+        .arg(config.collectionId);
+
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QUrl url = req.url();
+
     if (!queries.isEmpty()) {
-        QUrlQuery query;
+        QStringList encodedQueries;
+
         for (const QJsonValue &q : queries) {
-            appendListQueryItem(q.toString(), &query, true);
+            const QString queryString = q.toString().trimmed();
+            if (!queryString.isEmpty()) {
+                encodedQueries.append(
+                    "queries[]=" + QUrl::toPercentEncoding(queryString)
+                    );
+            }
         }
-        url.setQuery(query);
+
+        url.setQuery(encodedQueries.join("&"), QUrl::TolerantMode);
     }
+
     req.setUrl(url);
+
+    qDebug() << "[Server] listDocuments URL:" << url.toString();
+
     QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
 }

@@ -320,7 +320,7 @@ private slots:
      * @param data Response data from the server
      */
     void onServerRequestSuccess(const QJsonObject &data);
-    
+
     /*!
      * @brief Handles server request errors
      * @param code Error code
@@ -340,6 +340,8 @@ private:
     void completeInitialization();
     void failInitialization(int code, const QString &message);
 
+    void enqueueIncomingMessage(const QString &documentId, const model::PendingMessage &message);
+    void processNextIncomingMessage();
     /*!
      * @class Private
      * @brief Private implementation class (PIMPL pattern)

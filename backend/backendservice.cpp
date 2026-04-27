@@ -1386,7 +1386,7 @@ int BackendService::runEchoService(QString *errorMessage) {
         QString("databases.%1.collections.%2.documents")
             .arg(m_config.databaseId, m_config.messagesCollectionId)
     };
-    realtime.connect(realtimeChannels);
+    realtime.connectToChannels(realtimeChannels);
     out << "Running service for all channels" << Qt::endl;
     return application->exec();
 }

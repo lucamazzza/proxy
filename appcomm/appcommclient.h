@@ -11,8 +11,13 @@
 #include <QObject>
 #include "state.h"
 #include "model.h"
-#include "appwritesdk.h"
 #include <memory>
+#include <QJsonObject>
+#include <QJsonArray>
+#include "appwritesdk.h"
+#include "realtime.h"
+#include "ratelimiter.h"
+#include "recoverymanager.h"
 
 namespace appcomm {
 
@@ -39,27 +44,37 @@ class AppcommClient : public QObject {
      * @brief Current connection state.
      */
     Q_PROPERTY(ConnectionState connectionState
-               READ connectionState
-               NOTIFY connectionStateChanged
-               FINAL)
+                   READ connectionState
+                       NOTIFY connectionStateChanged
+                           FINAL)
 
     /*!
      * @brief Human-readable connection state (for UI).
      */
     Q_PROPERTY(QString connectionStateText
-               READ connectionStateText
-               NOTIFY connectionStateChanged
-               FINAL)
+                   READ connectionStateText
+                       NOTIFY connectionStateChanged
+                           FINAL)
 
     /*!
      * @brief Whether the client is authenticated.
      */
     Q_PROPERTY(bool authenticated
-               READ isAuthenticated
-               NOTIFY authenticationStateChanged
-               FINAL)
+                   READ isAuthenticated
+                       NOTIFY authenticationStateChanged
+                           FINAL)
 public:
-    explicit AppcommClient(const appwritesdk::ConnectionConfig &config, QObject *parent = nullptr);
+    explicit AppcommClient(const model::AppCommConfig &config, QObject *parent = nullptr);
+
+    explicit AppcommClient(
+        const model::AppCommConfig &config,
+        appwritesdk::IClientSdk *client,
+        IRealtime *realtime,
+        IRecoveryManager *recoveryManager,
+        IRateLimiter *rateLimiter,
+        QObject *parent = nullptr
+    );
+
     ~AppcommClient() override;
 
     //Connection
@@ -85,6 +100,8 @@ public:
     //Messaging
     void sendMessage(const QJsonObject &payload);
 
+    void loadMembership();
+    void loadChannelMessages(int limit = 50);
 signals:
     //Authentication
     void authenticationStateChanged();
@@ -192,6 +209,7 @@ private:
     class Private; //pimpl
     std::unique_ptr<Private> d; //Data
     void setConnectionState(ConnectionState newState);
+    void setupConnections();
 };
 
 } // namespace client
