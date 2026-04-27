@@ -1,8 +1,10 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import App 1.0
 
 Page {
+    signal backRequested()
     ColumnLayout {
         anchors.centerIn: parent
         width: 320
@@ -25,26 +27,35 @@ Page {
             placeholderText: "Password"
             echoMode: TextInput.Password
             Layout.fillWidth: true
+
+            Keys.onReturnPressed: {
+                AppController.loginWithEmail(emailField.text, passwordField.text)
+            }
         }
 
         Button {
-            text: "Login"
+            text: AppController.busy ? "Logging in..." : "Login"
+            enabled: !AppController.busy
             Layout.fillWidth: true
+
             onClicked: {
-                controller.loginWithEmail(emailField.text, passwordField.text)
+                AppController.loginWithEmail(emailField.text, passwordField.text)
             }
         }
 
         Button {
             text: "Back"
+            enabled: !AppController.busy
             Layout.fillWidth: true
+
             onClicked: {
-                StackView.view.pop()
+                AppController.clearError()
+                backRequested()
             }
         }
 
         Label {
-            text: controller.errorMessage
+            text: AppController.errorMessage
             color: "red"
             visible: text.length > 0
             wrapMode: Text.Wrap

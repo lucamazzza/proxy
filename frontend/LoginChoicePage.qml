@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import App 1.0
 
 Page {
     signal emailLoginRequested()
@@ -16,29 +17,28 @@ Page {
             Layout.alignment: Qt.AlignHCenter
         }
 
-        Label {
-            text: "Choose how to authenticate"
-            Layout.alignment: Qt.AlignHCenter
-        }
-
         Button {
-            text: "Login as guest"
+            text: AppController.busy ? "Signing in..." : "Login as guest"
+            enabled: !AppController.busy
             Layout.fillWidth: true
+
             onClicked: {
-                controller.loginAsGuest()
+                AppController.loginAsGuest()
             }
         }
 
         Button {
             text: "Login with email"
+            enabled: !AppController.busy
             Layout.fillWidth: true
+
             onClicked: {
                 emailLoginRequested()
             }
         }
 
         Label {
-            text: controller.errorMessage
+            text: AppController.errorMessage
             color: "red"
             visible: text.length > 0
             wrapMode: Text.Wrap

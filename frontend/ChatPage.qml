@@ -1,17 +1,13 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import App 1.0
 
 Page {
     header: ToolBar {
         RowLayout {
             anchors.fill: parent
             anchors.margins: 8
-
-            Button {
-                text: "Back"
-                onClicked: StackView.view.pop()
-            }
 
             Label {
                 text: "AppComm Chat"
@@ -20,7 +16,21 @@ Page {
             }
 
             Label {
-                text: "State: " + controller.connectionState
+                text: "Channel: " + AppController.currentChannel
+            }
+
+            Label {
+                text: "State: " + AppController.connectionState
+            }
+
+            Button {
+                text: "Logout"
+
+                onClicked: {
+                    AppController.logout()
+                    StackView.view.clear()
+                    StackView.view.push("LoginChoicePage.qml")
+                }
             }
         }
     }
@@ -29,50 +39,6 @@ Page {
         anchors.fill: parent
         anchors.margins: 12
         spacing: 10
-
-        GroupBox {
-            title: "Channel"
-            Layout.fillWidth: true
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: 8
-
-                RowLayout {
-                    Layout.fillWidth: true
-
-                    TextField {
-                        id: channelField
-                        placeholderText: "Insert channel ID"
-                        Layout.fillWidth: true
-                    }
-
-                    Button {
-                        text: "Join"
-                        onClicked: controller.joinChannel(channelField.text)
-                    }
-
-                    Button {
-                        text: "Leave"
-                        onClicked: controller.leaveChannel()
-                    }
-                }
-
-                Label {
-                    text: controller.currentChannel === ""
-                          ? "Current channel: none"
-                          : "Current channel: " + controller.currentChannel
-                }
-
-                Label {
-                    text: controller.errorMessage
-                    color: "red"
-                    visible: text.length > 0
-                    wrapMode: Text.Wrap
-                    Layout.fillWidth: true
-                }
-            }
-        }
 
         GroupBox {
             title: "Messages"
@@ -85,9 +51,12 @@ Page {
                 anchors.margins: 8
                 clip: true
                 spacing: 8
-                model: controller.messagesModel
+                model: AppController.messagesModel
                 delegate: MessageDelegate { }
-                onCountChanged: positionViewAtEnd()
+
+                onCountChanged: {
+                    positionViewAtEnd()
+                }
             }
         }
 
@@ -101,11 +70,9 @@ Page {
 
                 TextField {
                     id: messageField
-                    placeholderText: controller.currentChannel === ""
-                                     ? "Join a channel first"
-                                     : "Write a message"
+                    placeholderText: "Write a message"
                     Layout.fillWidth: true
-                    enabled: controller.currentChannel !== ""
+                    enabled: AppController.currentChannel !== ""
 
                     onAccepted: {
                         sendButton.clicked()
@@ -115,10 +82,11 @@ Page {
                 Button {
                     id: sendButton
                     text: "Send"
-                    enabled: controller.currentChannel !== "" &&
+                    enabled: AppController.currentChannel !== "" &&
                              messageField.text.trim().length > 0
+
                     onClicked: {
-                        controller.sendMessage(messageField.text)
+                        AppController.sendMessage(messageField.text)
                         messageField.clear()
                     }
                 }

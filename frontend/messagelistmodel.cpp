@@ -31,6 +31,8 @@ QVariant MessageListModel::data(const QModelIndex &index, int role) const
         return message.timestamp;
     case SystemRole:
         return message.system;
+    case MineRole:
+        return message.mine;
     default:
         return {};
     }
@@ -42,7 +44,8 @@ QHash<int, QByteArray> MessageListModel::roleNames() const
         {SenderRole, "sender"},
         {BodyRole, "body"},
         {TimestampRole, "timestamp"},
-        {SystemRole, "system"}
+        {SystemRole, "system"},
+        {MineRole, "mine"}
     };
 }
 

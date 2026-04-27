@@ -34,6 +34,7 @@ qt_add_qml_module(appfrontend
         ChatPage.qml
         MessageDelegate.qml
         EmailLoginPage.qml
+        GuestDeniedPage.qml
 )
 
 set_target_properties(appfrontend PROPERTIES

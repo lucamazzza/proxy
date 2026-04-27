@@ -10,7 +10,8 @@ struct ChatMessageItem
     QString sender;
     QString body;
     QString timestamp;
-    bool system = false; //distingue messaggio utente da messaggio sistema
+    bool system = false; //Messaggio di sistema
+    bool mine = false; //Messaggio mio
 };
 
 class MessageListModel : public QAbstractListModel
@@ -22,7 +23,8 @@ public:
         SenderRole = Qt::UserRole + 1,
         BodyRole,
         TimestampRole,
-        SystemRole
+        SystemRole,
+        MineRole
     };
 
     explicit MessageListModel(QObject *parent = nullptr);
