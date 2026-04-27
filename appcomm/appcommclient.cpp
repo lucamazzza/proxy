@@ -22,6 +22,7 @@
 #include <QNetworkAccessManager>
 
 #include <optional>
+#include <utility>
 
 using namespace appcomm::client;
 
@@ -106,17 +107,12 @@ public:
     RecentMessageCache m_recentMessageCache;
     QNetworkAccessManager m_networkManager;
 
-    std::unique_ptr<appwritesdk::Client> m_ownedClient;
-    std::unique_ptr<RecoveryManager> m_ownedRecoveryManager;
-    std::unique_ptr<RateLimiter> m_ownedRateLimiter;
-    std::unique_ptr<Realtime> m_ownedRealtime;
+    std::unique_ptr<appwritesdk::IClientSdk> m_client;
+    std::unique_ptr<IRecoveryManager> m_recoveryManager;
+    std::unique_ptr<IRateLimiter> m_rateLimiter;
+    std::unique_ptr<IRealtime> m_realtime;
 
-    appwritesdk::IClientSdk *m_client = nullptr;
-    IRecoveryManager *m_recoveryManager = nullptr;
-    IRateLimiter *m_rateLimiter = nullptr;
-    IRealtime *m_realtime = nullptr;
-
-    MessageProcessor m_messageProcessor;
+    std::unique_ptr<MessageProcessor> m_messageProcessor;
     PendingRequest m_pendingRequest = PendingRequest::None;
 
     explicit Private(const model::AppCommConfig &cfg)
@@ -127,27 +123,23 @@ public:
         , m_sessionInfo()
         , m_recentMessageCache()
         , m_networkManager()
-        , m_ownedClient(std::make_unique<appwritesdk::Client>(&m_networkManager))
-        , m_ownedRecoveryManager(std::make_unique<RecoveryManager>(
-              m_ownedClient.get(),
-              &m_recentMessageCache,
-              m_baseConfig
-              ))
-        , m_ownedRateLimiter(std::make_unique<RateLimiter>(10, 1))
-        , m_ownedRealtime(std::make_unique<Realtime>(m_baseConfig))
-        , m_client(m_ownedClient.get())
-        , m_recoveryManager(m_ownedRecoveryManager.get())
-        , m_rateLimiter(m_ownedRateLimiter.get())
-        , m_realtime(m_ownedRealtime.get())
-        , m_messageProcessor(&m_clientState, m_recoveryManager)
     {
+        auto *client = new appwritesdk::Client(&m_networkManager);
+
+        m_client = std::unique_ptr<appwritesdk::IClientSdk>(client);
+        m_recoveryManager = std::unique_ptr<IRecoveryManager>(
+            new RecoveryManager(client, &m_recentMessageCache, m_baseConfig)
+            );
+        m_rateLimiter = std::make_unique<RateLimiter>(10, 1);
+        m_realtime = std::make_unique<Realtime>(m_baseConfig);
+        m_messageProcessor = std::make_unique<MessageProcessor>(
+            &m_clientState,
+            m_recoveryManager.get()
+            );
     }
 
     Private(const model::AppCommConfig &cfg,
-            appwritesdk::IClientSdk *client,
-            IRealtime *realtime,
-            IRecoveryManager *recoveryManager,
-            IRateLimiter *rateLimiter)
+            AppcommClient::Dependencies dependencies)
         : m_appConfig(cfg)
         , m_baseConfig(makeBaseConfig(cfg))
         , m_clientState()
@@ -155,12 +147,15 @@ public:
         , m_sessionInfo()
         , m_recentMessageCache()
         , m_networkManager()
-        , m_client(client)
-        , m_recoveryManager(recoveryManager)
-        , m_rateLimiter(rateLimiter)
-        , m_realtime(realtime)
-        , m_messageProcessor(&m_clientState, recoveryManager)
+        , m_client(std::move(dependencies.client))
+        , m_recoveryManager(std::move(dependencies.recoveryManager))
+        , m_rateLimiter(std::move(dependencies.rateLimiter))
+        , m_realtime(std::move(dependencies.realtime))
     {
+        m_messageProcessor = std::make_unique<MessageProcessor>(
+            &m_clientState,
+            m_recoveryManager.get()
+            );
     }
 
     appwritesdk::ConnectionConfig configForCollection(const QString &collectionId) const
@@ -179,18 +174,12 @@ AppcommClient::AppcommClient(const model::AppCommConfig &config, QObject *parent
 }
 
 AppcommClient::AppcommClient(const model::AppCommConfig &config,
-                             appwritesdk::IClientSdk *client,
-                             IRealtime *realtime,
-                             IRecoveryManager *recoveryManager,
-                             IRateLimiter *rateLimiter,
+                             Dependencies dependencies,
                              QObject *parent)
     : QObject(parent)
     , d(std::make_unique<Private>(
           config,
-          client,
-          realtime,
-          recoveryManager,
-          rateLimiter
+          std::move(dependencies)
           ))
 {
     setupConnections();
@@ -200,7 +189,7 @@ AppcommClient::~AppcommClient() = default;
 
 void AppcommClient::setupConnections()
 {
-    auto *clientObject = dynamic_cast<QObject *>(d->m_client);
+    auto *clientObject = dynamic_cast<QObject *>(d->m_client.get());
     if (clientObject != nullptr) {
         connect(clientObject, SIGNAL(requestSuccess(QJsonObject)),
                 this, SLOT(onRequestSuccess(QJsonObject)));
@@ -210,20 +199,20 @@ void AppcommClient::setupConnections()
     }
 
     if (d->m_realtime != nullptr) {
-        connect(d->m_realtime, &IRealtime::connected,
+        connect(d->m_realtime.get(), &IRealtime::connected,
                 this, &AppcommClient::onConnected);
 
-        connect(d->m_realtime, &IRealtime::disconnected,
+        connect(d->m_realtime.get(), &IRealtime::disconnected,
                 this, &AppcommClient::onDisconnected);
 
-        connect(d->m_realtime, &IRealtime::eventReceived,
+        connect(d->m_realtime.get(), &IRealtime::eventReceived,
                 this, &AppcommClient::onEventReceived);
 
-        connect(d->m_realtime, &IRealtime::errorOccurred,
+        connect(d->m_realtime.get(), &IRealtime::errorOccurred,
                 this, &AppcommClient::onErrorOccurred);
     }
 
-    auto *recoveryObject = dynamic_cast<QObject *>(d->m_recoveryManager);
+    auto *recoveryObject = dynamic_cast<QObject *>(d->m_recoveryManager.get());
     if (recoveryObject != nullptr) {
         connect(recoveryObject, SIGNAL(messagesRecovered(QJsonArray)),
                 this, SLOT(onMessagesRecovered(QJsonArray)));
@@ -346,7 +335,7 @@ void AppcommClient::logout()
 
     d->m_sessionInfo = {};
     d->m_clientState = ClientState();
-    d->m_messageProcessor.reset(QString());
+    d->m_messageProcessor->reset(QString());
     d->m_pendingRequest = Private::PendingRequest::None;
 
     emit authenticationStateChanged();
@@ -374,7 +363,7 @@ void AppcommClient::joinChannel(const QString &channelId)
     }
 
     d->m_clientState.activeChannelId = trimmedChannelId;
-    d->m_messageProcessor.reset(trimmedChannelId);
+    d->m_messageProcessor->reset(trimmedChannelId);
 
     emit joinedChannel(trimmedChannelId);
 
@@ -390,7 +379,7 @@ void AppcommClient::leaveChannel()
     }
 
     d->m_clientState.activeChannelId.clear();
-    d->m_messageProcessor.reset(QString());
+    d->m_messageProcessor->reset(QString());
 
     emit leftChannel(oldChannelId);
 
@@ -518,24 +507,7 @@ void AppcommClient::loadChannelMessages(int limit)
 
 void AppcommClient::onMessagesRecovered(const QJsonArray &messages)
 {
-    for (const QJsonValue &value : messages) {
-        if (!value.isObject()) {
-            continue;
-        }
-
-        const appcomm::model::Message message =
-            appcomm::model::Message::fromJson(value.toObject());
-
-        const std::optional<appcomm::model::Message> processed =
-            d->m_messageProcessor.processIncoming(message);
-
-        if (!processed.has_value()) {
-            continue;
-        }
-
-        d->m_recentMessageCache.addMessage(*processed);
-        emit messageReceived(*processed);
-    }
+    handleMessageDocuments(messages);
 }
 
 void AppcommClient::onRecoveryError(int errorCode, const QString &errorMessage)
@@ -553,9 +525,6 @@ void AppcommClient::onResyncCompleted(int messageCount)
 
 void AppcommClient::onRequestSuccess(const QJsonObject &data)
 {
-    qDebug() << "[AppcommClient] onRequestSuccess pending:"
-             << static_cast<int>(d->m_pendingRequest)
-             << data;
     if (d->m_pendingRequest == Private::PendingRequest::Login && isSessionResponse(data)) {
         d->m_pendingRequest = Private::PendingRequest::None;
 
@@ -598,7 +567,7 @@ void AppcommClient::onRequestSuccess(const QJsonObject &data)
         }
 
         d->m_clientState.activeChannelId = member.channelId;
-        d->m_messageProcessor.reset(member.channelId);
+        d->m_messageProcessor->reset(member.channelId);
 
         emit joinedChannel(member.channelId);
 
@@ -609,26 +578,7 @@ void AppcommClient::onRequestSuccess(const QJsonObject &data)
     if (d->m_pendingRequest == Private::PendingRequest::LoadMessages) {
         d->m_pendingRequest = Private::PendingRequest::None;
 
-        const QJsonArray documents = data.value("documents").toArray();
-
-        for (const QJsonValue &value : documents) {
-            if (!value.isObject()) {
-                continue;
-            }
-
-            const model::Message message =
-                model::Message::fromJson(value.toObject());
-
-            const std::optional<model::Message> processed =
-                d->m_messageProcessor.processIncoming(message);
-
-            if (!processed.has_value()) {
-                continue;
-            }
-
-            d->m_recentMessageCache.addMessage(*processed);
-            emit messageReceived(*processed);
-        }
+        handleMessageDocuments(data.value("documents").toArray());
 
         if (d->m_connectionState == ConnectionState::Disconnected) {
             connectToServer();
@@ -640,10 +590,6 @@ void AppcommClient::onRequestSuccess(const QJsonObject &data)
 
 void AppcommClient::onRequestError(int code, const QString &message)
 {
-    qDebug() << "[AppcommClient] onRequestError pending:"
-             << static_cast<int>(d->m_pendingRequest)
-             << "code:" << code
-             << "message:" << message;
     Q_UNUSED(code);
 
     d->m_pendingRequest = Private::PendingRequest::None;
@@ -669,18 +615,7 @@ void AppcommClient::onEventReceived(const QJsonObject &event)
         return;
     }
 
-    const appcomm::model::Message message =
-        appcomm::model::Message::fromJson(payload);
-
-    const std::optional<appcomm::model::Message> processed =
-        d->m_messageProcessor.processIncoming(message);
-
-    if (!processed.has_value()) {
-        return;
-    }
-
-    d->m_recentMessageCache.addMessage(*processed);
-    emit messageReceived(*processed);
+    handleIncomingMessage(appcomm::model::Message::fromJson(payload));
 }
 
 void AppcommClient::onErrorOccurred(const QString &error)
@@ -699,4 +634,28 @@ void AppcommClient::setConnectionState(ConnectionState newState)
 
     d->m_connectionState = newState;
     emit connectionStateChanged();
+}
+
+void AppcommClient::handleIncomingMessage(const model::Message &message)
+{
+    const std::optional<model::Message> processed =
+        d->m_messageProcessor->processIncoming(message);
+
+    if (!processed.has_value()) {
+        return;
+    }
+
+    d->m_recentMessageCache.addMessage(*processed);
+    emit messageReceived(*processed);
+}
+
+void AppcommClient::handleMessageDocuments(const QJsonArray &documents)
+{
+    for (const QJsonValue &value : documents) {
+        if (!value.isObject()) {
+            continue;
+        }
+
+        handleIncomingMessage(model::Message::fromJson(value.toObject()));
+    }
 }

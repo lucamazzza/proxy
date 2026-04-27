@@ -64,14 +64,18 @@ class AppcommClient : public QObject {
                        NOTIFY authenticationStateChanged
                            FINAL)
 public:
+    struct Dependencies {
+        std::unique_ptr<appwritesdk::IClientSdk> client;
+        std::unique_ptr<IRealtime> realtime;
+        std::unique_ptr<IRecoveryManager> recoveryManager;
+        std::unique_ptr<IRateLimiter> rateLimiter;
+    };
+
     explicit AppcommClient(const model::AppCommConfig &config, QObject *parent = nullptr);
 
     explicit AppcommClient(
         const model::AppCommConfig &config,
-        appwritesdk::IClientSdk *client,
-        IRealtime *realtime,
-        IRecoveryManager *recoveryManager,
-        IRateLimiter *rateLimiter,
+        Dependencies dependencies,
         QObject *parent = nullptr
     );
 
@@ -210,6 +214,8 @@ private:
     std::unique_ptr<Private> d; //Data
     void setConnectionState(ConnectionState newState);
     void setupConnections();
+    void handleIncomingMessage(const model::Message &message);
+    void handleMessageDocuments(const QJsonArray &documents);
 };
 
 } // namespace client

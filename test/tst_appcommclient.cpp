@@ -5,6 +5,8 @@
 #include <QJsonObject>
 #include <QStringList>
 
+#include <memory>
+
 #include "appcommclient.h"
 #include "appwritesdk.h"
 #include "model.h"
@@ -195,6 +197,44 @@ signals:
     void resyncCompleted(int messageCount);
 };
 
+struct FakeDependencies
+{
+    std::unique_ptr<FakeClientSdk> sdk = std::make_unique<FakeClientSdk>();
+    std::unique_ptr<FakeRealtime> realtime = std::make_unique<FakeRealtime>();
+    std::unique_ptr<FakeRecoveryManager> recovery = std::make_unique<FakeRecoveryManager>();
+    std::unique_ptr<FakeRateLimiter> limiter = std::make_unique<FakeRateLimiter>();
+
+    FakeClientSdk &clientSdk()
+    {
+        return *sdk;
+    }
+
+    FakeRealtime &realtimeClient()
+    {
+        return *realtime;
+    }
+
+    FakeRecoveryManager &recoveryManager()
+    {
+        return *recovery;
+    }
+
+    FakeRateLimiter &rateLimiter()
+    {
+        return *limiter;
+    }
+
+    AppcommClient::Dependencies take()
+    {
+        AppcommClient::Dependencies dependencies;
+        dependencies.client = std::move(sdk);
+        dependencies.realtime = std::move(realtime);
+        dependencies.recoveryManager = std::move(recovery);
+        dependencies.rateLimiter = std::move(limiter);
+        return dependencies;
+    }
+};
+
 class TestAppcommClient : public QObject
 {
     Q_OBJECT
@@ -303,12 +343,13 @@ private slots:
 
     void initialState_isCorrect()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         QCOMPARE(client.connectionState(), ConnectionState::Disconnected);
         QCOMPARE(client.connectionStateText(), QString("Disconnected"));
@@ -320,12 +361,13 @@ private slots:
 
     void createGuestSession_callsSdk()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         client.createGuestSession();
 
@@ -338,12 +380,13 @@ private slots:
 
     void createEmailSession_callsSdkWithCredentials()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         client.createEmailSession("test@example.com", "secret");
 
@@ -354,12 +397,13 @@ private slots:
 
     void loginSuccess_setsAuthenticatedSessionAndLoadsMembership()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy authSpy(&client, &AppcommClient::authenticationStateChanged);
 
         client.createGuestSession();
@@ -382,12 +426,13 @@ private slots:
 
     void emailLoginSuccess_setsEmailAuthType()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         client.createEmailSession("test@example.com", "secret");
         emit sdk.requestSuccess(sessionResponse("session-1", "user-1", "email"));
@@ -398,12 +443,13 @@ private slots:
 
     void invalidLoginResponse_doesNothing()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy authSpy(&client, &AppcommClient::authenticationStateChanged);
 
         client.createGuestSession();
@@ -419,12 +465,13 @@ private slots:
 
     void requestError_resetsPendingRequestAndEmitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
         client.createGuestSession();
@@ -439,13 +486,13 @@ private slots:
 
     void loginSuccess_withoutMembersCollection_emitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(configWithoutMembersCollection(),
-                             &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(configWithoutMembersCollection(), deps.take());
 
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
@@ -459,12 +506,13 @@ private slots:
 
     void membershipSuccess_setsChannelAndLoadsMessages()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy joinedSpy(&client, &AppcommClient::joinedChannel);
 
         client.createGuestSession();
@@ -491,12 +539,13 @@ private slots:
 
     void membershipEmpty_emitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
         client.createGuestSession();
@@ -510,12 +559,13 @@ private slots:
 
     void invalidMembership_emitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
         client.createGuestSession();
@@ -535,12 +585,13 @@ private slots:
 
     void joinChannel_trimsChannelEmitsSignalAndLoadsMessages()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy joinedSpy(&client, &AppcommClient::joinedChannel);
 
         client.joinChannel("  channel-1  ");
@@ -555,12 +606,13 @@ private slots:
 
     void joinChannel_emptyEmitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
         client.joinChannel("   ");
@@ -573,12 +625,13 @@ private slots:
 
     void leaveChannel_withoutChannelDoesNothing()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy leftSpy(&client, &AppcommClient::leftChannel);
 
         client.leaveChannel();
@@ -588,12 +641,13 @@ private slots:
 
     void leaveChannel_withChannelClearsAndEmitsSignal()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy leftSpy(&client, &AppcommClient::leftChannel);
 
         client.joinChannel("channel-1");
@@ -606,12 +660,13 @@ private slots:
 
     void connectToServer_withoutChannelDoesNothing()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         client.connectToServer();
 
@@ -621,12 +676,13 @@ private slots:
 
     void connectToServer_withChannelConnectsRealtime()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy stateSpy(&client, &AppcommClient::connectionStateChanged);
 
         client.joinChannel("channel-1");
@@ -641,12 +697,13 @@ private slots:
 
     void connectToServer_whenAlreadyConnectingDoesNothing()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         client.joinChannel("channel-1");
         client.connectToServer();
@@ -657,13 +714,13 @@ private slots:
 
     void connectToServer_withoutMessagesCollectionEmitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(configWithoutMessagesCollection(),
-                             &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(configWithoutMessagesCollection(), deps.take());
 
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
@@ -676,12 +733,13 @@ private slots:
 
     void realtimeConnected_setsConnected()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         emit realtime.connected();
 
@@ -691,12 +749,13 @@ private slots:
 
     void realtimeDisconnected_setsDisconnected()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         emit realtime.connected();
         emit realtime.disconnected();
@@ -707,12 +766,13 @@ private slots:
 
     void disconnectFromServer_whenDisconnectedDoesNothing()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         client.disconnectFromServer();
 
@@ -722,12 +782,13 @@ private slots:
 
     void disconnectFromServer_whenConnectedDisconnectsRealtime()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         emit realtime.connected();
 
@@ -740,12 +801,13 @@ private slots:
 
     void leaveChannel_whenConnectedDisconnects()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         client.joinChannel("channel-1");
         emit realtime.connected();
@@ -759,12 +821,13 @@ private slots:
 
     void sendMessage_whenNotAuthenticatedEmitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
         client.joinChannel("channel-1");
@@ -777,12 +840,13 @@ private slots:
 
     void sendMessage_withoutChannelEmitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
         client.createGuestSession();
@@ -797,13 +861,14 @@ private slots:
 
     void sendMessage_whenRateLimitedEmitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
         limiter.allowed = false;
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
         client.createGuestSession();
@@ -819,13 +884,13 @@ private slots:
 
     void sendMessage_withoutIncomingCollectionEmitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(configWithoutIncomingMessagesCollection(),
-                             &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(configWithoutIncomingMessagesCollection(), deps.take());
 
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
@@ -842,12 +907,13 @@ private slots:
 
     void sendMessage_whenValidCreatesPendingMessage()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         client.createGuestSession();
         emit sdk.requestSuccess(sessionResponse("session-1", "user-1"));
@@ -876,12 +942,13 @@ private slots:
 
     void loadMembership_withoutUserIdEmitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
         client.loadMembership();
@@ -893,12 +960,13 @@ private slots:
 
     void loadChannelMessages_withoutChannelEmitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
         client.loadChannelMessages();
@@ -910,12 +978,13 @@ private slots:
 
     void loadChannelMessages_customLimitIsUsed()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         client.joinChannel("channel-1");
         client.loadChannelMessages(12);
@@ -926,12 +995,13 @@ private slots:
 
     void loadChannelMessages_invalidLimitFallsBackTo50()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         client.joinChannel("channel-1");
         client.loadChannelMessages(0);
@@ -942,12 +1012,13 @@ private slots:
 
     void messagesLoaded_emitsMessagesAndConnects()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
         client.joinChannel("channel-1");
@@ -974,12 +1045,13 @@ private slots:
 
     void messagesLoaded_ignoresInvalidWrongChannelAndDuplicates()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
         client.joinChannel("channel-1");
@@ -1004,12 +1076,13 @@ private slots:
 
     void realtimeEvent_directPayloadEmitsMessage()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
         client.joinChannel("channel-1");
@@ -1028,12 +1101,13 @@ private slots:
 
     void realtimeEvent_nestedPayloadEmitsMessage()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
         client.joinChannel("channel-1");
@@ -1056,12 +1130,13 @@ private slots:
 
     void realtimeEvent_withoutPayloadIsIgnored()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
         client.joinChannel("channel-1");
@@ -1075,12 +1150,13 @@ private slots:
 
     void realtimeError_setsFailedAndEmitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
         emit realtime.errorOccurred("WebSocket failed");
@@ -1093,12 +1169,13 @@ private slots:
 
     void recoveredMessages_emitMessageReceived()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
         client.joinChannel("channel-1");
@@ -1113,12 +1190,13 @@ private slots:
 
     void recoveredMessages_ignoreInvalidValues()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
         client.joinChannel("channel-1");
@@ -1133,12 +1211,13 @@ private slots:
 
     void recoveryError_emitsError()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
         emit recovery.recoveryError(500, "Recovery failed");
@@ -1149,12 +1228,13 @@ private slots:
 
     void logout_whenAuthenticatedDeletesSessionAndClearsState()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
         QSignalSpy authSpy(&client, &AppcommClient::authenticationStateChanged);
 
         client.createGuestSession();
@@ -1179,12 +1259,13 @@ private slots:
 
     void logout_whenConnectedDisconnectsRealtime()
     {
-        FakeClientSdk sdk;
-        FakeRealtime realtime;
-        FakeRecoveryManager recovery;
-        FakeRateLimiter limiter;
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
 
-        AppcommClient client(validConfig(), &sdk, &realtime, &recovery, &limiter);
+        AppcommClient client(validConfig(), deps.take());
 
         client.createGuestSession();
         emit sdk.requestSuccess(sessionResponse("session-1", "user-1"));
