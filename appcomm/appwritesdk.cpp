@@ -181,18 +181,11 @@ void Client::listDocuments(const ConnectionConfig &config, const QJsonArray &que
     QUrl url = req.url();
 
     if (!queries.isEmpty()) {
-        QStringList encodedQueries;
-
+        QUrlQuery query;
         for (const QJsonValue &q : queries) {
-            const QString queryString = q.toString().trimmed();
-            if (!queryString.isEmpty()) {
-                encodedQueries.append(
-                    "queries[]=" + QUrl::toPercentEncoding(queryString)
-                    );
-            }
+            appendListQueryItem(q.toString(), &query, true);
         }
-
-        url.setQuery(encodedQueries.join("&"), QUrl::TolerantMode);
+        url.setQuery(query);
     }
 
     req.setUrl(url);
@@ -380,23 +373,14 @@ void Server::listDocuments(const ConnectionConfig &config, const QJsonArray &que
     QUrl url = req.url();
 
     if (!queries.isEmpty()) {
-        QStringList encodedQueries;
-
+        QUrlQuery query;
         for (const QJsonValue &q : queries) {
-            const QString queryString = q.toString().trimmed();
-            if (!queryString.isEmpty()) {
-                encodedQueries.append(
-                    "queries[]=" + QUrl::toPercentEncoding(queryString)
-                    );
-            }
+            appendListQueryItem(q.toString(), &query, true);
         }
-
-        url.setQuery(encodedQueries.join("&"), QUrl::TolerantMode);
+        url.setQuery(query);
     }
 
     req.setUrl(url);
-
-    qDebug() << "[Server] listDocuments URL:" << url.toString();
 
     QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Server::onResponseFinished);
