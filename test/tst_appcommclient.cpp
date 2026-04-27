@@ -374,8 +374,10 @@ private slots:
         QCOMPARE(sdk.listDocumentsCalls, 1);
         QCOMPARE(sdk.lastConfig.collectionId, QString("members"));
         QCOMPARE(sdk.lastQueries.size(), 2);
-        QCOMPARE(sdk.lastQueries.at(0).toString(), QString("equal(\"userId\",[\"user-1\"])"));
-        QCOMPARE(sdk.lastQueries.at(1).toString(), QString("limit(1)"));
+        QCOMPARE(sdk.lastQueries.at(0).toString(),
+                 QString("{\"method\":\"equal\",\"attribute\":\"userId\",\"values\":[\"user-1\"]}"));
+        QCOMPARE(sdk.lastQueries.at(1).toString(),
+                 QString("{\"method\":\"limit\",\"values\":[1]}"));
     }
 
     void emailLoginSuccess_setsEmailAuthType()
@@ -480,11 +482,11 @@ private slots:
         QCOMPARE(sdk.lastConfig.collectionId, QString("messages"));
         QCOMPARE(sdk.lastQueries.size(), 3);
         QCOMPARE(sdk.lastQueries.at(0).toString(),
-                 QString("equal(\"channelId\",[\"channel-42\"])"));
+                 QString("{\"method\":\"equal\",\"attribute\":\"channelId\",\"values\":[\"channel-42\"]}"));
         QCOMPARE(sdk.lastQueries.at(1).toString(),
-                 QString("orderAsc(\"sequenceNumber\")"));
+                 QString("{\"method\":\"orderAsc\",\"attribute\":\"sequenceNumber\"}"));
         QCOMPARE(sdk.lastQueries.at(2).toString(),
-                 QString("limit(50)"));
+                 QString("{\"method\":\"limit\",\"values\":[50]}"));
     }
 
     void membershipEmpty_emitsError()
@@ -855,7 +857,7 @@ private slots:
 
         QCOMPARE(limiter.allowRequestCalls, 1);
         QCOMPARE(sdk.createDocumentCalls, 1);
-        QCOMPARE(sdk.lastConfig.collectionId, QString("incomingMessages"));
+        QCOMPARE(sdk.lastConfig.collectionId, QString("pendingmessages"));
 
         QCOMPARE(sdk.lastData.value("channelId").toString(), QString("channel-1"));
         QCOMPARE(sdk.lastData.value("senderId").toString(), QString("user-1"));
@@ -918,7 +920,8 @@ private slots:
         client.joinChannel("channel-1");
         client.loadChannelMessages(12);
 
-        QCOMPARE(sdk.lastQueries.at(2).toString(), QString("limit(12)"));
+        QCOMPARE(sdk.lastQueries.at(2).toString(),
+                 QString("{\"method\":\"limit\",\"values\":[12]}"));
     }
 
     void loadChannelMessages_invalidLimitFallsBackTo50()
@@ -933,7 +936,8 @@ private slots:
         client.joinChannel("channel-1");
         client.loadChannelMessages(0);
 
-        QCOMPARE(sdk.lastQueries.at(2).toString(), QString("limit(50)"));
+        QCOMPARE(sdk.lastQueries.at(2).toString(),
+                 QString("{\"method\":\"limit\",\"values\":[50]}"));
     }
 
     void messagesLoaded_emitsMessagesAndConnects()
