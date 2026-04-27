@@ -2,7 +2,9 @@
 
 #include <QCoreApplication>
 #include <QEventLoop>
+#include <QJsonDocument>
 #include <QJsonValue>
+#include <QQueue>
 #include <QRegularExpression>
 #include <QSet>
 #include <QTextStream>
@@ -1360,6 +1362,14 @@ int BackendService::runEchoService(QString *errorMessage) {
                      &appwritesdk::Server::requestError,
                      this,
                      [&err](int code, const QString &message) {
+                         const QString normalized = message.toLower();
+                         const bool recoverableQuerySyntaxError =
+                             code == 400
+                             && (normalized.contains("invalid query")
+                                 || normalized.contains("syntax error"));
+                         if (recoverableQuerySyntaxError) {
+                             return;
+                         }
                          err << "Echo publish failed (" << code << "): " << message << Qt::endl;
                      });
     QObject::connect(&m_server,
@@ -1376,22 +1386,41 @@ int BackendService::runEchoService(QString *errorMessage) {
     QObject::connect(&realtime, &appcomm::Realtime::errorOccurred, this, [&err](const QString &message) {
         err << "Realtime error: " << message << Qt::endl;
     });
-    QObject::connect(&realtime, &appcomm::Realtime::eventReceived, this, [&](const QJsonObject &event) {
-        const QJsonObject payload = extractRealtimePayload(event);
-        if (payload.isEmpty()) {
+    struct IncomingEnvelope {
+        QString documentId;
+        appcomm::model::PendingMessage pendingMessage;
+    };
+    QQueue<IncomingEnvelope> incomingQueue;
+    QSet<QString> trackedIncomingIds;
+    bool processingIncoming = false;
+    std::function<void()> processNextIncoming;
+    std::function<void(const QJsonObject &)> enqueuePendingDocument;
+    std::function<void()> pollPendingDocuments;
+    processNextIncoming = [&]() {
+        if (processingIncoming || incomingQueue.isEmpty()) {
             return;
         }
 
-        const QString incomingDocumentId = payload.value("$id").toString().trimmed();
-        const appcomm::model::PendingMessage pendingMessage =
-            appcomm::model::PendingMessage::fromJson(payload);
-        if (!pendingMessage.isValid()) {
-            return;
-        }
+        processingIncoming = true;
+        const IncomingEnvelope incoming = incomingQueue.dequeue();
+
+        auto complete = [&]() {
+            trackedIncomingIds.remove(incoming.documentId);
+            processingIncoming = false;
+            processNextIncoming();
+        };
+
+        const QString incomingPayload =
+            QString::fromUtf8(QJsonDocument(incoming.pendingMessage.payload)
+                                  .toJson(QJsonDocument::Compact));
+        out << "Incoming message: "
+            << incomingPayload
+            << " (messageId=" << incoming.pendingMessage.messageId << ")"
+            << Qt::endl;
 
         qint64 nextSequenceNumber = 0;
         const QJsonArray sequenceQueries = {
-            equalQuery("channelId", pendingMessage.channelId),
+            equalQuery("channelId", incoming.pendingMessage.channelId),
             "orderDesc(\"sequenceNumber\")",
             "limit(1)"
         };
@@ -1399,6 +1428,7 @@ int BackendService::runEchoService(QString *errorMessage) {
         QString operationError;
         if (!listDocuments(m_config.messagesCollectionId, sequenceQueries, &latestMessages, &operationError)) {
             err << "Cannot resolve next sequence number: " << operationError << Qt::endl;
+            complete();
             return;
         }
         if (!latestMessages.isEmpty()) {
@@ -1410,16 +1440,17 @@ int BackendService::runEchoService(QString *errorMessage) {
         }
 
         appcomm::model::Message userMessage;
-        userMessage.channelId = pendingMessage.channelId;
-        userMessage.senderId = pendingMessage.senderId;
-        userMessage.messageId = pendingMessage.messageId;
+        userMessage.channelId = incoming.pendingMessage.channelId;
+        userMessage.senderId = incoming.pendingMessage.senderId;
+        userMessage.messageId = incoming.pendingMessage.messageId;
         userMessage.sequenceNumber = nextSequenceNumber;
         userMessage.timestamp = QDateTime::currentDateTimeUtc();
-        userMessage.payload = pendingMessage.payload;
+        userMessage.payload = incoming.pendingMessage.payload;
         userMessage.isEcho = false;
 
         if (!createDocument(m_config.messagesCollectionId, userMessage.toJson(), nullptr, &operationError)) {
             err << "Cannot persist user message: " << operationError << Qt::endl;
+            complete();
             return;
         }
 
@@ -1432,21 +1463,70 @@ int BackendService::runEchoService(QString *errorMessage) {
 
         if (!createDocument(m_config.messagesCollectionId, echoMessage.toJson(), nullptr, &operationError)) {
             err << "Cannot persist echo message: " << operationError << Qt::endl;
+            complete();
             return;
         }
 
-        if (!incomingDocumentId.isEmpty()) {
+        if (!incoming.documentId.isEmpty()) {
             QString deleteError;
-            if (!deleteDocument(m_config.incomingMessagesCollectionId, incomingDocumentId, &deleteError)) {
+            if (!deleteDocument(m_config.incomingMessagesCollectionId, incoming.documentId, &deleteError)) {
                 err << "Cannot delete processed pending message: " << deleteError << Qt::endl;
             }
         }
+        out << "Responded!" << Qt::endl;
+
+        complete();
+    };
+    enqueuePendingDocument = [&](const QJsonObject &pendingDoc) {
+        const QString incomingDocumentId = pendingDoc.value("$id").toString().trimmed();
+        const appcomm::model::PendingMessage pendingMessage =
+            appcomm::model::PendingMessage::fromJson(pendingDoc);
+        if (incomingDocumentId.isEmpty() || !pendingMessage.isValid()) {
+            return;
+        }
+        if (trackedIncomingIds.contains(incomingDocumentId)) {
+            return;
+        }
+        trackedIncomingIds.insert(incomingDocumentId);
+        incomingQueue.enqueue({incomingDocumentId, pendingMessage});
+        processNextIncoming();
+    };
+    pollPendingDocuments = [&]() {
+        QJsonArray pendingDocuments;
+        QString listPendingError;
+        if (!listDocuments(m_config.incomingMessagesCollectionId,
+                           QJsonArray{},
+                           &pendingDocuments,
+                           &listPendingError)) {
+            err << "Cannot list pending messages: " << listPendingError << Qt::endl;
+            return;
+        }
+        for (const QJsonValue &docValue : pendingDocuments) {
+            enqueuePendingDocument(docValue.toObject());
+        }
+    };
+    QObject::connect(&realtime, &appcomm::Realtime::eventReceived, this, [&](const QJsonObject &event) {
+        const QJsonObject payload = extractRealtimePayload(event);
+        if (payload.isEmpty()) {
+            return;
+        }
+        enqueuePendingDocument(payload);
     });
     const QStringList realtimeChannels = {
         QString("databases.%1.collections.%2.documents")
+            .arg(m_config.databaseId, m_config.incomingMessagesCollectionId),
+        QString("databases.%1.collections.%2.documents.*")
             .arg(m_config.databaseId, m_config.incomingMessagesCollectionId)
     };
     realtime.connectToChannels(realtimeChannels);
+    QTimer pendingPollTimer;
+    pendingPollTimer.setInterval(2000);
+    QObject::connect(&pendingPollTimer, &QTimer::timeout, this, [&]() {
+        pollPendingDocuments();
+    });
+    pendingPollTimer.start();
+    pollPendingDocuments();
+    out << "Watching channels: " << realtimeChannels.join(", ") << Qt::endl;
     out << "Running service for all channels" << Qt::endl;
     return application->exec();
 }
