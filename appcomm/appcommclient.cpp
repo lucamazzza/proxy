@@ -5,6 +5,7 @@
 #include "messageprocessor.h"
 #include "ratelimiter.h"
 #include "realtime.h"
+#include "appwritesdk.h"
 
 #include <QDateTime>
 #include <QJsonArray>
@@ -456,8 +457,9 @@ void AppcommClient::loadMembership()
         d->configForCollection(d->m_appConfig.membersCollectionId);
 
     QJsonArray queries;
-    queries.append(QString("equal(\"userId\",[\"%1\"])").arg(d->m_sessionInfo.userId));
-    queries.append("limit(1)");
+    queries.append(QString("{\"method\":\"equal\",\"attribute\":\"userId\",\"values\":[\"%1\"]}")
+                       .arg(d->m_sessionInfo.userId));
+    queries.append("{\"method\":\"limit\",\"values\":[1]}");
 
     d->m_pendingRequest = Private::PendingRequest::LoadMembership;
     d->m_client->listDocuments(config, queries);
@@ -488,9 +490,10 @@ void AppcommClient::loadChannelMessages(int limit)
         d->configForCollection(d->m_appConfig.messagesCollectionId);
 
     QJsonArray queries;
-    queries.append(QString("equal(\"channelId\",[\"%1\"])").arg(d->m_clientState.activeChannelId));
-    queries.append("orderAsc(\"sequenceNumber\")");
-    queries.append(QString("limit(%1)").arg(limit));
+    queries.append(QString("{\"method\":\"equal\",\"attribute\":\"channelId\",\"values\":[\"%1\"]}")
+                       .arg(d->m_clientState.activeChannelId));
+    queries.append("{\"method\":\"orderAsc\",\"attribute\":\"sequenceNumber\"}");
+    queries.append(QString("{\"method\":\"limit\",\"values\":[%1]}").arg(limit));
 
     d->m_pendingRequest = Private::PendingRequest::LoadMessages;
     d->m_client->listDocuments(config, queries);
@@ -535,6 +538,9 @@ void AppcommClient::onResyncCompleted(int messageCount)
 
 void AppcommClient::onRequestSuccess(const QJsonObject &data)
 {
+    qDebug() << "[AppcommClient] onRequestSuccess pending:"
+             << static_cast<int>(d->m_pendingRequest)
+             << data;
     if (d->m_pendingRequest == Private::PendingRequest::Login && isSessionResponse(data)) {
         d->m_pendingRequest = Private::PendingRequest::None;
 
@@ -619,6 +625,10 @@ void AppcommClient::onRequestSuccess(const QJsonObject &data)
 
 void AppcommClient::onRequestError(int code, const QString &message)
 {
+    qDebug() << "[AppcommClient] onRequestError pending:"
+             << static_cast<int>(d->m_pendingRequest)
+             << "code:" << code
+             << "message:" << message;
     Q_UNUSED(code);
 
     d->m_pendingRequest = Private::PendingRequest::None;
