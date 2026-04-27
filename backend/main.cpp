@@ -25,7 +25,7 @@ void printUsage()
         << "Commands:\n"
         << "  start                                 # start long-running backend service\n"
         << "  configure <endpoint> <projectId> <apiKey> <databaseId>\n"
-        << "            [messagesCollection] [membersCollection] [channelsCollection] [sessionsCollection]\n"
+        << "            [messagesCollection] [membersCollection] [channelsCollection] [sessionsCollection] [incomingMessagesCollection]\n"
         << "            [--guest-access <true|false>]\n"
         << "  users list\n"
         << "  users add <email> <password> [name]\n"
@@ -232,8 +232,8 @@ int main(int argc, char *argv[])
             printError(configureOptionsError);
             return 1;
         }
-        if (parsed.positionals.size() < 4 || parsed.positionals.size() > 8) {
-            printError("Usage: backend configure <endpoint> <projectId> <apiKey> <databaseId> [messagesCollection] [membersCollection] [channelsCollection] [sessionsCollection] [--guest-access <true|false>]");
+        if (parsed.positionals.size() < 4 || parsed.positionals.size() > 9) {
+            printError("Usage: backend configure <endpoint> <projectId> <apiKey> <databaseId> [messagesCollection] [membersCollection] [channelsCollection] [sessionsCollection] [incomingMessagesCollection] [--guest-access <true|false>]");
             return 1;
         }
 
@@ -255,6 +255,9 @@ int main(int argc, char *argv[])
         }
         if (parsed.positionals.size() >= 8) {
             config.sessionsCollectionId = parsed.positionals.at(7).trimmed();
+        }
+        if (parsed.positionals.size() >= 9) {
+            config.incomingMessagesCollectionId = parsed.positionals.at(8).trimmed();
         }
 
         if (!config.isValid()) {
