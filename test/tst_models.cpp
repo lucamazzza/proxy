@@ -713,7 +713,7 @@ void tst_models::testAppCommConfigIsValid_valid()
     config.apiKey = "apikey";
     config.databaseId = "db1";
     config.messagesCollectionId = "messages";
-    config.incomingMessagesCollectionId = "incomingMessages";
+    config.incomingMessagesCollectionId = "pendingmessages";
     config.membersCollectionId = "members";
 
     QVERIFY(config.isValid());

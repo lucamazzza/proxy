@@ -207,7 +207,7 @@ private:
         cfg.projectId = "project-id";
         cfg.databaseId = "database-id";
         cfg.messagesCollectionId = "messages";
-        cfg.incomingMessagesCollectionId = "incomingMessages";
+        cfg.incomingMessagesCollectionId = "pendingmessages";
         cfg.membersCollectionId = "members";
         return cfg;
     }
