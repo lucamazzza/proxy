@@ -36,6 +36,29 @@ QString equalQuery(const QString &key, const QString &value) {
     return QString("equal(\"%1\",[\"%2\"])").arg(key, escapeQueryValue(value));
 }
 
+QJsonObject extractRealtimePayload(const QJsonObject &event) {
+    QJsonObject envelope = event;
+    const QJsonValue dataValue = event.value("data");
+    if (dataValue.isObject()) {
+        envelope = dataValue.toObject();
+    }
+
+    QJsonValue payloadValue = envelope.value("payload");
+    if (!payloadValue.isObject()) {
+        payloadValue = event.value("payload");
+    }
+    if (!payloadValue.isObject()) {
+        return {};
+    }
+
+    QJsonObject payload = payloadValue.toObject();
+    const QJsonValue nestedDataValue = payload.value("data");
+    if (nestedDataValue.isObject()) {
+        payload = nestedDataValue.toObject();
+    }
+    return payload;
+}
+
 QJsonArray toJsonArray(const QStringList &values) {
     QJsonArray array;
     for (const QString &value : values) {
@@ -906,6 +929,9 @@ bool BackendService::removeChannel(const QString &channelId, QString *errorMessa
     if (!deleteDocumentsByChannel(m_config.membersCollectionId, normalizedChannelId, errorMessage)) {
         return false;
     }
+    if (!deleteDocumentsByChannel(m_config.incomingMessagesCollectionId, normalizedChannelId, errorMessage)) {
+        return false;
+    }
     if (!deleteDocumentsByChannel(m_config.messagesCollectionId, normalizedChannelId, errorMessage)) {
         return false;
     }
@@ -1173,7 +1199,7 @@ bool BackendService::readMessages(const QString &channelId,
     if (!messageId.trimmed().isEmpty()) {
         queries.append(equalQuery("messageId", messageId.trimmed()));
     }
-    queries.append("orderAsc(\"timestamp\")");
+    queries.append("orderAsc(\"sequenceNumber\")");
     queries.append(QString("limit(%1)").arg(limit));
     QJsonArray messageDocuments;
     if (!listDocuments(m_config.messagesCollectionId, queries, &messageDocuments, errorMessage)) {
@@ -1191,10 +1217,13 @@ bool BackendService::readMessages(const QString &channelId,
     std::sort(parsedMessages.begin(),
               parsedMessages.end(),
               [](const appcomm::model::Message &left, const appcomm::model::Message &right) {
-                  if (left.timestamp == right.timestamp) {
-                      return left.sequenceNumber < right.sequenceNumber;
+                  if (left.sequenceNumber == right.sequenceNumber) {
+                      if (left.timestamp == right.timestamp) {
+                          return left.messageId < right.messageId;
+                      }
+                      return left.timestamp < right.timestamp;
                   }
-                  return left.timestamp < right.timestamp;
+                  return left.sequenceNumber < right.sequenceNumber;
               });
     QJsonArray result;
     for (const appcomm::model::Message &message : parsedMessages) {
@@ -1325,7 +1354,7 @@ int BackendService::runEchoService(QString *errorMessage) {
     QTextStream out(stdout);
     QTextStream err(stderr);
     const appwritesdk::ConnectionConfig realtimeConfig =
-        configForCollection(m_config.messagesCollectionId);
+        configForCollection(m_config.incomingMessagesCollectionId);
     appcomm::Realtime realtime(realtimeConfig, this);
     QObject::connect(&m_server,
                      &appwritesdk::Server::requestError,
@@ -1348,43 +1377,74 @@ int BackendService::runEchoService(QString *errorMessage) {
         err << "Realtime error: " << message << Qt::endl;
     });
     QObject::connect(&realtime, &appcomm::Realtime::eventReceived, this, [&](const QJsonObject &event) {
-        QJsonObject eventData = event;
-        const QJsonValue dataValue = event.value("data");
-        if (dataValue.isObject()) {
-            eventData = dataValue.toObject();
-        }
-        const QJsonValue payloadValue = eventData.value("payload");
-        if (!payloadValue.isObject()) {
+        const QJsonObject payload = extractRealtimePayload(event);
+        if (payload.isEmpty()) {
             return;
         }
-        QJsonObject messageObject = payloadValue.toObject();
-        if (messageObject.contains("data") && messageObject.value("data").isObject()) {
-            messageObject = messageObject.value("data").toObject();
-        }
-        const appcomm::model::Message incomingMessage =
-            appcomm::model::Message::fromJson(messageObject);
-        if (!incomingMessage.isValid()) {
+
+        const QString incomingDocumentId = payload.value("$id").toString().trimmed();
+        const appcomm::model::PendingMessage pendingMessage =
+            appcomm::model::PendingMessage::fromJson(payload);
+        if (!pendingMessage.isValid()) {
             return;
         }
-        if (incomingMessage.isEcho) {
+
+        qint64 nextSequenceNumber = 0;
+        const QJsonArray sequenceQueries = {
+            equalQuery("channelId", pendingMessage.channelId),
+            "orderDesc(\"sequenceNumber\")",
+            "limit(1)"
+        };
+        QJsonArray latestMessages;
+        QString operationError;
+        if (!listDocuments(m_config.messagesCollectionId, sequenceQueries, &latestMessages, &operationError)) {
+            err << "Cannot resolve next sequence number: " << operationError << Qt::endl;
             return;
         }
-        appcomm::model::Message echoMessage = incomingMessage;
+        if (!latestMessages.isEmpty()) {
+            const appcomm::model::Message lastMessage =
+                appcomm::model::Message::fromJson(latestMessages.first().toObject());
+            if (lastMessage.sequenceNumber >= 0) {
+                nextSequenceNumber = lastMessage.sequenceNumber + 1;
+            }
+        }
+
+        appcomm::model::Message userMessage;
+        userMessage.channelId = pendingMessage.channelId;
+        userMessage.senderId = pendingMessage.senderId;
+        userMessage.messageId = pendingMessage.messageId;
+        userMessage.sequenceNumber = nextSequenceNumber;
+        userMessage.timestamp = QDateTime::currentDateTimeUtc();
+        userMessage.payload = pendingMessage.payload;
+        userMessage.isEcho = false;
+
+        if (!createDocument(m_config.messagesCollectionId, userMessage.toJson(), nullptr, &operationError)) {
+            err << "Cannot persist user message: " << operationError << Qt::endl;
+            return;
+        }
+
+        appcomm::model::Message echoMessage = userMessage;
         echoMessage.messageId = makeUuid();
         echoMessage.senderId = "backend-echo";
-        if (echoMessage.sequenceNumber < 0) {
-            echoMessage.sequenceNumber = 0;
-        } else {
-            echoMessage.sequenceNumber += 1;
-        }
+        echoMessage.sequenceNumber = nextSequenceNumber + 1;
         echoMessage.timestamp = QDateTime::currentDateTimeUtc();
         echoMessage.isEcho = true;
-        const appwritesdk::ConnectionConfig sdkConfig = configForCollection(m_config.messagesCollectionId);
-        m_server.createDocument(sdkConfig, echoMessage.toJson());
+
+        if (!createDocument(m_config.messagesCollectionId, echoMessage.toJson(), nullptr, &operationError)) {
+            err << "Cannot persist echo message: " << operationError << Qt::endl;
+            return;
+        }
+
+        if (!incomingDocumentId.isEmpty()) {
+            QString deleteError;
+            if (!deleteDocument(m_config.incomingMessagesCollectionId, incomingDocumentId, &deleteError)) {
+                err << "Cannot delete processed pending message: " << deleteError << Qt::endl;
+            }
+        }
     });
     const QStringList realtimeChannels = {
         QString("databases.%1.collections.%2.documents")
-            .arg(m_config.databaseId, m_config.messagesCollectionId)
+            .arg(m_config.databaseId, m_config.incomingMessagesCollectionId)
     };
     realtime.connectToChannels(realtimeChannels);
     out << "Running service for all channels" << Qt::endl;

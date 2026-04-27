@@ -269,6 +269,27 @@ bool BackendBootstrapper::bootstrap(QString *errorMessage) {
                           errorMessage)) {
         return false;
     }
+    const QList<AttributeDef> pendingMessageAttributes = {
+        {"string", "channelId", true, QJsonObject{{"size", 128}}},
+        {"string", "senderId", true, QJsonObject{{"size", 128}}},
+        {"string", "messageId", true, QJsonObject{{"size", 128}}},
+        {"datetime", "timestamp", true, QJsonObject()},
+        {"string", "payload", true, QJsonObject{{"size", 10000}}}
+    };
+    const QList<IndexDef> pendingMessageIndexes = {
+        {"idx_pending_channel", "key", {"channelId"}},
+        {"idx_pending_timestamp", "key", {"timestamp"}},
+        {"idx_pending_message_unique", "unique", {"messageId"}},
+        {"idx_pending_channel_timestamp", "key", {"channelId", "timestamp"}}
+    };
+    if (!ensureCollection(m_config.incomingMessagesCollectionId,
+                          "pendingmessages",
+                          collectionPermissions,
+                          pendingMessageAttributes,
+                          pendingMessageIndexes,
+                          errorMessage)) {
+        return false;
+    }
     const QList<AttributeDef> memberAttributes = {
         {"string", "channelId", true, QJsonObject{{"size", 128}}},
         {"string", "userId", true, QJsonObject{{"size", 128}}},
