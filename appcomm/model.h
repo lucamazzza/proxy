@@ -105,6 +105,18 @@ struct Message {
     static Message fromJson(const QJsonObject& obj);
 };
 
+struct PendingMessage {
+    QString channelId;
+    QString senderId;
+    QString messageId;
+    QDateTime timestamp;
+    QJsonObject payload;
+
+    bool isValid() const;
+    QJsonObject toJson() const;
+    static PendingMessage fromJson(const QJsonObject &obj);
+};
+
 /*!
  * @brief Represents session metadata for an authenticated user.
  *
@@ -189,6 +201,7 @@ struct AppCommConfig {
     QString databaseId;             ///< Database identifier
     QString messagesCollectionId;   ///< Messages collection ID
     QString membersCollectionId;    ///< Channel members collection ID
+    QString incomingMessagesCollectionId;
 
     /*!
      * @brief Validates the configuration.

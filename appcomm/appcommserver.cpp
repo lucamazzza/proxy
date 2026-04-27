@@ -11,9 +11,12 @@
 #include "messagequeryservice.h"
 #include "realtime.h"
 #include "model.h"
-#include <QJsonDocument>
+
 #include <QJsonArray>
+#include <QJsonDocument>
+#include <QQueue>
 #include <QTimer>
+#include <QUuid>
 
 using namespace appcomm::server;
 
@@ -69,24 +72,39 @@ bool isBootstrapLimitError(const QString &message) {
             || normalized.contains("maximum number of attributes")
             || normalized.contains("maximum number of indexes")
             || normalized.contains("maximum number of index"))
-        && normalized.contains("reached");
+           && normalized.contains("reached");
 }
 
 bool shouldRetryIndexCreation(const QString &message) {
     const QString normalized = message.toLower();
     return normalized.contains("not yet available")
-        || (normalized.contains("attribute") && normalized.contains("available"));
+           || (normalized.contains("attribute") && normalized.contains("available"));
 }
 
 bool isDatabaseLimitReached(const QString &message) {
     const QString normalized = message.toLower();
     return normalized.contains("maximum number of databases")
-        || normalized.contains("max databases")
-        || normalized.contains("only one database")
-        || normalized.contains("one database");
+           || normalized.contains("max databases")
+           || normalized.contains("only one database")
+           || normalized.contains("one database");
 }
 
+appcomm::model::Message makeSequencedMessage(const appcomm::model::PendingMessage &pending,
+                                             qint64 sequenceNumber,
+                                             bool isEcho)
+{
+    appcomm::model::Message msg;
+    msg.channelId = pending.channelId;
+    msg.senderId = pending.senderId;
+    msg.messageId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    msg.sequenceNumber = sequenceNumber;
+    msg.timestamp = QDateTime::currentDateTimeUtc();
+    msg.payload = pending.payload;
+    msg.isEcho = isEcho;
+    return msg;
 }
+
+} // namespace
 
 class AppcommServer::Private {
 public:
@@ -109,7 +127,11 @@ public:
         ListingMembers,
         DeletingUser,
         DeletingMessageListingDoc,
-        DeletingMessageDeletingDoc
+        DeletingMessageDeletingDoc,
+        ResolvingNextSequence,
+        CreatingFinalUserMessage,
+        CreatingEchoMessage,
+        DeletingIncomingMessage
     };
 
     model::AppCommConfig config;
@@ -134,6 +156,11 @@ public:
     QString pendingDeletedUserId;
     QString pendingDeletedMessageId;
 
+    QQueue<QPair<QString, model::PendingMessage>> incomingQueue;
+    QString currentIncomingDocumentId;
+    model::PendingMessage currentIncomingMessage;
+    qint64 nextSequenceNumber = 0;
+
     Private()
         : networkManager(nullptr)
         , server(nullptr)
@@ -141,9 +168,24 @@ public:
         , messageQueryService(nullptr)
         , realtime(nullptr)
         , initialized(false)
-    {}
+    {
+    }
 
     ~Private() {
+    }
+
+    appwritesdk::ConnectionConfig configForCollection(const QString &collectionId) const
+    {
+        appwritesdk::ConnectionConfig configCopy = sdkConfig;
+        configCopy.collectionId = collectionId;
+        return configCopy;
+    }
+
+    void clearCurrentIncoming()
+    {
+        currentIncomingDocumentId.clear();
+        currentIncomingMessage = model::PendingMessage();
+        nextSequenceNumber = 0;
     }
 };
 
@@ -155,8 +197,11 @@ AppcommServer::AppcommServer(QObject *parent)
     d->server = new appwritesdk::Server(d->networkManager, this);
     d->membershipService = new MembershipService(this);
     d->messageQueryService = new MessageQueryService(this);
-    connect(d->server, &appwritesdk::Server::requestSuccess, this, &AppcommServer::onServerRequestSuccess);
-    connect(d->server, &appwritesdk::Server::requestError, this, &AppcommServer::onServerRequestError);
+
+    connect(d->server, &appwritesdk::Server::requestSuccess,
+            this, &AppcommServer::onServerRequestSuccess);
+    connect(d->server, &appwritesdk::Server::requestError,
+            this, &AppcommServer::onServerRequestError);
 }
 
 AppcommServer::~AppcommServer() {
@@ -170,32 +215,46 @@ void AppcommServer::configure(const model::AppCommConfig &config) {
     d->sdkConfig.apiKey = config.apiKey;
     d->sdkConfig.dbId = config.databaseId;
     d->sdkConfig.collectionId = config.messagesCollectionId;
+
     if (d->realtime) {
         delete d->realtime;
     }
-    d->realtime = new Realtime(d->sdkConfig, this);
-    QStringList channels;
-    channels.append(QString("databases.%1.collections.%2.documents")
-                    .arg(config.databaseId, config.messagesCollectionId));
+
+    appwritesdk::ConnectionConfig incomingConfig = d->configForCollection(config.incomingMessagesCollectionId);
+    d->realtime = new Realtime(incomingConfig, this);
+
+    const QStringList channels{
+        QString("databases.%1.collections.%2.documents")
+        .arg(config.databaseId, config.incomingMessagesCollectionId)
+    };
+
     QObject::connect(d->realtime, &Realtime::eventReceived, this, [this](const QJsonObject &event) {
         QJsonObject eventData = event;
         if (eventData.contains("data") && eventData.value("data").isObject()) {
             eventData = eventData.value("data").toObject();
         }
+
         const QJsonValue payloadValue = eventData.value("payload");
         if (!payloadValue.isObject()) {
             return;
         }
+
         QJsonObject payloadObj = payloadValue.toObject();
         if (payloadObj.contains("data") && payloadObj.value("data").isObject()) {
             payloadObj = payloadObj.value("data").toObject();
         }
-        model::Message msg = model::Message::fromJson(payloadObj);
-        if (msg.isValid()) {
-            emit messageBroadcasted(msg);
+
+        const QString documentId = payloadObj.value("$id").toString().trimmed();
+        const model::PendingMessage pending = model::PendingMessage::fromJson(payloadObj);
+
+        if (documentId.isEmpty() || !pending.isValid()) {
+            return;
         }
+
+        enqueueIncomingMessage(documentId, pending);
     });
-    d->realtime->connect(channels);
+
+    d->realtime->connectToChannels(channels);
     emit configured();
 }
 
@@ -257,6 +316,7 @@ void AppcommServer::requestNextBootstrapAttribute() {
         requestNextBootstrapIndex();
         return;
     }
+
     const BootstrapAttributeDef attribute = d->bootstrapAttributes.at(d->currentAttributeIndex);
     d->initStep = Private::InitStep::CreatingAttribute;
     d->server->createAttribute(d->sdkConfig,
@@ -271,6 +331,7 @@ void AppcommServer::requestCurrentBootstrapIndex() {
         completeInitialization();
         return;
     }
+
     const BootstrapIndexDef index = d->bootstrapIndexes.at(d->currentIndexIndex);
     d->initStep = Private::InitStep::CreatingIndex;
     d->currentIndexAttempt += 1;
@@ -282,6 +343,7 @@ void AppcommServer::requestNextBootstrapIndex() {
         completeInitialization();
         return;
     }
+
     d->currentIndexAttempt = 0;
     requestCurrentBootstrapIndex();
 }
@@ -299,11 +361,37 @@ void AppcommServer::failInitialization(int code, const QString &message) {
     emit initializationError(code, message);
 }
 
+void AppcommServer::enqueueIncomingMessage(const QString &documentId, const model::PendingMessage &message)
+{
+    d->incomingQueue.enqueue(qMakePair(documentId, message));
+    processNextIncomingMessage();
+}
+
+void AppcommServer::processNextIncomingMessage()
+{
+    if (d->activeOperation != Private::AsyncOperation::None) {
+        return;
+    }
+
+    if (d->incomingQueue.isEmpty()) {
+        return;
+    }
+
+    const auto next = d->incomingQueue.dequeue();
+    d->currentIncomingDocumentId = next.first;
+    d->currentIncomingMessage = next.second;
+
+    d->activeOperation = Private::AsyncOperation::ResolvingNextSequence;
+    const QJsonArray queries = d->messageQueryService->lastSequenceForChannel(d->currentIncomingMessage.channelId);
+    d->server->listDocuments(d->configForCollection(d->config.messagesCollectionId), queries);
+}
+
 void AppcommServer::createChannel(const model::Channel &channel) {
     if (!channel.isValid()) {
         emit channelError(400, "Invalid channel data");
         return;
     }
+
     d->channels[channel.channelId] = channel;
     emit channelCreated(channel);
 }
@@ -317,6 +405,7 @@ void AppcommServer::deleteChannel(const QString &channelId) {
         emit operationError(409, "Another server operation is already in progress");
         return;
     }
+
     m_deletingChannelId = channelId;
     m_originalCollectionId = d->sdkConfig.collectionId;
     const QJsonArray queries = d->messageQueryService->channelDocuments(channelId, 100);
@@ -327,8 +416,7 @@ void AppcommServer::deleteChannel(const QString &channelId) {
 }
 
 void AppcommServer::listChannels() {
-    QList<model::Channel> channelList = d->channels.values();
-    emit channelsListed(channelList);
+    emit channelsListed(d->channels.values());
 }
 
 void AppcommServer::createUser(const QString &email, const QString &password, const QString &name) {
@@ -336,6 +424,7 @@ void AppcommServer::createUser(const QString &email, const QString &password, co
         emit userError(400, "Email and Password cannot be empty");
         return;
     }
+
     d->server->createUser(d->sdkConfig, email, password, name);
 }
 
@@ -348,6 +437,7 @@ void AppcommServer::deleteUser(const QString &userId) {
         emit userError(409, "Another server operation is already in progress");
         return;
     }
+
     d->activeOperation = Private::AsyncOperation::DeletingUser;
     d->pendingDeletedUserId = userId;
     d->server->deleteUser(d->sdkConfig, userId);
@@ -355,20 +445,28 @@ void AppcommServer::deleteUser(const QString &userId) {
 
 void AppcommServer::listUsers() {
     QJsonArray queries;
-    // Parametrize limit
     queries.append("limit(100)");
     d->server->listUsers(d->sdkConfig, queries);
 }
 
 void AppcommServer::broadcastMessage(const model::Message &message) {
-    if (!message.isValid()) {
-        emit messageError(400, "Invalid Message");
+    if (!message.channelId.trimmed().isEmpty()
+        && !message.senderId.trimmed().isEmpty()
+        && message.timestamp.isValid()) {
+        model::PendingMessage pending;
+        pending.channelId = message.channelId;
+        pending.senderId = message.senderId;
+        pending.messageId = message.messageId.trimmed().isEmpty()
+                                ? QUuid::createUuid().toString(QUuid::WithoutBraces)
+                                : message.messageId;
+        pending.timestamp = message.timestamp;
+        pending.payload = message.payload;
+
+        enqueueIncomingMessage(QString(), pending);
         return;
     }
-    auto oldCollectionId = d->sdkConfig.collectionId;
-    d->sdkConfig.collectionId = d->config.messagesCollectionId;
-    d->server->createDocument(d->sdkConfig, message.toJson());
-    d->sdkConfig.collectionId = oldCollectionId;
+
+    emit messageError(400, "Invalid Message");
 }
 
 void AppcommServer::getChannelMessages(const QString &channelId, int limit) {
@@ -376,11 +474,9 @@ void AppcommServer::getChannelMessages(const QString &channelId, int limit) {
         emit messageError(400, "Channel ID cannot be empty");
         return;
     }
+
     const QJsonArray queries = d->messageQueryService->channelMessages(channelId, limit);
-    auto oldCollectionId = d->sdkConfig.collectionId;
-    d->sdkConfig.collectionId = d->config.messagesCollectionId;
-    d->server->listDocuments(d->sdkConfig, queries);
-    d->sdkConfig.collectionId = oldCollectionId;
+    d->server->listDocuments(d->configForCollection(d->config.messagesCollectionId), queries);
 }
 
 void AppcommServer::deleteMessage(const QString &messageId) {
@@ -392,6 +488,7 @@ void AppcommServer::deleteMessage(const QString &messageId) {
         emit messageError(409, "Another server operation is already in progress");
         return;
     }
+
     m_originalCollectionId = d->sdkConfig.collectionId;
     d->activeOperation = Private::AsyncOperation::DeletingMessageListingDoc;
     d->pendingDeletedMessageId = messageId;
@@ -409,16 +506,15 @@ void AppcommServer::addChannelMember(const QString &channelId, const QString &us
         emit membershipError(409, "Another server operation is already in progress");
         return;
     }
+
     const model::ChannelMember member = d->membershipService->createActiveMember(
         channelId,
         userId,
         QDateTime::currentDateTimeUtc());
+
     d->pendingMemberToAdd = member;
     d->activeOperation = Private::AsyncOperation::AddingMember;
-    auto oldCollectionId = d->sdkConfig.collectionId;
-    d->sdkConfig.collectionId = d->config.membersCollectionId;
-    d->server->createDocument(d->sdkConfig, member.toJson());
-    d->sdkConfig.collectionId = oldCollectionId;
+    d->server->createDocument(d->configForCollection(d->config.membersCollectionId), member.toJson());
 }
 
 void AppcommServer::removeChannelMember(const QString &channelId, const QString &userId) {
@@ -430,6 +526,7 @@ void AppcommServer::removeChannelMember(const QString &channelId, const QString 
         emit membershipError(409, "Another server operation is already in progress");
         return;
     }
+
     m_removingChannelId = channelId;
     m_removingUserId = userId;
     m_originalCollectionId = d->sdkConfig.collectionId;
@@ -448,6 +545,7 @@ void AppcommServer::getChannelMembers(const QString &channelId) {
         emit membershipError(409, "Another server operation is already in progress");
         return;
     }
+
     m_queryingChannelId = channelId;
     m_originalCollectionId = d->sdkConfig.collectionId;
     const QJsonArray queries = d->messageQueryService->channelDocuments(channelId);
@@ -472,6 +570,64 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
     switch (d->activeOperation) {
     case Private::AsyncOperation::None:
         return false;
+
+    case Private::AsyncOperation::ResolvingNextSequence: {
+        const QJsonArray docs = data.value("documents").toArray();
+        if (!docs.isEmpty()) {
+            const model::Message lastMessage = model::Message::fromJson(docs.first().toObject());
+            d->nextSequenceNumber = lastMessage.isValid() ? lastMessage.sequenceNumber + 1 : 0;
+        } else {
+            d->nextSequenceNumber = 0;
+        }
+
+        const model::Message userMessage =
+            makeSequencedMessage(d->currentIncomingMessage, d->nextSequenceNumber, false);
+
+        d->activeOperation = Private::AsyncOperation::CreatingFinalUserMessage;
+        d->server->createDocument(d->configForCollection(d->config.messagesCollectionId), userMessage.toJson());
+        return true;
+    }
+
+    case Private::AsyncOperation::CreatingFinalUserMessage: {
+        const model::Message createdMessage = model::Message::fromJson(data);
+        if (createdMessage.isValid()) {
+            emit messageBroadcasted(createdMessage);
+        }
+
+        const model::Message echoMessage =
+            makeSequencedMessage(d->currentIncomingMessage, d->nextSequenceNumber + 1, true);
+
+        d->activeOperation = Private::AsyncOperation::CreatingEchoMessage;
+        d->server->createDocument(d->configForCollection(d->config.messagesCollectionId), echoMessage.toJson());
+        return true;
+    }
+
+    case Private::AsyncOperation::CreatingEchoMessage: {
+        const model::Message createdEcho = model::Message::fromJson(data);
+        if (createdEcho.isValid()) {
+            emit messageBroadcasted(createdEcho);
+        }
+
+        if (d->currentIncomingDocumentId.trimmed().isEmpty()) {
+            d->activeOperation = Private::AsyncOperation::None;
+            d->clearCurrentIncoming();
+            processNextIncomingMessage();
+            return true;
+        }
+
+        d->activeOperation = Private::AsyncOperation::DeletingIncomingMessage;
+        d->server->deleteDocument(
+            d->configForCollection(d->config.incomingMessagesCollectionId),
+            d->currentIncomingDocumentId);
+        return true;
+    }
+
+    case Private::AsyncOperation::DeletingIncomingMessage:
+        d->activeOperation = Private::AsyncOperation::None;
+        d->clearCurrentIncoming();
+        processNextIncomingMessage();
+        return true;
+
     case Private::AsyncOperation::DeletingChannelListingDocs: {
         const QJsonArray docs = data.value("documents").toArray();
         if (docs.isEmpty()) {
@@ -482,6 +638,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
             emit channelDeleted(m_deletingChannelId);
             return true;
         }
+
         d->docsToDeleteInChannel.clear();
         for (const QJsonValue &doc : docs) {
             const QString docId = doc.toObject().value("$id").toString().trimmed();
@@ -489,21 +646,22 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
                 d->docsToDeleteInChannel.append(docId);
             }
         }
+
         if (d->docsToDeleteInChannel.isEmpty()) {
             d->sdkConfig.collectionId = m_originalCollectionId;
             d->activeOperation = Private::AsyncOperation::None;
             emit channelError(500, "Unable to resolve message document IDs while deleting channel");
             return true;
         }
+
         d->activeOperation = Private::AsyncOperation::DeletingChannelDeletingDocs;
-        const QString docId = d->docsToDeleteInChannel.takeFirst();
-        d->server->deleteDocument(d->sdkConfig, docId);
+        d->server->deleteDocument(d->sdkConfig, d->docsToDeleteInChannel.takeFirst());
         return true;
     }
+
     case Private::AsyncOperation::DeletingChannelDeletingDocs:
         if (!d->docsToDeleteInChannel.isEmpty()) {
-            const QString docId = d->docsToDeleteInChannel.takeFirst();
-            d->server->deleteDocument(d->sdkConfig, docId);
+            d->server->deleteDocument(d->sdkConfig, d->docsToDeleteInChannel.takeFirst());
             return true;
         } else {
             d->activeOperation = Private::AsyncOperation::DeletingChannelListingDocs;
@@ -511,6 +669,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
             d->server->listDocuments(d->sdkConfig, queries);
             return true;
         }
+
     case Private::AsyncOperation::AddingMember: {
         model::ChannelMember member = model::ChannelMember::fromJson(data);
         if (member.userId.trimmed().isEmpty()) {
@@ -521,6 +680,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
         emit memberAdded(member);
         return true;
     }
+
     case Private::AsyncOperation::RemovingMemberListingDocs: {
         const QJsonArray docs = data.value("documents").toArray();
         if (docs.isEmpty()) {
@@ -529,6 +689,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
             emit memberRemoved(m_removingChannelId, m_removingUserId);
             return true;
         }
+
         const QString docId = d->membershipService->resolveDocumentId(docs.first().toObject());
         if (docId.isEmpty()) {
             d->sdkConfig.collectionId = m_originalCollectionId;
@@ -536,15 +697,18 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
             emit membershipError(500, "Unable to resolve member document ID");
             return true;
         }
+
         d->activeOperation = Private::AsyncOperation::RemovingMemberDeletingDoc;
         d->server->deleteDocument(d->sdkConfig, docId);
         return true;
     }
+
     case Private::AsyncOperation::RemovingMemberDeletingDoc:
         d->sdkConfig.collectionId = m_originalCollectionId;
         d->activeOperation = Private::AsyncOperation::None;
         emit memberRemoved(m_removingChannelId, m_removingUserId);
         return true;
+
     case Private::AsyncOperation::ListingMembers: {
         const QJsonArray docs = data.value("documents").toArray();
         const QList<model::ChannelMember> members = d->membershipService->parseMembers(docs);
@@ -553,6 +717,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
         emit membersListed(m_queryingChannelId, members);
         return true;
     }
+
     case Private::AsyncOperation::DeletingUser: {
         const QString deletedUserId = d->pendingDeletedUserId;
         d->pendingDeletedUserId.clear();
@@ -561,6 +726,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
         emit userDeleted(deletedUserId);
         return true;
     }
+
     case Private::AsyncOperation::DeletingMessageListingDoc: {
         const QJsonArray docs = data.value("documents").toArray();
         if (docs.isEmpty()) {
@@ -571,6 +737,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
             emit messageError(404, QString("Message not found: %1").arg(missingMessageId));
             return true;
         }
+
         const QString docId = docs.first().toObject().value("$id").toString().trimmed();
         if (docId.isEmpty()) {
             d->sdkConfig.collectionId = m_originalCollectionId;
@@ -579,10 +746,12 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
             emit messageError(500, "Unable to resolve message document ID");
             return true;
         }
+
         d->activeOperation = Private::AsyncOperation::DeletingMessageDeletingDoc;
         d->server->deleteDocument(d->sdkConfig, docId);
         return true;
     }
+
     case Private::AsyncOperation::DeletingMessageDeletingDoc: {
         const QString deletedMessageId = d->pendingDeletedMessageId;
         d->pendingDeletedMessageId.clear();
@@ -592,6 +761,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
         return true;
     }
     }
+
     return false;
 }
 
@@ -599,6 +769,17 @@ bool AppcommServer::handleOperationError(int code, const QString &message) {
     switch (d->activeOperation) {
     case Private::AsyncOperation::None:
         return false;
+
+    case Private::AsyncOperation::ResolvingNextSequence:
+    case Private::AsyncOperation::CreatingFinalUserMessage:
+    case Private::AsyncOperation::CreatingEchoMessage:
+    case Private::AsyncOperation::DeletingIncomingMessage:
+        d->activeOperation = Private::AsyncOperation::None;
+        d->clearCurrentIncoming();
+        emit messageError(code, message);
+        processNextIncomingMessage();
+        return true;
+
     case Private::AsyncOperation::DeletingChannelListingDocs:
     case Private::AsyncOperation::DeletingChannelDeletingDocs:
         d->docsToDeleteInChannel.clear();
@@ -606,11 +787,13 @@ bool AppcommServer::handleOperationError(int code, const QString &message) {
         d->activeOperation = Private::AsyncOperation::None;
         emit channelError(code, message);
         return true;
+
     case Private::AsyncOperation::AddingMember:
         d->pendingMemberToAdd = model::ChannelMember();
         d->activeOperation = Private::AsyncOperation::None;
         emit membershipError(code, message);
         return true;
+
     case Private::AsyncOperation::RemovingMemberListingDocs:
     case Private::AsyncOperation::RemovingMemberDeletingDoc:
     case Private::AsyncOperation::ListingMembers:
@@ -618,11 +801,13 @@ bool AppcommServer::handleOperationError(int code, const QString &message) {
         d->activeOperation = Private::AsyncOperation::None;
         emit membershipError(code, message);
         return true;
+
     case Private::AsyncOperation::DeletingUser:
         d->pendingDeletedUserId.clear();
         d->activeOperation = Private::AsyncOperation::None;
         emit userError(code, message);
         return true;
+
     case Private::AsyncOperation::DeletingMessageListingDoc:
     case Private::AsyncOperation::DeletingMessageDeletingDoc:
         d->pendingDeletedMessageId.clear();
@@ -631,6 +816,7 @@ bool AppcommServer::handleOperationError(int code, const QString &message) {
         emit messageError(code, message);
         return true;
     }
+
     return false;
 }
 
@@ -642,15 +828,18 @@ bool AppcommServer::handleInitializationSuccess(const QJsonObject &data) {
         }
         continueInitializationAfterDatabase();
         return true;
+
     case Private::InitStep::ListingDatabases: {
         if (!data.contains("databases")) {
             return false;
         }
+
         const QJsonArray databases = data.value("databases").toArray();
         if (databases.isEmpty()) {
             failInitialization(404, "No existing database found to reuse");
             return true;
         }
+
         QString existingDatabaseId;
         for (const QJsonValue &databaseValue : databases) {
             const QString databaseId = databaseValue.toObject().value("$id").toString().trimmed();
@@ -659,15 +848,18 @@ bool AppcommServer::handleInitializationSuccess(const QJsonObject &data) {
                 break;
             }
         }
+
         if (existingDatabaseId.isEmpty()) {
             failInitialization(404, "Unable to resolve existing database ID from Appwrite response");
             return true;
         }
+
         d->config.databaseId = existingDatabaseId;
         d->sdkConfig.dbId = existingDatabaseId;
         continueInitializationAfterDatabase();
         return true;
     }
+
     case Private::InitStep::CreatingCollection:
         if (!data.contains("$id") || !data.contains("$permissions")) {
             return false;
@@ -675,6 +867,7 @@ bool AppcommServer::handleInitializationSuccess(const QJsonObject &data) {
         d->currentAttributeIndex = 0;
         requestNextBootstrapAttribute();
         return true;
+
     case Private::InitStep::CreatingAttribute:
         if (!data.contains("key") || !data.contains("type")) {
             return false;
@@ -682,6 +875,7 @@ bool AppcommServer::handleInitializationSuccess(const QJsonObject &data) {
         d->currentAttributeIndex += 1;
         requestNextBootstrapAttribute();
         return true;
+
     case Private::InitStep::CreatingIndex:
         if (!data.contains("key") || !data.contains("status")) {
             return false;
@@ -690,9 +884,11 @@ bool AppcommServer::handleInitializationSuccess(const QJsonObject &data) {
         d->currentIndexAttempt = 0;
         requestNextBootstrapIndex();
         return true;
+
     case Private::InitStep::Idle:
         break;
     }
+
     return false;
 }
 
@@ -710,9 +906,11 @@ bool AppcommServer::handleInitializationError(int code, const QString &message) 
         }
         failInitialization(code, message);
         return true;
+
     case Private::InitStep::ListingDatabases:
         failInitialization(code, message);
         return true;
+
     case Private::InitStep::CreatingCollection:
         if (isAlreadyExistsError(code, message)) {
             d->currentAttributeIndex = 0;
@@ -721,6 +919,7 @@ bool AppcommServer::handleInitializationError(int code, const QString &message) 
         }
         failInitialization(code, message);
         return true;
+
     case Private::InitStep::CreatingAttribute:
         if (isAlreadyExistsError(code, message) || isBootstrapLimitError(message)) {
             d->currentAttributeIndex += 1;
@@ -729,6 +928,7 @@ bool AppcommServer::handleInitializationError(int code, const QString &message) 
         }
         failInitialization(code, message);
         return true;
+
     case Private::InitStep::CreatingIndex:
         if (isAlreadyExistsError(code, message) || isBootstrapLimitError(message)) {
             d->currentIndexIndex += 1;
@@ -746,9 +946,11 @@ bool AppcommServer::handleInitializationError(int code, const QString &message) 
         }
         failInitialization(code, message);
         return true;
+
     case Private::InitStep::Idle:
         break;
     }
+
     return false;
 }
 
@@ -760,7 +962,6 @@ void AppcommServer::onServerRequestSuccess(const QJsonObject &data) {
         return;
     }
 
-    // User creation
     if (data.contains("email") && data.contains("$id")) {
         model::User user;
         user.userId = data.value("$id").toString();
@@ -770,7 +971,6 @@ void AppcommServer::onServerRequestSuccess(const QJsonObject &data) {
         return;
     }
 
-    // User listing
     if (data.contains("users")) {
         QJsonArray usersArray = data.value("users").toArray();
         QList<model::User> users;
@@ -785,7 +985,6 @@ void AppcommServer::onServerRequestSuccess(const QJsonObject &data) {
         return;
     }
 
-    // Messages listing
     if (data.contains("documents")) {
         QJsonArray docs = data.value("documents").toArray();
         QList<model::Message> messages;

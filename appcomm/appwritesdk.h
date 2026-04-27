@@ -45,6 +45,40 @@ struct ConnectionConfig {
     QString collectionId; ///< Collection identifier
 };
 
+class IClientSdk {
+public:
+    virtual ~IClientSdk() = default;
+
+    virtual void createAnonymousSession(const ConnectionConfig &config) = 0;
+
+    virtual void createEmailSession(const ConnectionConfig &config,
+                                    const QString &email,
+                                    const QString &password) = 0;
+
+    virtual void deleteSession(const ConnectionConfig &config,
+                               const QString &sessionId) = 0;
+
+    virtual void deleteSessions(const ConnectionConfig &config) = 0;
+
+    virtual void getAccount(const ConnectionConfig &config) = 0;
+
+    virtual void createDocument(const ConnectionConfig &config,
+                                const QJsonObject &data) = 0;
+
+    virtual void listDocuments(const ConnectionConfig &config,
+                               const QJsonArray &queries = QJsonArray()) = 0;
+
+    virtual void getDocument(const ConnectionConfig &config,
+                             const QString &documentId) = 0;
+
+    virtual void updateDocument(const ConnectionConfig &config,
+                                const QString &documentId,
+                                const QJsonObject &data) = 0;
+
+    virtual void deleteDocument(const ConnectionConfig &config,
+                                const QString &documentId) = 0;
+};
+
 /*!
  * @brief Base class for Appwrite SDK operations.
  *
@@ -122,7 +156,7 @@ protected:
  * Provides methods for creating user sessions and managing documents
  * without requiring administrative privileges.
  */
-class Client : public BaseSDK {
+class Client : public BaseSDK, public IClientSdk {
     Q_OBJECT
 public:
     using BaseSDK::BaseSDK;
@@ -135,7 +169,7 @@ public:
      *
      * @param config Connection configuration
      */
-    void createAnonymousSession(const ConnectionConfig &config);
+    void createAnonymousSession(const ConnectionConfig &config) override;
 
     /*!
      * @brief Creates a session using email and password authentication.
@@ -144,7 +178,7 @@ public:
      * @param email User email address
      * @param password User password
      */
-    void createEmailSession(const ConnectionConfig &config, const QString &email, const QString &password);
+    void createEmailSession(const ConnectionConfig &config, const QString &email, const QString &password) override;
 
     /*!
      * @brief Deletes a given session.
@@ -152,21 +186,21 @@ public:
      * @param config The config of the connection currently standing.
      * @param sessionId The ID of the session to destroy.
      */
-    void deleteSession(const ConnectionConfig &config, const QString &sessionId);
+    void deleteSession(const ConnectionConfig &config, const QString &sessionId) override;
 
     /*!
      * @brief Deletes all the sessions in the system (Broadcast logout).
      *
      * @param config The config of the connection currently standing.
      */
-    void deleteSessions(const ConnectionConfig &config);
+    void deleteSessions(const ConnectionConfig &config) override;
 
     /*!
      * @brief Retrieve the currently logged account.
      *
      * @param config The config of the connection currently standing.
      */
-    void getAccount(const ConnectionConfig &config);
+    void getAccount(const ConnectionConfig &config) override;
 
     /*!
      * @brief Creates a new document in the configured collection.
@@ -174,7 +208,7 @@ public:
      * @param config Connection configuration with database and collection IDs
      * @param data JSON object containing document data
      */
-    void createDocument(const ConnectionConfig &config, const QJsonObject &data);
+    void createDocument(const ConnectionConfig &config, const QJsonObject &data) override;
 
     /*!
      * @brief Lists documents in the configured collection with optional query filters.
@@ -182,7 +216,7 @@ public:
      * @param config Connection configuration with database and collection IDs
      * @param queries Optional array of query strings (e.g., ["equal(\"channelId\",\"general\")", "limit(100)"])
      */
-    void listDocuments(const ConnectionConfig &config, const QJsonArray &queries = QJsonArray());
+    void listDocuments(const ConnectionConfig &config, const QJsonArray &queries = QJsonArray()) override;
 
     /*!
      * @brief Retrieves a single document by ID.
@@ -190,7 +224,7 @@ public:
      * @param config Connection configuration with database and collection IDs
      * @param documentId Unique document identifier
      */
-    void getDocument(const ConnectionConfig &config, const QString &documentId);
+    void getDocument(const ConnectionConfig &config, const QString &documentId) override;
 
     /*!
      * @brief Updates an existing document with new data.
@@ -199,7 +233,7 @@ public:
      * @param documentId Unique document identifier
      * @param data JSON object containing updated document data
      */
-    void updateDocument(const ConnectionConfig &config, const QString &documentId, const QJsonObject &data);
+    void updateDocument(const ConnectionConfig &config, const QString &documentId, const QJsonObject &data) override;
 
     /*!
      * @brief Deletes a document from the collection.
@@ -207,7 +241,7 @@ public:
      * @param config Connection configuration with database and collection IDs
      * @param documentId Unique document identifier to delete
      */
-    void deleteDocument(const ConnectionConfig &config, const QString &documentId);
+    void deleteDocument(const ConnectionConfig &config, const QString &documentId) override;
 };
 
 /*!

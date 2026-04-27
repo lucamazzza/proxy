@@ -1,22 +1,36 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QQmlEngine>
+
+#include "democontroller.h"
+#include "../appcomm/model.h"
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
+    appcomm::model::AppCommConfig config;
+    config.endpoint = "https://fra.cloud.appwrite.io/v1";
+    config.projectId = "69a007d7000a5a976062";
+    config.databaseId = "default";
+    config.messagesCollectionId = "messages";
+    config.incomingMessagesCollectionId = "pendingmessages";
+    config.membersCollectionId = "members";
+
     QQmlApplicationEngine engine;
-    const QUrl url(QStringLiteral("qrc:/frontend/Main.qml"));
+    DemoController controller(config);
+
+    qmlRegisterSingletonInstance("App", 1, 0, "AppController", &controller);
+
     QObject::connect(
         &engine,
-        &QQmlApplicationEngine::objectCreated,
+        &QQmlApplicationEngine::objectCreationFailed,
         &app,
-        [url](QObject *obj, const QUrl &objUrl) {
-            if (!obj && url == objUrl)
-                QCoreApplication::exit(-1);
-        },
+        []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
-    engine.load(url);
+
+    engine.loadFromModule("frontend", "Main");
 
     return app.exec();
 }

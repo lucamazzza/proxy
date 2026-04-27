@@ -64,6 +64,7 @@ public:
      * @return Query array containing message filter and optional limit.
      */
     QJsonArray messageDocuments(const QString &messageId, int limit = 1) const;
+    QJsonArray lastSequenceForChannel(const QString &channelId) const;
 
     /*!
      * @brief Builds an Appwrite equal(...) query for a string field.
