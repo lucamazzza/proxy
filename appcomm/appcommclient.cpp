@@ -590,7 +590,12 @@ void AppcommClient::onRequestSuccess(const QJsonObject &data)
 
 void AppcommClient::onRequestError(int code, const QString &message)
 {
-    Q_UNUSED(code);
+    const bool permissionDenied = code == 401 || code == 403;
+
+    if (d->m_sessionInfo.authType == model::AuthType::Guest && permissionDenied) {
+        emit errorOccurred("Guest access denied: missing Appwrite permissions.");
+        return;
+    }
 
     d->m_pendingRequest = Private::PendingRequest::None;
     emit errorOccurred(message);
