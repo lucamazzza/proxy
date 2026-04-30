@@ -21,6 +21,7 @@
 #include <QUuid>
 #include <QNetworkAccessManager>
 
+#include <algorithm>
 #include <optional>
 #include <utility>
 
@@ -73,6 +74,34 @@ QJsonObject extractRealtimePayload(const QJsonObject &event) {
     }
 
     return payload;
+}
+
+qint64 sequenceNumberFromDocument(const QJsonObject &document)
+{
+    return static_cast<qint64>(document.value("sequenceNumber").toDouble(-1));
+}
+
+QJsonArray sortMessageDocumentsAscending(const QJsonArray &documents)
+{
+    QList<QJsonObject> objects;
+    objects.reserve(documents.size());
+
+    for (const QJsonValue &value : documents) {
+        if (value.isObject()) {
+            objects.append(value.toObject());
+        }
+    }
+
+    std::sort(objects.begin(), objects.end(), [](const QJsonObject &left, const QJsonObject &right) {
+        return sequenceNumberFromDocument(left) < sequenceNumberFromDocument(right);
+    });
+
+    QJsonArray sorted;
+    for (const QJsonObject &object : objects) {
+        sorted.append(object);
+    }
+
+    return sorted;
 }
 
 appwritesdk::ConnectionConfig makeBaseConfig(const appcomm::model::AppCommConfig &cfg)
@@ -472,7 +501,7 @@ void AppcommClient::loadMembership()
 void AppcommClient::loadChannelMessages(int limit)
 {
     if (limit <= 0) {
-        limit = 50;
+        limit = 16;
     }
 
     if (d->m_clientState.activeChannelId.trimmed().isEmpty()) {
@@ -496,7 +525,7 @@ void AppcommClient::loadChannelMessages(int limit)
     QJsonArray queries;
     queries.append(QString("{\"method\":\"equal\",\"attribute\":\"channelId\",\"values\":[\"%1\"]}")
                        .arg(d->m_clientState.activeChannelId));
-    queries.append("{\"method\":\"orderAsc\",\"attribute\":\"sequenceNumber\"}");
+    queries.append("{\"method\":\"orderDesc\",\"attribute\":\"sequenceNumber\"}");
     queries.append(QString("{\"method\":\"limit\",\"values\":[%1]}").arg(limit));
 
     d->m_pendingRequest = Private::PendingRequest::LoadMessages;
@@ -578,7 +607,7 @@ void AppcommClient::onRequestSuccess(const QJsonObject &data)
     if (d->m_pendingRequest == Private::PendingRequest::LoadMessages) {
         d->m_pendingRequest = Private::PendingRequest::None;
 
-        handleMessageDocuments(data.value("documents").toArray());
+        handleMessageDocuments(sortMessageDocumentsAscending(data.value("documents").toArray()));
 
         if (d->m_connectionState == ConnectionState::Disconnected) {
             connectToServer();
@@ -592,12 +621,13 @@ void AppcommClient::onRequestError(int code, const QString &message)
 {
     const bool permissionDenied = code == 401 || code == 403;
 
+    d->m_pendingRequest = Private::PendingRequest::None;
+
     if (d->m_sessionInfo.authType == model::AuthType::Guest && permissionDenied) {
         emit errorOccurred("Guest access denied: missing Appwrite permissions.");
         return;
     }
 
-    d->m_pendingRequest = Private::PendingRequest::None;
     emit errorOccurred(message);
 }
 
