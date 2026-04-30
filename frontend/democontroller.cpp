@@ -196,7 +196,7 @@ void DemoController::onErrorOccurred(const QString &error)
     setBusy(false);
 
     if (m_loginMode == LoginMode::Guest &&
-        error.contains("No membership found", Qt::CaseInsensitive)) {
+        error.contains("Guest access denied", Qt::CaseInsensitive)) {
         emit guestAccessDenied();
         return;
     }
