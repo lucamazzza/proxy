@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import App 1.0
 
 Page {
+    signal backRequested()
     ColumnLayout {
         anchors.centerIn: parent
         width: 420
@@ -28,9 +29,7 @@ Page {
             Layout.fillWidth: true
 
             onClicked: {
-                AppController.logout()
-                StackView.view.clear()
-                StackView.view.push("LoginChoicePage.qml")
+                backRequested()
             }
         }
     }
