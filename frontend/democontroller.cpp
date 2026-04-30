@@ -196,7 +196,14 @@ void DemoController::onErrorOccurred(const QString &error)
     setBusy(false);
 
     if (m_loginMode == LoginMode::Guest &&
-        error.contains("Guest access denied", Qt::CaseInsensitive)) {
+        error.contains("Guest access denied", Qt::CaseInsensitive) ||
+        /*
+         * Se avessimo un'implementazione per il Guest con i permessi
+         * abilitati, questa riga messa in questo punto creerebbe conflitto
+         * con i Guest che non hanno un canale assegnato, ma nel nostro caso
+         * non la abbiamo, quindi non crea conflitti.
+         */
+        error.contains("No membership found", Qt::CaseInsensitive)) {
         emit guestAccessDenied();
         return;
     }
