@@ -57,9 +57,9 @@ void tst_recentmessagecache::cleanupTestCase() {}
 
 // Basic functionality
 void tst_recentmessagecache::initState() {
-    RecentMessageCache cache(50);
+    RecentMessageCache cache(16);
     QCOMPARE(cache.size(), 0);
-    QCOMPARE(cache.capacity(), 50);
+    QCOMPARE(cache.capacity(), 16);
     QVERIFY(cache.isEmpty());
 }
 

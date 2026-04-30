@@ -357,14 +357,14 @@ void tst_appcommserver::testBroadcastMessageInvalid()
 
 void tst_appcommserver::testGetChannelMessagesValid()
 {
-    server->getChannelMessages("channel-1", 50);
+    server->getChannelMessages("channel-1", 16);
     QVERIFY(true);
 }
 
 void tst_appcommserver::testGetChannelMessagesEmpty()
 {
     QSignalSpy spy(server, &AppcommServer::messageError);
-    server->getChannelMessages("", 50);
+    server->getChannelMessages("", 16);
 
     QCOMPARE(spy.count(), 1);
 }

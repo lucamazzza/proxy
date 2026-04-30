@@ -463,7 +463,7 @@ private slots:
         QCOMPARE(sdk.listDocumentsCalls, 0);
     }
 
-    void requestError_resetsPendingRequestAndEmitsError()
+    void requestError_forGuestPermissionDeniedResetsPendingRequestAndEmitsGuestDeniedError()
     {
         FakeDependencies deps;
         FakeClientSdk &sdk = deps.clientSdk();
@@ -478,7 +478,29 @@ private slots:
         emit sdk.requestError(401, "Unauthorized");
 
         QCOMPARE(errorSpy.count(), 1);
-        QCOMPARE(errorSpy.first().at(0).toString(), QString("Unauthorized"));
+        QCOMPARE(errorSpy.first().at(0).toString(),
+                 QString("Guest access denied: missing Appwrite permissions."));
+
+        emit sdk.requestSuccess(sessionResponse());
+        QCOMPARE(client.isAuthenticated(), false);
+    }
+
+    void requestError_forNonPermissionErrorResetsPendingRequestAndEmitsOriginalError()
+    {
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
+
+        AppcommClient client(validConfig(), deps.take());
+        QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
+
+        client.createGuestSession();
+        emit sdk.requestError(500, "Server error");
+
+        QCOMPARE(errorSpy.count(), 1);
+        QCOMPARE(errorSpy.first().at(0).toString(), QString("Server error"));
 
         emit sdk.requestSuccess(sessionResponse());
         QCOMPARE(client.isAuthenticated(), false);
@@ -532,9 +554,9 @@ private slots:
         QCOMPARE(sdk.lastQueries.at(0).toString(),
                  QString("{\"method\":\"equal\",\"attribute\":\"channelId\",\"values\":[\"channel-42\"]}"));
         QCOMPARE(sdk.lastQueries.at(1).toString(),
-                 QString("{\"method\":\"orderAsc\",\"attribute\":\"sequenceNumber\"}"));
+                 QString("{\"method\":\"orderDesc\",\"attribute\":\"sequenceNumber\"}"));
         QCOMPARE(sdk.lastQueries.at(2).toString(),
-                 QString("{\"method\":\"limit\",\"values\":[50]}"));
+                 QString("{\"method\":\"limit\",\"values\":[16]}"));
     }
 
     void membershipEmpty_emitsError()
@@ -1007,7 +1029,7 @@ private slots:
         client.loadChannelMessages(0);
 
         QCOMPARE(sdk.lastQueries.at(2).toString(),
-                 QString("{\"method\":\"limit\",\"values\":[50]}"));
+                 QString("{\"method\":\"limit\",\"values\":[16]}"));
     }
 
     void messagesLoaded_emitsMessagesAndConnects()
@@ -1041,6 +1063,42 @@ private slots:
         QCOMPARE(first.sequenceNumber, 1);
         QCOMPARE(second.messageId, QString("msg-2"));
         QCOMPARE(second.sequenceNumber, 2);
+    }
+
+    void messagesLoaded_whenReturnedDescendingProcessesInAscendingOrder()
+    {
+        FakeDependencies deps;
+        FakeClientSdk &sdk = deps.clientSdk();
+        FakeRealtime &realtime = deps.realtimeClient();
+        FakeRecoveryManager &recovery = deps.recoveryManager();
+        FakeRateLimiter &limiter = deps.rateLimiter();
+
+        AppcommClient client(validConfig(), deps.take());
+        QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
+
+        client.joinChannel("channel-1");
+
+        emit sdk.requestSuccess(messagesResponse(QJsonArray{
+            messageDocument("channel-1", 20, "msg-20"),
+            messageDocument("channel-1", 19, "msg-19"),
+            messageDocument("channel-1", 18, "msg-18")
+        }));
+
+        QCOMPARE(messageSpy.count(), 3);
+
+        const auto first =
+            qvariant_cast<appcomm::model::Message>(messageSpy.at(0).at(0));
+        const auto second =
+            qvariant_cast<appcomm::model::Message>(messageSpy.at(1).at(0));
+        const auto third =
+            qvariant_cast<appcomm::model::Message>(messageSpy.at(2).at(0));
+
+        QCOMPARE(first.messageId, QString("msg-18"));
+        QCOMPARE(first.sequenceNumber, 18);
+        QCOMPARE(second.messageId, QString("msg-19"));
+        QCOMPARE(second.sequenceNumber, 19);
+        QCOMPARE(third.messageId, QString("msg-20"));
+        QCOMPARE(third.sequenceNumber, 20);
     }
 
     void messagesLoaded_ignoresInvalidWrongChannelAndDuplicates()
