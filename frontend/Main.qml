@@ -12,7 +12,13 @@ ApplicationWindow {
         id: stackView
         anchors.fill: parent
 
-        initialItem: LoginChoicePage {
+        initialItem: loginChoicePageComponent
+    }
+
+    Component {
+        id: loginChoicePageComponent
+
+        LoginChoicePage {
             onEmailLoginRequested: {
                 AppController.clearError()
                 stackView.push(emailLoginPageComponent)
@@ -30,17 +36,40 @@ ApplicationWindow {
         }
     }
 
+    Component {
+        id: chatPageComponent
+
+        ChatPage {
+            onLogoutFinished: {
+                stackView.clear()
+                stackView.push(loginChoicePageComponent)
+            }
+        }
+    }
+
+    Component {
+        id: guestDeniedPageComponent
+
+        GuestDeniedPage {
+            onBackRequested: {
+                AppController.logout()
+                stackView.clear()
+                stackView.push(loginChoicePageComponent)
+            }
+        }
+    }
+
     Connections {
         target: AppController
 
         function onLoginSucceeded() {
             stackView.clear()
-            stackView.push("ChatPage.qml")
+            stackView.push(chatPageComponent)
         }
 
         function onGuestAccessDenied() {
             stackView.clear()
-            stackView.push("GuestDeniedPage.qml")
+            stackView.push(guestDeniedPageComponent)
         }
     }
 }
