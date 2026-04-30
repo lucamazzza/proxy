@@ -119,9 +119,9 @@ public:
     /*!
      * @brief Retrieves messages from a channel
      * @param channelId Channel identifier
-     * @param limit Maximum number of messages (default 50)
+     * @param limit Maximum number of messages (default 16)
      */
-    void getChannelMessages(const QString &channelId, int limit = 50);
+    void getChannelMessages(const QString &channelId, int limit = 16);
 
     /*!
      * @brief Deletes a specific message

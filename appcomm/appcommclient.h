@@ -105,7 +105,7 @@ public:
     void sendMessage(const QJsonObject &payload);
 
     void loadMembership();
-    void loadChannelMessages(int limit = 50);
+    void loadChannelMessages(int limit = 16);
 signals:
     //Authentication
     void authenticationStateChanged();
