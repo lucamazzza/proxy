@@ -18,7 +18,7 @@ Page {
         }
 
         Label {
-            text: "Guest users can authenticate, but they are not assigned to a channel. Therefore they cannot open the chat."
+            text: "Guest users don't have permissions to interact with the chat. Therefore they cannot view or write in the chat."
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignHCenter
             Layout.fillWidth: true
