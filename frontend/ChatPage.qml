@@ -4,6 +4,18 @@ import QtQuick.Layouts
 import App 1.0
 
 Page {
+    signal logoutFinished()
+
+    Timer {
+        id: logoutNavigationTimer
+        interval: 2000
+        repeat: false
+
+        onTriggered: {
+            logoutFinished()
+        }
+    }
+
     header: ToolBar {
         RowLayout {
             anchors.fill: parent
@@ -24,12 +36,12 @@ Page {
             }
 
             Button {
-                text: "Logout"
+                text: logoutNavigationTimer.running ? "Logging out..." : "Logout"
+                enabled: !logoutNavigationTimer.running
 
                 onClicked: {
                     AppController.logout()
-                    StackView.view.clear()
-                    StackView.view.push("LoginChoicePage.qml")
+                    logoutNavigationTimer.restart()
                 }
             }
         }
