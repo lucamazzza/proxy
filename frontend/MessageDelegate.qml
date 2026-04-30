@@ -24,7 +24,7 @@ Item {
         anchors.right: (!system && mine) ? parent.right : undefined
         anchors.left: (!system && !mine) ? parent.left : undefined
 
-        width: Math.min(parent.width * 0.70, Math.max(180, contentColumn.implicitWidth + 22))
+        width: Math.min(parent.width * 0.70, Math.max(80, contentColumn.implicitWidth + 22))
         implicitHeight: contentColumn.implicitHeight + 14
 
         Column {
