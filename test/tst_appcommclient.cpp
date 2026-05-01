@@ -132,7 +132,7 @@ class FakeRealtime : public IRealtime
     Q_OBJECT
 
 public:
-    int connectToChannelsCalls = 0;
+    int connectToTopicsCalls = 0;
     int disconnectFromServerCalls = 0;
     QStringList lastChannels;
 
@@ -141,9 +141,9 @@ public:
     {
     }
 
-    void connectToChannels(const QStringList &channels) override
+    void connectToTopics(const QStringList &channels) override
     {
-        connectToChannelsCalls++;
+        connectToTopicsCalls++;
         lastChannels = channels;
     }
 
@@ -693,7 +693,7 @@ private slots:
         client.connectToServer();
 
         QCOMPARE(client.connectionState(), ConnectionState::Disconnected);
-        QCOMPARE(realtime.connectToChannelsCalls, 0);
+        QCOMPARE(realtime.connectToTopicsCalls, 0);
     }
 
     void connectToServer_withChannelConnectsRealtime()
@@ -712,7 +712,7 @@ private slots:
 
         QCOMPARE(client.connectionState(), ConnectionState::Connecting);
         QCOMPARE(stateSpy.count(), 1);
-        QCOMPARE(realtime.connectToChannelsCalls, 1);
+        QCOMPARE(realtime.connectToTopicsCalls, 1);
         QCOMPARE(realtime.lastChannels.first(),
                  QString("databases.database-id.collections.messages.documents"));
     }
@@ -731,7 +731,7 @@ private slots:
         client.connectToServer();
         client.connectToServer();
 
-        QCOMPARE(realtime.connectToChannelsCalls, 1);
+        QCOMPARE(realtime.connectToTopicsCalls, 1);
     }
 
     void connectToServer_withoutMessagesCollectionEmitsError()
@@ -1051,7 +1051,7 @@ private slots:
         }));
 
         QCOMPARE(messageSpy.count(), 2);
-        QCOMPARE(realtime.connectToChannelsCalls, 1);
+        QCOMPARE(realtime.connectToTopicsCalls, 1);
         QCOMPARE(client.connectionState(), ConnectionState::Connecting);
 
         const auto first =

@@ -119,8 +119,8 @@ public:
 
     enum class AsyncOperation {
         None,
-        DeletingChannelListingDocs,
-        DeletingChannelDeletingDocs,
+        DeletingTopicListingDocs,
+        DeletingTopicDeletingDocs,
         AddingMember,
         RemovingMemberListingDocs,
         RemovingMemberDeletingDoc,
@@ -223,7 +223,7 @@ void AppcommServer::configure(const model::AppCommConfig &config) {
     appwritesdk::ConnectionConfig incomingConfig = d->configForCollection(config.incomingMessagesCollectionId);
     d->realtime = new Realtime(incomingConfig, this);
 
-    const QStringList channels{
+    const QStringList topics{
         QString("databases.%1.collections.%2.documents")
         .arg(config.databaseId, config.incomingMessagesCollectionId)
     };
@@ -254,7 +254,7 @@ void AppcommServer::configure(const model::AppCommConfig &config) {
         enqueueIncomingMessage(documentId, pending);
     });
 
-    d->realtime->connectToChannels(channels);
+    d->realtime->connectToTopics(topics);
     emit configured();
 }
 
@@ -410,7 +410,7 @@ void AppcommServer::deleteTopic(const QString &topicId) {
     m_originalCollectionId = d->sdkConfig.collectionId;
     const QJsonArray queries = d->messageQueryService->topicDocuments(topicId, 100);
     d->docsToDeleteInTopic.clear();
-    d->activeOperation = Private::AsyncOperation::DeletingChannelListingDocs;
+    d->activeOperation = Private::AsyncOperation::DeletingTopicListingDocs;
     d->sdkConfig.collectionId = d->config.messagesCollectionId;
     d->server->listDocuments(d->sdkConfig, queries);
 }
@@ -628,7 +628,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
         processNextIncomingMessage();
         return true;
 
-    case Private::AsyncOperation::DeletingChannelListingDocs: {
+    case Private::AsyncOperation::DeletingTopicListingDocs: {
         const QJsonArray docs = data.value("documents").toArray();
         if (docs.isEmpty()) {
             d->sdkConfig.collectionId = m_originalCollectionId;
@@ -654,17 +654,17 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
             return true;
         }
 
-        d->activeOperation = Private::AsyncOperation::DeletingChannelDeletingDocs;
+        d->activeOperation = Private::AsyncOperation::DeletingTopicDeletingDocs;
         d->server->deleteDocument(d->sdkConfig, d->docsToDeleteInTopic.takeFirst());
         return true;
     }
 
-    case Private::AsyncOperation::DeletingChannelDeletingDocs:
+    case Private::AsyncOperation::DeletingTopicDeletingDocs:
         if (!d->docsToDeleteInTopic.isEmpty()) {
             d->server->deleteDocument(d->sdkConfig, d->docsToDeleteInTopic.takeFirst());
             return true;
         } else {
-            d->activeOperation = Private::AsyncOperation::DeletingChannelListingDocs;
+            d->activeOperation = Private::AsyncOperation::DeletingTopicListingDocs;
             const QJsonArray queries = d->messageQueryService->topicDocuments(m_deletingTopicId, 100);
             d->server->listDocuments(d->sdkConfig, queries);
             return true;
@@ -780,8 +780,8 @@ bool AppcommServer::handleOperationError(int code, const QString &message) {
         processNextIncomingMessage();
         return true;
 
-    case Private::AsyncOperation::DeletingChannelListingDocs:
-    case Private::AsyncOperation::DeletingChannelDeletingDocs:
+    case Private::AsyncOperation::DeletingTopicListingDocs:
+    case Private::AsyncOperation::DeletingTopicDeletingDocs:
         d->docsToDeleteInTopic.clear();
         d->sdkConfig.collectionId = m_originalCollectionId;
         d->activeOperation = Private::AsyncOperation::None;

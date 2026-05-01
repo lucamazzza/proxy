@@ -283,7 +283,7 @@ void AppcommClient::connectToServer()
         QString("databases.%1.collections.%2.documents")
             .arg(d->m_baseConfig.dbId, d->m_appConfig.messagesCollectionId);
 
-    d->m_realtime->connectToChannels({topic});
+    d->m_realtime->connectToTopics({topic});
 }
 
 void AppcommClient::disconnectFromServer()

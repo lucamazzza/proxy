@@ -310,19 +310,19 @@ bool BackendBootstrapper::bootstrap(QString *errorMessage) {
                           errorMessage)) {
         return false;
     }
-    const QList<AttributeDef> channelAttributes = {
+    const QList<AttributeDef> topicAttributes = {
         {"string", "topicId", true, QJsonObject{{"size", 128}}},
         {"string", "name", true, QJsonObject{{"size", 256}}},
         {"datetime", "createdAt", true, QJsonObject()}
     };
-    const QList<IndexDef> channelIndexes = {
+    const QList<IndexDef> topicIndexes = {
         {"idx_channel_id", "unique", {"topicId"}}
     };
     if (!ensureCollection(m_config.topicsCollectionId,
                           "topics",
                           collectionPermissions,
-                          channelAttributes,
-                          channelIndexes,
+                          topicAttributes,
+                          topicIndexes,
                           errorMessage)) {
         return false;
     }

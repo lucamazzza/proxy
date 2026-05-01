@@ -188,7 +188,7 @@ private slots:
      * @code
      * {
      *   "events": ["databases.*.collections.*.documents.*"],
-     *   "channels": ["databases.db1.collections.messages.documents"],
+     *   "topics": ["databases.db1.collections.messages.documents"],
      *   "timestamp": 1234567890,
      *   "payload": { ... document data ... }
      * }

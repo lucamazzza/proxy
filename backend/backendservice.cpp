@@ -1512,13 +1512,13 @@ int BackendService::runEchoService(QString *errorMessage) {
         }
         enqueuePendingDocument(payload);
     });
-    const QStringList realtimeChannels = {
+    const QStringList realtimeTopics = {
         QString("databases.%1.collections.%2.documents")
             .arg(m_config.databaseId, m_config.incomingMessagesCollectionId),
         QString("databases.%1.collections.%2.documents.*")
             .arg(m_config.databaseId, m_config.incomingMessagesCollectionId)
     };
-    realtime.connectToChannels(realtimeChannels);
+    realtime.connectToTopics(realtimeTopics);
     QTimer pendingPollTimer;
     pendingPollTimer.setInterval(2000);
     QObject::connect(&pendingPollTimer, &QTimer::timeout, this, [&]() {
@@ -1526,7 +1526,7 @@ int BackendService::runEchoService(QString *errorMessage) {
     });
     pendingPollTimer.start();
     pollPendingDocuments();
-    out << "Watching channels: " << realtimeChannels.join(", ") << Qt::endl;
-    out << "Running service for all channels" << Qt::endl;
+    out << "Watching topics: " << realtimeTopics.join(", ") << Qt::endl;
+    out << "Running service for all topics" << Qt::endl;
     return application->exec();
 }

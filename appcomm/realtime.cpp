@@ -30,7 +30,7 @@ Realtime::Realtime(const appwritesdk::ConnectionConfig &config, QObject *parent)
                      this, &Realtime::onErrorOccurred);
 }
 
-void Realtime::connectToChannels(const QStringList &channels)
+void Realtime::connectToTopics(const QStringList &topics)
 {
     QString endpoint = m_config.endpoint;
 
@@ -47,8 +47,8 @@ void Realtime::connectToChannels(const QStringList &channels)
     QString urlStr = QString("%1/v1/realtime?project=%2")
                          .arg(endpoint, m_config.projectId);
 
-    for (const QString &channel : channels) {
-        urlStr.append(QString("&channels[]=%1").arg(channel));
+    for (const QString &topic : topics) {
+        urlStr.append(QString("&channels[]=%1").arg(topic));
     }
 
     m_webSocket->open(QUrl(urlStr));

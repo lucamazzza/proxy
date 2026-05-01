@@ -28,7 +28,7 @@ public:
 
     ~IRealtime() override = default;
 
-    virtual void connectToChannels(const QStringList &channels) = 0;
+    virtual void connectToTopics(const QStringList &topics) = 0;
     virtual void disconnectFromServer() = 0;
 
 signals:
@@ -49,7 +49,7 @@ public:
     explicit Realtime(const appwritesdk::ConnectionConfig &config,
                       QObject *parent = nullptr);
 
-    void connectToChannels(const QStringList &channels) override;
+    void connectToTopics(const QStringList &topics) override;
     void disconnectFromServer() override;
 
 private slots:
