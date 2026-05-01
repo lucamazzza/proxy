@@ -14,6 +14,7 @@
 #include <QRegularExpression>
 #include <QUrlQuery>
 #include <QUrl>
+#include <QUuid>
 
 using namespace appwritesdk;
 
@@ -166,7 +167,7 @@ void Client::createDocument(const ConnectionConfig &config, const QJsonObject &d
                        .arg(config.dbId, config.collectionId);
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_USER);
     QJsonObject body;
-    body["documentId"] = "unique()";
+    body["documentId"] = QUuid::createUuid().toString(QUuid::WithoutBraces);
     body["data"] = data;
     body["permissions"] = QJsonArray{"read(\"any\")", "write(\"any\")"};
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
@@ -325,7 +326,7 @@ void Server::createUser(const ConnectionConfig &config,
                        const QString &name) {
     QNetworkRequest req = createBaseRequest(config, "users", APPCOMM_ADMIN);
     QJsonObject body;
-    body["userId"] = "unique()";
+    body["userId"] = QUuid::createUuid().toString(QUuid::WithoutBraces);
     body["email"] = email;
     body["password"] = password;
     if (!name.isEmpty()) {
@@ -391,7 +392,7 @@ void Server::createDocument(const ConnectionConfig &config, const QJsonObject &d
                        .arg(config.dbId, config.collectionId);
     QNetworkRequest req = createBaseRequest(config, path, APPCOMM_ADMIN);
     QJsonObject body;
-    body["documentId"] = "unique()";
+    body["documentId"] = QUuid::createUuid().toString(QUuid::WithoutBraces);
     body["data"] = data;
     body["permissions"] = QJsonArray{"read(\"any\")", "write(\"any\")"};
     QNetworkReply *reply = m_network->post(req, QJsonDocument(body).toJson());
