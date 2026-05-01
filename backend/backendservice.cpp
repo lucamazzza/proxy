@@ -13,6 +13,7 @@
 
 #include <algorithm>
 
+#include "garbagecollector.h"
 #include "model.h"
 #include "realtime.h"
 
@@ -1492,6 +1493,39 @@ int BackendService::runEchoService(QString *errorMessage) {
         processNextIncoming();
     };
     pollPendingDocuments = [&]() {
+        appcomm::model::PersistencePolicy cleanupPolicy;
+        cleanupPolicy.messageTTL = 120;
+
+        appcomm::server::GarbageCollector garbageCollector(
+            &m_server,
+            configForCollection(m_config.messagesCollectionId),
+            this);
+        QEventLoop cleanupLoop;
+        QTimer cleanupTimeout;
+        cleanupTimeout.setSingleShot(true);
+        QString cleanupError;
+        QObject::connect(&garbageCollector,
+                         &appcomm::server::GarbageCollector::cleanupComplete,
+                         &cleanupLoop,
+                         [&](int) { cleanupLoop.quit(); });
+        QObject::connect(&garbageCollector,
+                         &appcomm::server::GarbageCollector::cleanupError,
+                         &cleanupLoop,
+                         [&](const QString &message) {
+                             cleanupError = message;
+                             cleanupLoop.quit();
+                         });
+        QObject::connect(&cleanupTimeout, &QTimer::timeout, &cleanupLoop, [&]() {
+            cleanupError = "GarbageCollector timeout";
+            cleanupLoop.quit();
+        });
+        cleanupTimeout.start(10000);
+        garbageCollector.runCleanup(cleanupPolicy);
+        cleanupLoop.exec();
+        if (!cleanupError.isEmpty()) {
+            err << "Cannot run garbagecollector: " << cleanupError << Qt::endl;
+        }
+
         QJsonArray pendingDocuments;
         QString listPendingError;
         if (!listDocuments(m_config.incomingMessagesCollectionId,

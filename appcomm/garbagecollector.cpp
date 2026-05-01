@@ -31,7 +31,7 @@ void GarbageCollector::runCleanup(const model::PersistencePolicy &policy) {
         emit cleanupComplete(0);
         return;
     }
-    const QDateTime cutoffDate = QDateTime::currentDateTimeUtc().addDays(-policy.messageTTL);
+    const QDateTime cutoffDate = QDateTime::currentDateTimeUtc().addSecs(-policy.messageTTL);
     m_cutoffTimestamp = cutoffDate.toString(Qt::ISODate);
     m_cleanupInProgress = true;
     m_deletedCount = 0;
@@ -43,7 +43,16 @@ void GarbageCollector::onDocumentsListed(const QJsonObject &data) {
     if (!m_cleanupInProgress) {
         return;
     }
-    QJsonArray documents = data.value("documents").toArray();
+    const QDateTime cutoffDate = QDateTime::fromString(m_cutoffTimestamp, Qt::ISODate);
+    if (!cutoffDate.isValid()) {
+        m_cleanupInProgress = false;
+        m_cutoffTimestamp.clear();
+        m_docsToDelete.clear();
+        emit cleanupError("Cleanup failed: invalid cutoff timestamp");
+        return;
+    }
+
+    const QJsonArray documents = data.value("documents").toArray();
     if (documents.isEmpty()) {
         m_cleanupInProgress = false;
         m_cutoffTimestamp.clear();
@@ -52,8 +61,14 @@ void GarbageCollector::onDocumentsListed(const QJsonObject &data) {
     }
     disconnect(m_server, &appwritesdk::Server::requestSuccess, this, &GarbageCollector::onDocumentsListed);
     connect(m_server, &appwritesdk::Server::requestSuccess, this, &GarbageCollector::onDocumentDeleted);
-    for (const QJsonValue &doc : std::as_const(documents)) {
-        QString docId = doc.toObject().value("$id").toString();
+    for (const QJsonValue &docValue : std::as_const(documents)) {
+        const QJsonObject doc = docValue.toObject();
+        const QDateTime timestamp = QDateTime::fromString(doc.value("timestamp").toString(),
+                                                          Qt::ISODate);
+        if (!timestamp.isValid() || timestamp >= cutoffDate) {
+            continue;
+        }
+        const QString docId = doc.value("$id").toString();
         if (!docId.isEmpty()) {
             m_docsToDelete.append(docId);
         }
@@ -61,6 +76,10 @@ void GarbageCollector::onDocumentsListed(const QJsonObject &data) {
     if (!m_docsToDelete.isEmpty()) {
         QString docId = m_docsToDelete.takeFirst();
         m_server->deleteDocument(m_config, docId);
+    } else {
+        m_cleanupInProgress = false;
+        m_cutoffTimestamp.clear();
+        emit cleanupComplete(m_deletedCount);
     }
 }
 
@@ -88,8 +107,5 @@ void GarbageCollector::onError(int code, const QString &message) {
 }
 
 QJsonArray GarbageCollector::cleanupQueries() const {
-    QJsonArray queries;
-    queries.append(QString("lessThan(\"timestamp\", \"%1\")").arg(m_cutoffTimestamp));
-    queries.append(QString("limit(%1)").arg(CLEANUP_BATCH_SIZE));
-    return queries;
+    return {};
 }
