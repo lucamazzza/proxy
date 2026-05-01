@@ -21,7 +21,7 @@ namespace backend {
 class Session {
 public:
     QString sessionId;
-    QString channelId;
+    QString topicId;
     QStringList userIds;
     QDateTime createdAt;
     QString status = "open";
@@ -36,7 +36,7 @@ public:
     explicit BackendService(const BackendConfig &config, QObject *parent = nullptr);
     BackendConfig resolvedConfig() const;
     bool bootstrap(QString *errorMessage);
-    bool createChannel(const QString &name, QJsonObject *createdChannel, QString *errorMessage);
+    bool createTopic(const QString &name, QJsonObject *createdTopic, QString *errorMessage);
     bool createUser(const QString &email, const QString &password, const QString &name, QJsonObject *createdUser,
                     QString *errorMessage);
     bool deleteUser(const QString &userId, QString *errorMessage);
@@ -45,19 +45,19 @@ public:
                        QString *errorMessage);
     bool removeCollection(const QString &collectionId, QString *errorMessage);
     bool listCollections(QJsonArray *collections, QString *errorMessage);
-    bool listChannels(QJsonArray *channels, QString *errorMessage);
-    bool removeChannel(const QString &channelId, QString *errorMessage);
-    bool addMember(const QString &channelId, const QString &userId, const QString &displayName, QJsonObject *member,
+    bool listTopics(QJsonArray *topics, QString *errorMessage);
+    bool removeTopic(const QString &topicId, QString *errorMessage);
+    bool addMember(const QString &topicId, const QString &userId, const QString &displayName, QJsonObject *member,
                    QString *errorMessage);
-    bool removeMember(const QString &channelId, const QString &userId, QString *errorMessage);
-    bool listMembers(const QString &channelId, QJsonArray *members, QString *errorMessage);
-    bool createSession(const QString &channelId, const QStringList &userIds, QJsonObject *createdSession,
+    bool removeMember(const QString &topicId, const QString &userId, QString *errorMessage);
+    bool listMembers(const QString &topicId, QJsonArray *members, QString *errorMessage);
+    bool createSession(const QString &topicId, const QStringList &userIds, QJsonObject *createdSession,
                        QString *errorMessage);
     bool listSessions(QJsonArray *sessions, QString *errorMessage);
     bool closeSession(const QString &sessionId, QString *errorMessage);
-    bool readMessages(const QString &channelId, const QString &messageId, int limit, QJsonArray *messages,
+    bool readMessages(const QString &topicId, const QString &messageId, int limit, QJsonArray *messages,
                       QString *errorMessage);
-    bool createMessage(const QString &channelId, const QString &senderId, const QJsonObject &payload,
+    bool createMessage(const QString &topicId, const QString &senderId, const QJsonObject &payload,
                        QJsonObject *createdMessage, QString *errorMessage);
     bool removeMessage(const QString &messageId, QString *errorMessage);
     int runEchoService(QString *errorMessage);
@@ -77,8 +77,8 @@ private:
     bool deleteDocument(const QString &collectionId, const QString &documentId, QString *errorMessage);
     bool findSingleDocument(const QString &collectionId, const QJsonArray &queries, QJsonObject *document,
                             QString *errorMessage);
-    bool ensureChannelExists(const QString &channelId, QString *errorMessage);
-    bool deleteDocumentsByChannel(const QString &collectionId, const QString &channelId, QString *errorMessage);
+    bool ensureTopicExists(const QString &topicId, QString *errorMessage);
+    bool deleteDocumentsByTopic(const QString &collectionId, const QString &topicId, QString *errorMessage);
     BackendConfig m_config;
     QNetworkAccessManager m_network;
     appwritesdk::Server m_server;

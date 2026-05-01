@@ -32,17 +32,17 @@ private slots:
     void testIsInitializedDefault();
     void testIsInitializedAfterInit();
 
-    // Channel management
-    void testCreateChannelValid();
-    void testCreateChannelInvalid();
-    void testCreateChannelEmitsSignal();
-    void testDeleteChannelValid();
-    void testDeleteChannelEmpty();
-    void testDeleteChannelEmitsError();
-    void testListChannelsEmpty();
-    void testListChannelsWithData();
-    void testGetChannelValid();
-    void testGetChannelInvalid();
+    // Topic management
+    void testCreateTopicValid();
+    void testCreateTopicInvalid();
+    void testCreateTopicEmitsSignal();
+    void testDeleteTopicValid();
+    void testDeleteTopicEmpty();
+    void testDeleteTopicEmitsError();
+    void testListTopicsEmpty();
+    void testListTopicsWithData();
+    void testGetTopicValid();
+    void testGetTopicInvalid();
     void testChannelsGetter();
 
     // User management
@@ -55,20 +55,20 @@ private slots:
     // Message management
     void testBroadcastMessageValid();
     void testBroadcastMessageInvalid();
-    void testGetChannelMessagesValid();
-    void testGetChannelMessagesEmpty();
+    void testGetTopicMessagesValid();
+    void testGetTopicMessagesEmpty();
     void testDeleteMessageValid();
     void testDeleteMessageEmpty();
 
     // Membership management
-    void testAddChannelMemberValid();
-    void testAddChannelMemberEmptyChannel();
-    void testAddChannelMemberEmptyUser();
-    void testRemoveChannelMemberValid();
-    void testRemoveChannelMemberEmptyChannel();
-    void testRemoveChannelMemberEmptyUser();
-    void testGetChannelMembersValid();
-    void testGetChannelMembersEmpty();
+    void testAddTopicMemberValid();
+    void testAddTopicMemberEmptyTopic();
+    void testAddTopicMemberEmptyUser();
+    void testRemoveTopicMemberValid();
+    void testRemoveTopicMemberEmptyTopic();
+    void testRemoveTopicMemberEmptyUser();
+    void testGetTopicMembersValid();
+    void testGetTopicMembersEmpty();
 
 private:
     AppcommServer *server;
@@ -153,141 +153,141 @@ void tst_appcommserver::testIsInitializedAfterInit()
     QVERIFY(!server->isInitialized());
 }
 
-// Channel management
+// Topic management
 
-void tst_appcommserver::testCreateChannelValid()
+void tst_appcommserver::testCreateTopicValid()
 {
-    Channel channel;
-    channel.channelId = "test-channel-123";
-    channel.name = "Test Channel";
+    Topic topic;
+    topic.topicId = "test-topic-123";
+    topic.name = "Test Topic";
 
-    QSignalSpy spy(server, &AppcommServer::channelCreated);
-    server->createChannel(channel);
+    QSignalSpy spy(server, &AppcommServer::topicCreated);
+    server->createTopic(topic);
 
     QCOMPARE(spy.count(), 1);
     QList<QVariant> args = spy.takeFirst();
-    Channel emittedChannel = args.at(0).value<Channel>();
-    QCOMPARE(emittedChannel.channelId, channel.channelId);
-    QCOMPARE(emittedChannel.name, channel.name);
+    Topic emittedTopic = args.at(0).value<Topic>();
+    QCOMPARE(emittedTopic.topicId, topic.topicId);
+    QCOMPARE(emittedTopic.name, topic.name);
 }
 
-void tst_appcommserver::testCreateChannelInvalid()
+void tst_appcommserver::testCreateTopicInvalid()
 {
-    Channel channel;
-    channel.channelId = "";
-    channel.name = "Invalid Channel";
+    Topic topic;
+    topic.topicId = "";
+    topic.name = "Invalid Topic";
 
-    QSignalSpy errorSpy(server, &AppcommServer::channelError);
-    QSignalSpy createdSpy(server, &AppcommServer::channelCreated);
+    QSignalSpy errorSpy(server, &AppcommServer::topicError);
+    QSignalSpy createdSpy(server, &AppcommServer::topicCreated);
 
-    server->createChannel(channel);
+    server->createTopic(topic);
 
     QCOMPARE(errorSpy.count(), 1);
     QCOMPARE(createdSpy.count(), 0);
 }
 
-void tst_appcommserver::testCreateChannelEmitsSignal()
+void tst_appcommserver::testCreateTopicEmitsSignal()
 {
-    Channel channel;
-    channel.channelId = "test-channel-456";
-    channel.name = "Signal Test Channel";
+    Topic topic;
+    topic.topicId = "test-topic-456";
+    topic.name = "Signal Test Topic";
 
-    QSignalSpy spy(server, &AppcommServer::channelCreated);
-    server->createChannel(channel);
+    QSignalSpy spy(server, &AppcommServer::topicCreated);
+    server->createTopic(topic);
 
     QCOMPARE(spy.count(), 1);
 }
 
-void tst_appcommserver::testDeleteChannelValid()
+void tst_appcommserver::testDeleteTopicValid()
 {
-    Channel channel;
-    channel.channelId = "channel-to-delete";
-    channel.name = "Delete Me";
-    server->createChannel(channel);
+    Topic topic;
+    topic.topicId = "topic-to-delete";
+    topic.name = "Delete Me";
+    server->createTopic(topic);
 
-    server->deleteChannel("channel-to-delete");
+    server->deleteTopic("topic-to-delete");
     QVERIFY(true);
 }
 
-void tst_appcommserver::testDeleteChannelEmpty()
+void tst_appcommserver::testDeleteTopicEmpty()
 {
-    QSignalSpy spy(server, &AppcommServer::channelError);
-    server->deleteChannel("");
+    QSignalSpy spy(server, &AppcommServer::topicError);
+    server->deleteTopic("");
 
     QCOMPARE(spy.count(), 1);
     QList<QVariant> args = spy.takeFirst();
     QCOMPARE(args.at(0).toInt(), 400);
 }
 
-void tst_appcommserver::testDeleteChannelEmitsError()
+void tst_appcommserver::testDeleteTopicEmitsError()
 {
-    QSignalSpy spy(server, &AppcommServer::channelError);
-    server->deleteChannel("");
+    QSignalSpy spy(server, &AppcommServer::topicError);
+    server->deleteTopic("");
 
     QCOMPARE(spy.count(), 1);
 }
 
-void tst_appcommserver::testListChannelsEmpty()
+void tst_appcommserver::testListTopicsEmpty()
 {
-    QSignalSpy spy(server, &AppcommServer::channelsListed);
-    server->listChannels();
-
-    QCOMPARE(spy.count(), 1);
-    QList<QVariant> args = spy.takeFirst();
-    QList<Channel> channels = args.at(0).value<QList<Channel>>();
-    QCOMPARE(channels.size(), 0);
-}
-
-void tst_appcommserver::testListChannelsWithData()
-{
-    Channel channel1;
-    channel1.channelId = "channel-1";
-    channel1.name = "Channel 1";
-
-    Channel channel2;
-    channel2.channelId = "channel-2";
-    channel2.name = "Channel 2";
-
-    server->createChannel(channel1);
-    server->createChannel(channel2);
-
-    QSignalSpy spy(server, &AppcommServer::channelsListed);
-    server->listChannels();
+    QSignalSpy spy(server, &AppcommServer::topicsListed);
+    server->listTopics();
 
     QCOMPARE(spy.count(), 1);
     QList<QVariant> args = spy.takeFirst();
-    QList<Channel> channels = args.at(0).value<QList<Channel>>();
-    QCOMPARE(channels.size(), 2);
+    QList<Topic> topics = args.at(0).value<QList<Topic>>();
+    QCOMPARE(topics.size(), 0);
 }
 
-void tst_appcommserver::testGetChannelValid()
+void tst_appcommserver::testListTopicsWithData()
 {
-    Channel channel;
-    channel.channelId = "get-channel-test";
-    channel.name = "Get Test";
-    server->createChannel(channel);
+    Topic channel1;
+    channel1.topicId = "topic-1";
+    channel1.name = "Topic 1";
 
-    Channel retrieved = server->getChannel("get-channel-test");
-    QCOMPARE(retrieved.channelId, channel.channelId);
-    QCOMPARE(retrieved.name, channel.name);
+    Topic channel2;
+    channel2.topicId = "topic-2";
+    channel2.name = "Topic 2";
+
+    server->createTopic(channel1);
+    server->createTopic(channel2);
+
+    QSignalSpy spy(server, &AppcommServer::topicsListed);
+    server->listTopics();
+
+    QCOMPARE(spy.count(), 1);
+    QList<QVariant> args = spy.takeFirst();
+    QList<Topic> topics = args.at(0).value<QList<Topic>>();
+    QCOMPARE(topics.size(), 2);
 }
 
-void tst_appcommserver::testGetChannelInvalid()
+void tst_appcommserver::testGetTopicValid()
 {
-    Channel retrieved = server->getChannel("non-existent-channel");
-    QVERIFY(retrieved.channelId.isEmpty());
+    Topic topic;
+    topic.topicId = "get-topic-test";
+    topic.name = "Get Test";
+    server->createTopic(topic);
+
+    Topic retrieved = server->getTopic("get-topic-test");
+    QCOMPARE(retrieved.topicId, topic.topicId);
+    QCOMPARE(retrieved.name, topic.name);
+}
+
+void tst_appcommserver::testGetTopicInvalid()
+{
+    Topic retrieved = server->getTopic("non-existent-topic");
+    QVERIFY(retrieved.topicId.isEmpty());
 }
 
 void tst_appcommserver::testChannelsGetter()
 {
-    Channel channel;
-    channel.channelId = "getter-test";
-    channel.name = "Getter Channel";
-    server->createChannel(channel);
+    Topic topic;
+    topic.topicId = "getter-test";
+    topic.name = "Getter Topic";
+    server->createTopic(topic);
 
-    QList<Channel> channels = server->channels();
-    QCOMPARE(channels.size(), 1);
-    QCOMPARE(channels.first().channelId, channel.channelId);
+    QList<Topic> topics = server->topics();
+    QCOMPARE(topics.size(), 1);
+    QCOMPARE(topics.first().topicId, topic.topicId);
 }
 
 // User management
@@ -333,7 +333,7 @@ void tst_appcommserver::testDeleteUserEmpty()
 void tst_appcommserver::testBroadcastMessageValid()
 {
     Message msg;
-    msg.channelId = "channel-1";
+    msg.topicId = "topic-1";
     msg.senderId = "user-1";
     msg.messageId = "msg-1";
     msg.sequenceNumber = 1;
@@ -347,7 +347,7 @@ void tst_appcommserver::testBroadcastMessageValid()
 void tst_appcommserver::testBroadcastMessageInvalid()
 {
     Message msg;
-    msg.channelId = "";
+    msg.topicId = "";
 
     QSignalSpy spy(server, &AppcommServer::messageError);
     server->broadcastMessage(msg);
@@ -355,16 +355,16 @@ void tst_appcommserver::testBroadcastMessageInvalid()
     QCOMPARE(spy.count(), 1);
 }
 
-void tst_appcommserver::testGetChannelMessagesValid()
+void tst_appcommserver::testGetTopicMessagesValid()
 {
-    server->getChannelMessages("channel-1", 16);
+    server->getTopicMessages("topic-1", 16);
     QVERIFY(true);
 }
 
-void tst_appcommserver::testGetChannelMessagesEmpty()
+void tst_appcommserver::testGetTopicMessagesEmpty()
 {
     QSignalSpy spy(server, &AppcommServer::messageError);
-    server->getChannelMessages("", 16);
+    server->getTopicMessages("", 16);
 
     QCOMPARE(spy.count(), 1);
 }
@@ -385,64 +385,64 @@ void tst_appcommserver::testDeleteMessageEmpty()
 
 // Membership management
 
-void tst_appcommserver::testAddChannelMemberValid()
+void tst_appcommserver::testAddTopicMemberValid()
 {
     QSignalSpy addedSpy(server, &AppcommServer::memberAdded);
     QSignalSpy errorSpy(server, &AppcommServer::membershipError);
-    server->addChannelMember("channel-1", "user-1");
+    server->addTopicMember("topic-1", "user-1");
 
     QVERIFY(addedSpy.isValid());
     QCOMPARE(errorSpy.count(), 0);
 }
 
-void tst_appcommserver::testAddChannelMemberEmptyChannel()
+void tst_appcommserver::testAddTopicMemberEmptyTopic()
 {
     QSignalSpy spy(server, &AppcommServer::membershipError);
-    server->addChannelMember("", "user-1");
+    server->addTopicMember("", "user-1");
 
     QCOMPARE(spy.count(), 1);
 }
 
-void tst_appcommserver::testAddChannelMemberEmptyUser()
+void tst_appcommserver::testAddTopicMemberEmptyUser()
 {
     QSignalSpy spy(server, &AppcommServer::membershipError);
-    server->addChannelMember("channel-1", "");
+    server->addTopicMember("topic-1", "");
 
     QCOMPARE(spy.count(), 1);
 }
 
-void tst_appcommserver::testRemoveChannelMemberValid()
+void tst_appcommserver::testRemoveTopicMemberValid()
 {
-    server->removeChannelMember("channel-1", "user-1");
+    server->removeTopicMember("topic-1", "user-1");
     QVERIFY(true);
 }
 
-void tst_appcommserver::testRemoveChannelMemberEmptyChannel()
+void tst_appcommserver::testRemoveTopicMemberEmptyTopic()
 {
     QSignalSpy spy(server, &AppcommServer::membershipError);
-    server->removeChannelMember("", "user-1");
+    server->removeTopicMember("", "user-1");
 
     QCOMPARE(spy.count(), 1);
 }
 
-void tst_appcommserver::testRemoveChannelMemberEmptyUser()
+void tst_appcommserver::testRemoveTopicMemberEmptyUser()
 {
     QSignalSpy spy(server, &AppcommServer::membershipError);
-    server->removeChannelMember("channel-1", "");
+    server->removeTopicMember("topic-1", "");
 
     QCOMPARE(spy.count(), 1);
 }
 
-void tst_appcommserver::testGetChannelMembersValid()
+void tst_appcommserver::testGetTopicMembersValid()
 {
-    server->getChannelMembers("channel-1");
+    server->getTopicMembers("topic-1");
     QVERIFY(true);
 }
 
-void tst_appcommserver::testGetChannelMembersEmpty()
+void tst_appcommserver::testGetTopicMembersEmpty()
 {
     QSignalSpy spy(server, &AppcommServer::membershipError);
-    server->getChannelMembers("");
+    server->getTopicMembers("");
 
     QCOMPARE(spy.count(), 1);
 }

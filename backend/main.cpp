@@ -25,7 +25,7 @@ void printUsage()
         << "Commands:\n"
         << "  start                                 # start long-running backend service\n"
         << "  configure <endpoint> <projectId> <apiKey> <databaseId>\n"
-        << "            [messagesCollection] [membersCollection] [channelsCollection] [sessionsCollection] [incomingMessagesCollection]\n"
+        << "            [messagesCollection] [membersCollection] [topicsCollection] [sessionsCollection] [incomingMessagesCollection]\n"
         << "            [--guest-access <true|false>]\n"
         << "  users list\n"
         << "  users add <email> <password> [name]\n"
@@ -33,18 +33,18 @@ void printUsage()
         << "  collections list\n"
         << "  collections add <collectionId> [name]\n"
         << "  collections remove <collectionId>\n"
-        << "  channels list\n"
-        << "  channels add <name>\n"
-        << "  channels remove <channelId>\n"
-        << "  members list <channelId>\n"
-        << "  members add <channelId> <userId> [displayName]\n"
-        << "  members remove <channelId> <userId>\n"
+        << "  topics list\n"
+        << "  topics add <name>\n"
+        << "  topics remove <topicId>\n"
+        << "  members list <topicId>\n"
+        << "  members add <topicId> <userId> [displayName]\n"
+        << "  members remove <topicId> <userId>\n"
         << "  sessions list\n"
-        << "  sessions add <channelId> <userId> [userId ...]\n"
+        << "  sessions add <topicId> <userId> [userId ...]\n"
         << "  sessions close <sessionId>\n"
-        << "  messages list <channelId> [limit]\n"
-        << "  messages find <channelId> <messageId> [limit]\n"
-        << "  messages add <channelId> <senderId> <payloadJsonOrText>\n"
+        << "  messages list <topicId> [limit]\n"
+        << "  messages find <topicId> <messageId> [limit]\n"
+        << "  messages add <topicId> <senderId> <payloadJsonOrText>\n"
         << "  messages remove <messageId>\n"
         << "  serve | echo-service                  # aliases of start\n";
 }
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
             return 1;
         }
         if (parsed.positionals.size() < 4 || parsed.positionals.size() > 9) {
-            printError("Usage: backend configure <endpoint> <projectId> <apiKey> <databaseId> [messagesCollection] [membersCollection] [channelsCollection] [sessionsCollection] [incomingMessagesCollection] [--guest-access <true|false>]");
+            printError("Usage: backend configure <endpoint> <projectId> <apiKey> <databaseId> [messagesCollection] [membersCollection] [topicsCollection] [sessionsCollection] [incomingMessagesCollection] [--guest-access <true|false>]");
             return 1;
         }
 
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
             config.membersCollectionId = parsed.positionals.at(5).trimmed();
         }
         if (parsed.positionals.size() >= 7) {
-            config.channelsCollectionId = parsed.positionals.at(6).trimmed();
+            config.topicsCollectionId = parsed.positionals.at(6).trimmed();
         }
         if (parsed.positionals.size() >= 8) {
             config.sessionsCollectionId = parsed.positionals.at(7).trimmed();
@@ -311,7 +311,7 @@ int main(int argc, char *argv[])
          || command == "serve"
          || command == "echo-service"
          || command == "collections"
-         || command == "channels"
+         || command == "topics"
          || command == "members"
          || command == "sessions"
          || command == "messages");
@@ -462,61 +462,61 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (command == "channels") {
+    if (command == "topics") {
         if (!ensureNoOptions(parsed, &error)) {
             printError(error);
             return 1;
         }
         if (parsed.positionals.isEmpty()) {
-            printError("channels command requires an action: list | add | remove");
+            printError("topics command requires an action: list | add | remove");
             return 1;
         }
 
         const QString action = parsed.positionals.at(0).trimmed().toLower();
         if (action == "list") {
             if (parsed.positionals.size() != 1) {
-                printError("Usage: backend channels list");
+                printError("Usage: backend topics list");
                 return 1;
             }
-            QJsonArray channels;
-            if (!service.listChannels(&channels, &error)) {
+            QJsonArray topics;
+            if (!service.listTopics(&topics, &error)) {
                 printError(error);
                 return 1;
             }
-            printJsonArray(channels);
+            printJsonArray(topics);
             return 0;
         }
 
         if (action == "add") {
             if (parsed.positionals.size() < 2) {
-                printError("Usage: backend channels add <name>");
+                printError("Usage: backend topics add <name>");
                 return 1;
             }
             const QString name = joinPositionals(parsed.positionals, 1);
-            QJsonObject channel;
-            if (!service.createChannel(name, &channel, &error)) {
+            QJsonObject topic;
+            if (!service.createTopic(name, &topic, &error)) {
                 printError(error);
                 return 1;
             }
-            printJsonObject(channel);
+            printJsonObject(topic);
             return 0;
         }
 
         if (action == "remove") {
             if (parsed.positionals.size() != 2) {
-                printError("Usage: backend channels remove <channelId>");
+                printError("Usage: backend topics remove <topicId>");
                 return 1;
             }
-            const QString channelId = parsed.positionals.at(1).trimmed();
-            if (!service.removeChannel(channelId, &error)) {
+            const QString topicId = parsed.positionals.at(1).trimmed();
+            if (!service.removeTopic(topicId, &error)) {
                 printError(error);
                 return 1;
             }
-            printJsonObject(QJsonObject{{"status", "removed"}, {"channelId", channelId}});
+            printJsonObject(QJsonObject{{"status", "removed"}, {"topicId", topicId}});
             return 0;
         }
 
-        printError(QString("Unknown channels action: %1").arg(action));
+        printError(QString("Unknown topics action: %1").arg(action));
         return 1;
     }
 
@@ -533,12 +533,12 @@ int main(int argc, char *argv[])
         const QString action = parsed.positionals.at(0).trimmed().toLower();
         if (action == "list") {
             if (parsed.positionals.size() != 2) {
-                printError("Usage: backend members list <channelId>");
+                printError("Usage: backend members list <topicId>");
                 return 1;
             }
-            const QString channelId = parsed.positionals.at(1).trimmed();
+            const QString topicId = parsed.positionals.at(1).trimmed();
             QJsonArray members;
-            if (!service.listMembers(channelId, &members, &error)) {
+            if (!service.listMembers(topicId, &members, &error)) {
                 printError(error);
                 return 1;
             }
@@ -548,14 +548,14 @@ int main(int argc, char *argv[])
 
         if (action == "add") {
             if (parsed.positionals.size() < 3) {
-                printError("Usage: backend members add <channelId> <userId> [displayName]");
+                printError("Usage: backend members add <topicId> <userId> [displayName]");
                 return 1;
             }
-            const QString channelId = parsed.positionals.at(1).trimmed();
+            const QString topicId = parsed.positionals.at(1).trimmed();
             const QString userId = parsed.positionals.at(2).trimmed();
             const QString displayName = joinPositionals(parsed.positionals, 3);
             QJsonObject member;
-            if (!service.addMember(channelId, userId, displayName, &member, &error)) {
+            if (!service.addMember(topicId, userId, displayName, &member, &error)) {
                 printError(error);
                 return 1;
             }
@@ -565,18 +565,18 @@ int main(int argc, char *argv[])
 
         if (action == "remove") {
             if (parsed.positionals.size() != 3) {
-                printError("Usage: backend members remove <channelId> <userId>");
+                printError("Usage: backend members remove <topicId> <userId>");
                 return 1;
             }
-            const QString channelId = parsed.positionals.at(1).trimmed();
+            const QString topicId = parsed.positionals.at(1).trimmed();
             const QString userId = parsed.positionals.at(2).trimmed();
-            if (!service.removeMember(channelId, userId, &error)) {
+            if (!service.removeMember(topicId, userId, &error)) {
                 printError(error);
                 return 1;
             }
             printJsonObject(QJsonObject{
                 {"status", "removed"},
-                {"channelId", channelId},
+                {"topicId", topicId},
                 {"userId", userId}
             });
             return 0;
@@ -599,10 +599,10 @@ int main(int argc, char *argv[])
         const QString action = parsed.positionals.at(0).trimmed().toLower();
         if (action == "list") {
             if (parsed.positionals.size() < 2 || parsed.positionals.size() > 3) {
-                printError("Usage: backend messages list <channelId> [limit]");
+                printError("Usage: backend messages list <topicId> [limit]");
                 return 1;
             }
-            const QString channelId = parsed.positionals.at(1).trimmed();
+            const QString topicId = parsed.positionals.at(1).trimmed();
             int limit = 100;
             if (parsed.positionals.size() == 3) {
                 bool ok = false;
@@ -613,7 +613,7 @@ int main(int argc, char *argv[])
                 }
             }
             QJsonArray messages;
-            if (!service.readMessages(channelId, QString(), limit, &messages, &error)) {
+            if (!service.readMessages(topicId, QString(), limit, &messages, &error)) {
                 printError(error);
                 return 1;
             }
@@ -623,10 +623,10 @@ int main(int argc, char *argv[])
 
         if (action == "find") {
             if (parsed.positionals.size() < 3 || parsed.positionals.size() > 4) {
-                printError("Usage: backend messages find <channelId> <messageId> [limit]");
+                printError("Usage: backend messages find <topicId> <messageId> [limit]");
                 return 1;
             }
-            const QString channelId = parsed.positionals.at(1).trimmed();
+            const QString topicId = parsed.positionals.at(1).trimmed();
             const QString messageId = parsed.positionals.at(2).trimmed();
             int limit = 100;
             if (parsed.positionals.size() == 4) {
@@ -638,7 +638,7 @@ int main(int argc, char *argv[])
                 }
             }
             QJsonArray messages;
-            if (!service.readMessages(channelId, messageId, limit, &messages, &error)) {
+            if (!service.readMessages(topicId, messageId, limit, &messages, &error)) {
                 printError(error);
                 return 1;
             }
@@ -648,10 +648,10 @@ int main(int argc, char *argv[])
 
         if (action == "add") {
             if (parsed.positionals.size() < 4) {
-                printError("Usage: backend messages add <channelId> <senderId> <payloadJsonOrText>");
+                printError("Usage: backend messages add <topicId> <senderId> <payloadJsonOrText>");
                 return 1;
             }
-            const QString channelId = parsed.positionals.at(1).trimmed();
+            const QString topicId = parsed.positionals.at(1).trimmed();
             const QString senderId = parsed.positionals.at(2).trimmed();
             const QString payloadInput = joinPositionals(parsed.positionals, 3);
 
@@ -666,7 +666,7 @@ int main(int argc, char *argv[])
             }
 
             QJsonObject message;
-            if (!service.createMessage(channelId, senderId, payload, &message, &error)) {
+            if (!service.createMessage(topicId, senderId, payload, &message, &error)) {
                 printError(error);
                 return 1;
             }
@@ -719,10 +719,10 @@ int main(int argc, char *argv[])
 
         if (action == "add") {
             if (parsed.positionals.size() < 3) {
-                printError("Usage: backend sessions add <channelId> <userId> [userId ...]");
+                printError("Usage: backend sessions add <topicId> <userId> [userId ...]");
                 return 1;
             }
-            const QString channelId = parsed.positionals.at(1).trimmed();
+            const QString topicId = parsed.positionals.at(1).trimmed();
             QStringList userIds;
             for (int i = 2; i < parsed.positionals.size(); ++i) {
                 const QString userId = parsed.positionals.at(i).trimmed();
@@ -736,7 +736,7 @@ int main(int argc, char *argv[])
             }
 
             QJsonObject createdSession;
-            if (!service.createSession(channelId, userIds, &createdSession, &error)) {
+            if (!service.createSession(topicId, userIds, &createdSession, &error)) {
                 printError(error);
                 return 1;
             }

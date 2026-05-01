@@ -53,28 +53,28 @@ struct User {
 };
 
 /*!
- * @brief Represents a communication channel.
+ * @brief Represents a communication topic.
  *
- * A channel is identified by a unique ID and optionally a human-readable name.
+ * A topic is identified by a unique ID and optionally a human-readable name.
  */
-struct Channel {
-    QString channelId; ///< Unique channel identifier (UUID)
-    QString name;      ///< Human-readable channel name
+struct Topic {
+    QString topicId; ///< Unique topic identifier (UUID)
+    QString name;    ///< Human-readable topic name
 
     /*!
-     * @brief Validates the channel object.
+     * @brief Validates the topic object.
      * @return True if all required fields are non-empty
      */
     bool isValid() const;
 };
 
 /*!
- * @brief Represents a message exchanged within a channel.
+ * @brief Represents a message exchanged within a topic.
  *
  * Messages are serialized as JSON and can carry arbitrary payload data.
  */
 struct Message {
-    QString channelId;        ///< Channel to which the message belongs
+    QString topicId;          ///< Topic to which the message belongs
     QString senderId;         ///< ID of the sender user
     QString messageId;        ///< Unique message identifier
     qint64 sequenceNumber = -1;  ///< Unique message number in sequence
@@ -106,7 +106,7 @@ struct Message {
 };
 
 struct PendingMessage {
-    QString channelId;
+    QString topicId;
     QString senderId;
     QString messageId;
     QDateTime timestamp;
@@ -147,33 +147,33 @@ struct SessionInfo {
 };
 
 /*!
- * @brief Represents a member of a channel.
+ * @brief Represents a member of a topic.
  *
- * Tracks user presence and activity within a channel.
+ * Tracks user presence and activity within a topic.
  */
-struct ChannelMember {
+struct TopicMember {
     QString userId;       ///< User identifier
-    QString channelId;    ///< Channel identifier
-    QString displayName;  ///< Display name within the channel
+    QString topicId;    ///< Topic identifier
+    QString displayName;  ///< Display name within the topic
     QDateTime joinedAt;   ///< Join timestamp (UTC)
     QDateTime lastSeenAt; ///< Last activity timestamp (UTC)
     bool isActive;        ///< Whether the user is currently active
 
     /*!
-     * @brief Serializes the channel member to JSON.
+     * @brief Serializes the topic member to JSON.
      * @return JSON representation of the member
      */
     QJsonObject toJson() const;
 
     /*!
-     * @brief Deserializes a channel member from JSON.
+     * @brief Deserializes a topic member from JSON.
      *
      * Returns a default (empty) object if validation fails.
      *
      * @param obj JSON object to parse
-     * @return Parsed ChannelMember or empty object
+     * @return Parsed TopicMember or empty object
      */
-    static ChannelMember fromJson(const QJsonObject& obj);
+    static TopicMember fromJson(const QJsonObject& obj);
 };
 
 /*!
@@ -185,7 +185,7 @@ struct ChannelMember {
 struct PersistencePolicy {
     int messageTTL = -1;          ///< Message time-to-live
     int sessionTTL = -1;          ///< Session time-to-live
-    int inactiveChannelTTL = -1;  ///< Channel inactivity timeout
+    int inactiveTopicTTL = -1;  ///< Topic inactivity timeout
 };
 
 /*!
@@ -200,7 +200,7 @@ struct AppCommConfig {
     QString apiKey;                 ///< API key (server-side usage)
     QString databaseId;             ///< Database identifier
     QString messagesCollectionId;   ///< Messages collection ID
-    QString membersCollectionId;    ///< Channel members collection ID
+    QString membersCollectionId;    ///< Topic members collection ID
     QString incomingMessagesCollectionId;
 
     /*!

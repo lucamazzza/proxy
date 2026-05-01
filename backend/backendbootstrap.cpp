@@ -245,7 +245,7 @@ bool BackendBootstrapper::bootstrap(QString *errorMessage) {
     }
     const QJsonArray collectionPermissions = ::collectionPermissions(m_config.guestAccessEnabled);
     const QList<AttributeDef> messageAttributes = {
-        {"string", "channelId", true, QJsonObject{{"size", 128}}},
+        {"string", "topicId", true, QJsonObject{{"size", 128}}},
         {"string", "senderId", true, QJsonObject{{"size", 128}}},
         {"string", "messageId", true, QJsonObject{{"size", 128}}},
         {"integer", "sequenceNumber", true, QJsonObject{{"min", 0}}},
@@ -254,12 +254,12 @@ bool BackendBootstrapper::bootstrap(QString *errorMessage) {
         {"boolean", "isEcho", true, QJsonObject()}
     };
     const QList<IndexDef> messageIndexes = {
-        {"idx_channel", "key", {"channelId"}},
+        {"idx_topic", "key", {"topicId"}},
         {"idx_timestamp", "key", {"timestamp"}},
         {"idx_sequence", "key", {"sequenceNumber"}},
         {"idx_message_unique", "unique", {"messageId"}},
-        {"idx_channel_sequence_unique", "unique", {"channelId", "sequenceNumber"}},
-        {"idx_channel_timestamp", "key", {"channelId", "timestamp"}}
+        {"idx_channel_sequence_unique", "unique", {"topicId", "sequenceNumber"}},
+        {"idx_channel_timestamp", "key", {"topicId", "timestamp"}}
     };
     if (!ensureCollection(m_config.messagesCollectionId,
                           "messages",
@@ -270,17 +270,17 @@ bool BackendBootstrapper::bootstrap(QString *errorMessage) {
         return false;
     }
     const QList<AttributeDef> pendingMessageAttributes = {
-        {"string", "channelId", true, QJsonObject{{"size", 128}}},
+        {"string", "topicId", true, QJsonObject{{"size", 128}}},
         {"string", "senderId", true, QJsonObject{{"size", 128}}},
         {"string", "messageId", true, QJsonObject{{"size", 128}}},
         {"datetime", "timestamp", true, QJsonObject()},
         {"string", "payload", true, QJsonObject{{"size", 10000}}}
     };
     const QList<IndexDef> pendingMessageIndexes = {
-        {"idx_pending_channel", "key", {"channelId"}},
+        {"idx_pending_topic", "key", {"topicId"}},
         {"idx_pending_timestamp", "key", {"timestamp"}},
         {"idx_pending_message_unique", "unique", {"messageId"}},
-        {"idx_pending_channel_timestamp", "key", {"channelId", "timestamp"}}
+        {"idx_pending_channel_timestamp", "key", {"topicId", "timestamp"}}
     };
     if (!ensureCollection(m_config.incomingMessagesCollectionId,
                           "pendingmessages",
@@ -291,7 +291,7 @@ bool BackendBootstrapper::bootstrap(QString *errorMessage) {
         return false;
     }
     const QList<AttributeDef> memberAttributes = {
-        {"string", "channelId", true, QJsonObject{{"size", 128}}},
+        {"string", "topicId", true, QJsonObject{{"size", 128}}},
         {"string", "userId", true, QJsonObject{{"size", 128}}},
         {"string", "displayName", true, QJsonObject{{"size", 256}}},
         {"datetime", "joinedAt", true, QJsonObject()},
@@ -299,8 +299,8 @@ bool BackendBootstrapper::bootstrap(QString *errorMessage) {
         {"boolean", "isActive", true, QJsonObject()}
     };
     const QList<IndexDef> memberIndexes = {
-        {"idx_member_channel", "key", {"channelId"}},
-        {"idx_member_unique", "unique", {"channelId", "userId"}}
+        {"idx_member_topic", "key", {"topicId"}},
+        {"idx_member_unique", "unique", {"topicId", "userId"}}
     };
     if (!ensureCollection(m_config.membersCollectionId,
                           "members",
@@ -311,15 +311,15 @@ bool BackendBootstrapper::bootstrap(QString *errorMessage) {
         return false;
     }
     const QList<AttributeDef> channelAttributes = {
-        {"string", "channelId", true, QJsonObject{{"size", 128}}},
+        {"string", "topicId", true, QJsonObject{{"size", 128}}},
         {"string", "name", true, QJsonObject{{"size", 256}}},
         {"datetime", "createdAt", true, QJsonObject()}
     };
     const QList<IndexDef> channelIndexes = {
-        {"idx_channel_id", "unique", {"channelId"}}
+        {"idx_channel_id", "unique", {"topicId"}}
     };
-    if (!ensureCollection(m_config.channelsCollectionId,
-                          "channels",
+    if (!ensureCollection(m_config.topicsCollectionId,
+                          "topics",
                           collectionPermissions,
                           channelAttributes,
                           channelIndexes,
@@ -328,14 +328,14 @@ bool BackendBootstrapper::bootstrap(QString *errorMessage) {
     }
     const QList<AttributeDef> sessionAttributes = {
         {"string", "sessionId", true, QJsonObject{{"size", 128}}},
-        {"string", "channelId", true, QJsonObject{{"size", 128}}},
+        {"string", "topicId", true, QJsonObject{{"size", 128}}},
         {"string", "userIds", true, QJsonObject{{"size", 128}, {"array", true}}},
         {"datetime", "createdAt", true, QJsonObject()},
         {"string", "status", true, QJsonObject{{"size", 16}}}
     };
     const QList<IndexDef> sessionIndexes = {
         {"idx_session_id", "unique", {"sessionId"}},
-        {"idx_session_channel", "key", {"channelId"}}
+        {"idx_session_topic", "key", {"topicId"}}
     };
     return ensureCollection(m_config.sessionsCollectionId,
                             "sessions",

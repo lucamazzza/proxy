@@ -30,30 +30,30 @@ public:
     explicit MessageQueryService(QObject *parent = nullptr);
 
     /*!
-     * @brief Builds a query for listing channel messages by recency.
-     * @param channelId Channel identifier.
+     * @brief Builds a query for listing topic messages by recency.
+     * @param topicId Topic identifier.
      * @param limit Optional maximum number of messages.
-     * @return Query array containing channel filter, descending timestamp order,
+     * @return Query array containing topic filter, descending timestamp order,
      *         and optional limit.
      */
-    QJsonArray channelMessages(const QString &channelId, int limit) const;
+    QJsonArray topicMessages(const QString &topicId, int limit) const;
 
     /*!
-     * @brief Builds a query for channel-scoped documents.
-     * @param channelId Channel identifier.
+     * @brief Builds a query for topic-scoped documents.
+     * @param topicId Topic identifier.
      * @param limit Optional maximum number of documents.
-     * @return Query array containing channel filter and optional limit.
+     * @return Query array containing topic filter and optional limit.
      */
-    QJsonArray channelDocuments(const QString &channelId, int limit = -1) const;
+    QJsonArray topicDocuments(const QString &topicId, int limit = -1) const;
 
     /*!
-     * @brief Builds a query for channel-member documents.
-     * @param channelId Channel identifier.
+     * @brief Builds a query for topic-member documents.
+     * @param topicId Topic identifier.
      * @param userId User identifier.
      * @param limit Optional maximum number of documents.
-     * @return Query array containing channel/user filters and optional limit.
+     * @return Query array containing topic/user filters and optional limit.
      */
-    QJsonArray channelMemberDocuments(const QString &channelId,
+    QJsonArray topicMemberDocuments(const QString &topicId,
                                       const QString &userId,
                                       int limit = 1) const;
 
@@ -64,7 +64,7 @@ public:
      * @return Query array containing message filter and optional limit.
      */
     QJsonArray messageDocuments(const QString &messageId, int limit = 1) const;
-    QJsonArray lastSequenceForChannel(const QString &channelId) const;
+    QJsonArray lastSequenceForTopic(const QString &topicId) const;
 
     /*!
      * @brief Builds an Appwrite equal(...) query for a string field.

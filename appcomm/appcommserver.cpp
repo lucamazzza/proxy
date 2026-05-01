@@ -1,6 +1,6 @@
 /*!
  * @file appcommserver.cpp
- * @brief Implementation of server-side channel, user, message, and membership flows.
+ * @brief Implementation of server-side topic, user, message, and membership flows.
  *
  * @copyright Copyright (c) 2026 SUPSI
  */
@@ -37,7 +37,7 @@ struct BootstrapIndexDef {
 
 QList<BootstrapAttributeDef> messageAttributes() {
     return {
-        {"string", "channelId", APPCOMM_ATTR_REQUIRED, QJsonObject{{"size", 128}}},
+        {"string", "topicId", APPCOMM_ATTR_REQUIRED, QJsonObject{{"size", 128}}},
         {"string", "senderId", APPCOMM_ATTR_REQUIRED, QJsonObject{{"size", 128}}},
         {"string", "messageId", APPCOMM_ATTR_REQUIRED, QJsonObject{{"size", 128}}},
         {"integer", "sequenceNumber", APPCOMM_ATTR_REQUIRED, QJsonObject{{"min", 0}}},
@@ -49,12 +49,12 @@ QList<BootstrapAttributeDef> messageAttributes() {
 
 QList<BootstrapIndexDef> messageIndexes() {
     return {
-        {"idx_channel", "key", {"channelId"}},
+        {"idx_topic", "key", {"topicId"}},
         {"idx_timestamp", "key", {"timestamp"}},
         {"idx_sequence", "key", {"sequenceNumber"}},
         {"idx_message_unique", "unique", {"messageId"}},
-        {"idx_channel_sequence_unique", "unique", {"channelId", "sequenceNumber"}},
-        {"idx_channel_timestamp", "key", {"channelId", "timestamp"}}
+        {"idx_channel_sequence_unique", "unique", {"topicId", "sequenceNumber"}},
+        {"idx_channel_timestamp", "key", {"topicId", "timestamp"}}
     };
 }
 
@@ -94,7 +94,7 @@ appcomm::model::Message makeSequencedMessage(const appcomm::model::PendingMessag
                                              bool isEcho)
 {
     appcomm::model::Message msg;
-    msg.channelId = pending.channelId;
+    msg.topicId = pending.topicId;
     msg.senderId = pending.senderId;
     msg.messageId = QUuid::createUuid().toString(QUuid::WithoutBraces);
     msg.sequenceNumber = sequenceNumber;
@@ -142,7 +142,7 @@ public:
     MessageQueryService *messageQueryService;
     Realtime *realtime;
     bool initialized;
-    QHash<QString, model::Channel> channels;
+    QHash<QString, model::Topic> topics;
     QHash<QString, model::User> users;
     InitStep initStep = InitStep::Idle;
     QList<BootstrapAttributeDef> bootstrapAttributes;
@@ -150,9 +150,9 @@ public:
     int currentAttributeIndex = 0;
     int currentIndexIndex = 0;
     int currentIndexAttempt = 0;
-    QStringList docsToDeleteInChannel;
+    QStringList docsToDeleteInTopic;
     AsyncOperation activeOperation = AsyncOperation::None;
-    model::ChannelMember pendingMemberToAdd;
+    model::TopicMember pendingMemberToAdd;
     QString pendingDeletedUserId;
     QString pendingDeletedMessageId;
 
@@ -382,23 +382,23 @@ void AppcommServer::processNextIncomingMessage()
     d->currentIncomingMessage = next.second;
 
     d->activeOperation = Private::AsyncOperation::ResolvingNextSequence;
-    const QJsonArray queries = d->messageQueryService->lastSequenceForChannel(d->currentIncomingMessage.channelId);
+    const QJsonArray queries = d->messageQueryService->lastSequenceForTopic(d->currentIncomingMessage.topicId);
     d->server->listDocuments(d->configForCollection(d->config.messagesCollectionId), queries);
 }
 
-void AppcommServer::createChannel(const model::Channel &channel) {
-    if (!channel.isValid()) {
-        emit channelError(400, "Invalid channel data");
+void AppcommServer::createTopic(const model::Topic &topic) {
+    if (!topic.isValid()) {
+        emit topicError(400, "Invalid topic data");
         return;
     }
 
-    d->channels[channel.channelId] = channel;
-    emit channelCreated(channel);
+    d->topics[topic.topicId] = topic;
+    emit topicCreated(topic);
 }
 
-void AppcommServer::deleteChannel(const QString &channelId) {
-    if (channelId.isEmpty()) {
-        emit channelError(400, "Channel ID cannot be empty");
+void AppcommServer::deleteTopic(const QString &topicId) {
+    if (topicId.isEmpty()) {
+        emit topicError(400, "Topic ID cannot be empty");
         return;
     }
     if (d->activeOperation != Private::AsyncOperation::None) {
@@ -406,17 +406,17 @@ void AppcommServer::deleteChannel(const QString &channelId) {
         return;
     }
 
-    m_deletingChannelId = channelId;
+    m_deletingTopicId = topicId;
     m_originalCollectionId = d->sdkConfig.collectionId;
-    const QJsonArray queries = d->messageQueryService->channelDocuments(channelId, 100);
-    d->docsToDeleteInChannel.clear();
+    const QJsonArray queries = d->messageQueryService->topicDocuments(topicId, 100);
+    d->docsToDeleteInTopic.clear();
     d->activeOperation = Private::AsyncOperation::DeletingChannelListingDocs;
     d->sdkConfig.collectionId = d->config.messagesCollectionId;
     d->server->listDocuments(d->sdkConfig, queries);
 }
 
-void AppcommServer::listChannels() {
-    emit channelsListed(d->channels.values());
+void AppcommServer::listTopics() {
+    emit topicsListed(d->topics.values());
 }
 
 void AppcommServer::createUser(const QString &email, const QString &password, const QString &name) {
@@ -450,11 +450,11 @@ void AppcommServer::listUsers() {
 }
 
 void AppcommServer::broadcastMessage(const model::Message &message) {
-    if (!message.channelId.trimmed().isEmpty()
+    if (!message.topicId.trimmed().isEmpty()
         && !message.senderId.trimmed().isEmpty()
         && message.timestamp.isValid()) {
         model::PendingMessage pending;
-        pending.channelId = message.channelId;
+        pending.topicId = message.topicId;
         pending.senderId = message.senderId;
         pending.messageId = message.messageId.trimmed().isEmpty()
                                 ? QUuid::createUuid().toString(QUuid::WithoutBraces)
@@ -469,13 +469,13 @@ void AppcommServer::broadcastMessage(const model::Message &message) {
     emit messageError(400, "Invalid Message");
 }
 
-void AppcommServer::getChannelMessages(const QString &channelId, int limit) {
-    if (channelId.isEmpty()) {
-        emit messageError(400, "Channel ID cannot be empty");
+void AppcommServer::getTopicMessages(const QString &topicId, int limit) {
+    if (topicId.isEmpty()) {
+        emit messageError(400, "Topic ID cannot be empty");
         return;
     }
 
-    const QJsonArray queries = d->messageQueryService->channelMessages(channelId, limit);
+    const QJsonArray queries = d->messageQueryService->topicMessages(topicId, limit);
     d->server->listDocuments(d->configForCollection(d->config.messagesCollectionId), queries);
 }
 
@@ -497,9 +497,9 @@ void AppcommServer::deleteMessage(const QString &messageId) {
     d->server->listDocuments(d->sdkConfig, queries);
 }
 
-void AppcommServer::addChannelMember(const QString &channelId, const QString &userId) {
-    if (channelId.isEmpty() || userId.isEmpty()) {
-        emit membershipError(400, "Channel ID and User ID cannot be empty");
+void AppcommServer::addTopicMember(const QString &topicId, const QString &userId) {
+    if (topicId.isEmpty() || userId.isEmpty()) {
+        emit membershipError(400, "Topic ID and User ID cannot be empty");
         return;
     }
     if (d->activeOperation != Private::AsyncOperation::None) {
@@ -507,8 +507,8 @@ void AppcommServer::addChannelMember(const QString &channelId, const QString &us
         return;
     }
 
-    const model::ChannelMember member = d->membershipService->createActiveMember(
-        channelId,
+    const model::TopicMember member = d->membershipService->createActiveMember(
+        topicId,
         userId,
         QDateTime::currentDateTimeUtc());
 
@@ -517,9 +517,9 @@ void AppcommServer::addChannelMember(const QString &channelId, const QString &us
     d->server->createDocument(d->configForCollection(d->config.membersCollectionId), member.toJson());
 }
 
-void AppcommServer::removeChannelMember(const QString &channelId, const QString &userId) {
-    if (channelId.isEmpty() || userId.isEmpty()) {
-        emit membershipError(400, "Channel ID and User ID cannot be empty");
+void AppcommServer::removeTopicMember(const QString &topicId, const QString &userId) {
+    if (topicId.isEmpty() || userId.isEmpty()) {
+        emit membershipError(400, "Topic ID and User ID cannot be empty");
         return;
     }
     if (d->activeOperation != Private::AsyncOperation::None) {
@@ -527,18 +527,18 @@ void AppcommServer::removeChannelMember(const QString &channelId, const QString 
         return;
     }
 
-    m_removingChannelId = channelId;
+    m_removingTopicId = topicId;
     m_removingUserId = userId;
     m_originalCollectionId = d->sdkConfig.collectionId;
-    const QJsonArray queries = d->messageQueryService->channelMemberDocuments(channelId, userId, 1);
+    const QJsonArray queries = d->messageQueryService->topicMemberDocuments(topicId, userId, 1);
     d->activeOperation = Private::AsyncOperation::RemovingMemberListingDocs;
     d->sdkConfig.collectionId = d->config.membersCollectionId;
     d->server->listDocuments(d->sdkConfig, queries);
 }
 
-void AppcommServer::getChannelMembers(const QString &channelId) {
-    if (channelId.isEmpty()) {
-        emit membershipError(400, "Channel ID cannot be empty");
+void AppcommServer::getTopicMembers(const QString &topicId) {
+    if (topicId.isEmpty()) {
+        emit membershipError(400, "Topic ID cannot be empty");
         return;
     }
     if (d->activeOperation != Private::AsyncOperation::None) {
@@ -546,9 +546,9 @@ void AppcommServer::getChannelMembers(const QString &channelId) {
         return;
     }
 
-    m_queryingChannelId = channelId;
+    m_queryingTopicId = topicId;
     m_originalCollectionId = d->sdkConfig.collectionId;
-    const QJsonArray queries = d->messageQueryService->channelDocuments(channelId);
+    const QJsonArray queries = d->messageQueryService->topicDocuments(topicId);
     d->activeOperation = Private::AsyncOperation::ListingMembers;
     d->sdkConfig.collectionId = d->config.membersCollectionId;
     d->server->listDocuments(d->sdkConfig, queries);
@@ -558,12 +558,12 @@ bool AppcommServer::isInitialized() const {
     return d->initialized;
 }
 
-QList<appcomm::model::Channel> AppcommServer::channels() const {
-    return d->channels.values();
+QList<appcomm::model::Topic> AppcommServer::topics() const {
+    return d->topics.values();
 }
 
-appcomm::model::Channel AppcommServer::getChannel(const QString &channelId) const {
-    return d->channels.value(channelId);
+appcomm::model::Topic AppcommServer::getTopic(const QString &topicId) const {
+    return d->topics.value(topicId);
 }
 
 bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
@@ -632,50 +632,50 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
         const QJsonArray docs = data.value("documents").toArray();
         if (docs.isEmpty()) {
             d->sdkConfig.collectionId = m_originalCollectionId;
-            d->docsToDeleteInChannel.clear();
+            d->docsToDeleteInTopic.clear();
             d->activeOperation = Private::AsyncOperation::None;
-            d->channels.remove(m_deletingChannelId);
-            emit channelDeleted(m_deletingChannelId);
+            d->topics.remove(m_deletingTopicId);
+            emit topicDeleted(m_deletingTopicId);
             return true;
         }
 
-        d->docsToDeleteInChannel.clear();
+        d->docsToDeleteInTopic.clear();
         for (const QJsonValue &doc : docs) {
             const QString docId = doc.toObject().value("$id").toString().trimmed();
             if (!docId.isEmpty()) {
-                d->docsToDeleteInChannel.append(docId);
+                d->docsToDeleteInTopic.append(docId);
             }
         }
 
-        if (d->docsToDeleteInChannel.isEmpty()) {
+        if (d->docsToDeleteInTopic.isEmpty()) {
             d->sdkConfig.collectionId = m_originalCollectionId;
             d->activeOperation = Private::AsyncOperation::None;
-            emit channelError(500, "Unable to resolve message document IDs while deleting channel");
+            emit topicError(500, "Unable to resolve message document IDs while deleting topic");
             return true;
         }
 
         d->activeOperation = Private::AsyncOperation::DeletingChannelDeletingDocs;
-        d->server->deleteDocument(d->sdkConfig, d->docsToDeleteInChannel.takeFirst());
+        d->server->deleteDocument(d->sdkConfig, d->docsToDeleteInTopic.takeFirst());
         return true;
     }
 
     case Private::AsyncOperation::DeletingChannelDeletingDocs:
-        if (!d->docsToDeleteInChannel.isEmpty()) {
-            d->server->deleteDocument(d->sdkConfig, d->docsToDeleteInChannel.takeFirst());
+        if (!d->docsToDeleteInTopic.isEmpty()) {
+            d->server->deleteDocument(d->sdkConfig, d->docsToDeleteInTopic.takeFirst());
             return true;
         } else {
             d->activeOperation = Private::AsyncOperation::DeletingChannelListingDocs;
-            const QJsonArray queries = d->messageQueryService->channelDocuments(m_deletingChannelId, 100);
+            const QJsonArray queries = d->messageQueryService->topicDocuments(m_deletingTopicId, 100);
             d->server->listDocuments(d->sdkConfig, queries);
             return true;
         }
 
     case Private::AsyncOperation::AddingMember: {
-        model::ChannelMember member = model::ChannelMember::fromJson(data);
+        model::TopicMember member = model::TopicMember::fromJson(data);
         if (member.userId.trimmed().isEmpty()) {
             member = d->pendingMemberToAdd;
         }
-        d->pendingMemberToAdd = model::ChannelMember();
+        d->pendingMemberToAdd = model::TopicMember();
         d->activeOperation = Private::AsyncOperation::None;
         emit memberAdded(member);
         return true;
@@ -686,7 +686,7 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
         if (docs.isEmpty()) {
             d->sdkConfig.collectionId = m_originalCollectionId;
             d->activeOperation = Private::AsyncOperation::None;
-            emit memberRemoved(m_removingChannelId, m_removingUserId);
+            emit memberRemoved(m_removingTopicId, m_removingUserId);
             return true;
         }
 
@@ -706,15 +706,15 @@ bool AppcommServer::handleOperationSuccess(const QJsonObject &data) {
     case Private::AsyncOperation::RemovingMemberDeletingDoc:
         d->sdkConfig.collectionId = m_originalCollectionId;
         d->activeOperation = Private::AsyncOperation::None;
-        emit memberRemoved(m_removingChannelId, m_removingUserId);
+        emit memberRemoved(m_removingTopicId, m_removingUserId);
         return true;
 
     case Private::AsyncOperation::ListingMembers: {
         const QJsonArray docs = data.value("documents").toArray();
-        const QList<model::ChannelMember> members = d->membershipService->parseMembers(docs);
+        const QList<model::TopicMember> members = d->membershipService->parseMembers(docs);
         d->sdkConfig.collectionId = m_originalCollectionId;
         d->activeOperation = Private::AsyncOperation::None;
-        emit membersListed(m_queryingChannelId, members);
+        emit membersListed(m_queryingTopicId, members);
         return true;
     }
 
@@ -782,14 +782,14 @@ bool AppcommServer::handleOperationError(int code, const QString &message) {
 
     case Private::AsyncOperation::DeletingChannelListingDocs:
     case Private::AsyncOperation::DeletingChannelDeletingDocs:
-        d->docsToDeleteInChannel.clear();
+        d->docsToDeleteInTopic.clear();
         d->sdkConfig.collectionId = m_originalCollectionId;
         d->activeOperation = Private::AsyncOperation::None;
-        emit channelError(code, message);
+        emit topicError(code, message);
         return true;
 
     case Private::AsyncOperation::AddingMember:
-        d->pendingMemberToAdd = model::ChannelMember();
+        d->pendingMemberToAdd = model::TopicMember();
         d->activeOperation = Private::AsyncOperation::None;
         emit membershipError(code, message);
         return true;

@@ -36,7 +36,7 @@ private slots:
     void processIncoming_validFirstMessage_returnsMessageAndUpdatesState();
     void processIncoming_invalidMessage_returnsNullopt();
     void processIncoming_wrongChannel_returnsNullopt();
-    void processIncoming_emptyActiveChannel_acceptsMessage();
+    void processIncoming_emptyActiveTopic_acceptsMessage();
     void processIncoming_duplicateMessage_returnsNullopt();
     void processIncoming_olderMessage_returnsNullopt();
     void processIncoming_messageWithGap_triggersRecoveryAndReturnsNullopt();
@@ -55,13 +55,13 @@ private slots:
 
 private:
     model::Message makeValidMessage(
-        const QString& channelId = "channel-1",
+        const QString& topicId = "topic-1",
         qint64 sequenceNumber = 0,
         const QString& messageId = "msg-1"
         ) const
     {
         model::Message msg;
-        msg.channelId = channelId;
+        msg.topicId = topicId;
         msg.senderId = "user-1";
         msg.messageId = messageId;
         msg.sequenceNumber = sequenceNumber;
@@ -80,18 +80,18 @@ void tst_messageprocessor::cleanupTestCase() {}
 void tst_messageprocessor::processIncoming_validFirstMessage_returnsMessageAndUpdatesState()
 {
     ClientState state;
-    state.activeChannelId = "channel-1";
+    state.activeTopicId = "topic-1";
     state.lastReceivedSequence = -1;
     state.lastReceivedMessageId = "";
 
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 0, "msg-1");
+    const auto msg = makeValidMessage("topic-1", 0, "msg-1");
     const auto result = processor.processIncoming(msg);
 
     QVERIFY(result.has_value());
-    QCOMPARE(result->channelId, QString("channel-1"));
+    QCOMPARE(result->topicId, QString("topic-1"));
     QCOMPARE(result->sequenceNumber, static_cast<qint64>(0));
     QCOMPARE(result->messageId, QString("msg-1"));
 
@@ -104,7 +104,7 @@ void tst_messageprocessor::processIncoming_validFirstMessage_returnsMessageAndUp
 void tst_messageprocessor::processIncoming_invalidMessage_returnsNullopt()
 {
     ClientState state;
-    state.activeChannelId = "channel-1";
+    state.activeTopicId = "topic-1";
     state.lastReceivedSequence = -1;
     state.lastReceivedMessageId = "";
 
@@ -124,14 +124,14 @@ void tst_messageprocessor::processIncoming_invalidMessage_returnsNullopt()
 void tst_messageprocessor::processIncoming_wrongChannel_returnsNullopt()
 {
     ClientState state;
-    state.activeChannelId = "channel-1";
+    state.activeTopicId = "topic-1";
     state.lastReceivedSequence = -1;
     state.lastReceivedMessageId = "";
 
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-2", 0, "msg-1");
+    const auto msg = makeValidMessage("topic-2", 0, "msg-1");
     const auto result = processor.processIncoming(msg);
 
     QVERIFY(!result.has_value());
@@ -140,21 +140,21 @@ void tst_messageprocessor::processIncoming_wrongChannel_returnsNullopt()
     QVERIFY(!recoverySpy.requestFromCalled);
 }
 
-void tst_messageprocessor::processIncoming_emptyActiveChannel_acceptsMessage()
+void tst_messageprocessor::processIncoming_emptyActiveTopic_acceptsMessage()
 {
     ClientState state;
-    state.activeChannelId = "";
+    state.activeTopicId = "";
     state.lastReceivedSequence = -1;
     state.lastReceivedMessageId = "";
 
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("another-channel", 0, "msg-1");
+    const auto msg = makeValidMessage("another-topic", 0, "msg-1");
     const auto result = processor.processIncoming(msg);
 
     QVERIFY(result.has_value());
-    QCOMPARE(result->channelId, QString("another-channel"));
+    QCOMPARE(result->topicId, QString("another-topic"));
     QCOMPARE(state.lastReceivedSequence, static_cast<qint64>(0));
     QCOMPARE(state.lastReceivedMessageId, QString("msg-1"));
     QVERIFY(!recoverySpy.requestFromCalled);
@@ -163,14 +163,14 @@ void tst_messageprocessor::processIncoming_emptyActiveChannel_acceptsMessage()
 void tst_messageprocessor::processIncoming_duplicateMessage_returnsNullopt()
 {
     ClientState state;
-    state.activeChannelId = "channel-1";
+    state.activeTopicId = "topic-1";
     state.lastReceivedSequence = 5;
     state.lastReceivedMessageId = "msg-5";
 
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 5, "msg-dup");
+    const auto msg = makeValidMessage("topic-1", 5, "msg-dup");
     const auto result = processor.processIncoming(msg);
 
     QVERIFY(!result.has_value());
@@ -182,14 +182,14 @@ void tst_messageprocessor::processIncoming_duplicateMessage_returnsNullopt()
 void tst_messageprocessor::processIncoming_olderMessage_returnsNullopt()
 {
     ClientState state;
-    state.activeChannelId = "channel-1";
+    state.activeTopicId = "topic-1";
     state.lastReceivedSequence = 5;
     state.lastReceivedMessageId = "msg-5";
 
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 3, "msg-old");
+    const auto msg = makeValidMessage("topic-1", 3, "msg-old");
     const auto result = processor.processIncoming(msg);
 
     QVERIFY(!result.has_value());
@@ -201,14 +201,14 @@ void tst_messageprocessor::processIncoming_olderMessage_returnsNullopt()
 void tst_messageprocessor::processIncoming_messageWithGap_triggersRecoveryAndReturnsNullopt()
 {
     ClientState state;
-    state.activeChannelId = "channel-1";
+    state.activeTopicId = "topic-1";
     state.lastReceivedSequence = 5;
     state.lastReceivedMessageId = "msg-5";
 
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 8, "msg-8");
+    const auto msg = makeValidMessage("topic-1", 8, "msg-8");
     const auto result = processor.processIncoming(msg);
 
     QVERIFY(!result.has_value());
@@ -228,7 +228,7 @@ void tst_messageprocessor::isDuplicate_noPreviousMessage_returnsFalse()
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 0, "msg-1");
+    const auto msg = makeValidMessage("topic-1", 0, "msg-1");
     QVERIFY(!processor.isDuplicate(msg));
 }
 
@@ -241,7 +241,7 @@ void tst_messageprocessor::isDuplicate_sameSequence_returnsTrue()
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 4, "msg-1");
+    const auto msg = makeValidMessage("topic-1", 4, "msg-1");
     QVERIFY(processor.isDuplicate(msg));
 }
 
@@ -254,7 +254,7 @@ void tst_messageprocessor::isDuplicate_lowerSequence_returnsTrue()
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 2, "msg-1");
+    const auto msg = makeValidMessage("topic-1", 2, "msg-1");
     QVERIFY(processor.isDuplicate(msg));
 }
 
@@ -267,7 +267,7 @@ void tst_messageprocessor::isDuplicate_higherSequence_returnsFalse()
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 5, "msg-1");
+    const auto msg = makeValidMessage("topic-1", 5, "msg-1");
     QVERIFY(!processor.isDuplicate(msg));
 }
 
@@ -280,7 +280,7 @@ void tst_messageprocessor::hasGap_noPreviousMessage_returnsFalse()
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 10, "msg-10");
+    const auto msg = makeValidMessage("topic-1", 10, "msg-10");
     QVERIFY(!processor.hasGap(msg));
 }
 
@@ -293,7 +293,7 @@ void tst_messageprocessor::hasGap_consecutiveSequence_returnsFalse()
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 8, "msg-8");
+    const auto msg = makeValidMessage("topic-1", 8, "msg-8");
     QVERIFY(!processor.hasGap(msg));
 }
 
@@ -306,7 +306,7 @@ void tst_messageprocessor::hasGap_sameSequence_returnsFalse()
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 7, "msg-7-again");
+    const auto msg = makeValidMessage("topic-1", 7, "msg-7-again");
     QVERIFY(!processor.hasGap(msg));
 }
 
@@ -319,23 +319,23 @@ void tst_messageprocessor::hasGap_skippedSequence_returnsTrue()
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    const auto msg = makeValidMessage("channel-1", 10, "msg-10");
+    const auto msg = makeValidMessage("topic-1", 10, "msg-10");
     QVERIFY(processor.hasGap(msg));
 }
 
 void tst_messageprocessor::reset_setsChannelAndResetsState()
 {
     ClientState state;
-    state.activeChannelId = "old-channel";
+    state.activeTopicId = "old-topic";
     state.lastReceivedSequence = 10;
     state.lastReceivedMessageId = "msg-10";
 
     RecoveryManagerSpy recoverySpy;
     MessageProcessor processor(&state, &recoverySpy);
 
-    processor.reset("new-channel");
+    processor.reset("new-topic");
 
-    QCOMPARE(state.activeChannelId, QString("new-channel"));
+    QCOMPARE(state.activeTopicId, QString("new-topic"));
     QCOMPARE(state.lastReceivedSequence, static_cast<qint64>(-1));
     QCOMPARE(state.lastReceivedMessageId, QString(""));
 }

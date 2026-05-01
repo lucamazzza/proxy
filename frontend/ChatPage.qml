@@ -28,7 +28,7 @@ Page {
             }
 
             Label {
-                text: "Channel: " + AppController.currentChannel
+                text: "Topic: " + AppController.currentTopic
             }
 
             Label {
@@ -66,8 +66,18 @@ Page {
                 model: AppController.messagesModel
                 delegate: MessageDelegate { }
 
+                function scrollToBottom() {
+                    Qt.callLater(function() {
+                        messageListView.positionViewAtEnd()
+                    })
+                }
+
                 onCountChanged: {
-                    positionViewAtEnd()
+                    scrollToBottom()
+                }
+
+                onContentHeightChanged: {
+                    scrollToBottom()
                 }
             }
         }
@@ -84,7 +94,7 @@ Page {
                     id: messageField
                     placeholderText: "Write a message"
                     Layout.fillWidth: true
-                    enabled: AppController.currentChannel !== ""
+                    enabled: AppController.currentTopic !== ""
 
                     onAccepted: {
                         sendButton.clicked()
@@ -94,7 +104,7 @@ Page {
                 Button {
                     id: sendButton
                     text: "Send"
-                    enabled: AppController.currentChannel !== "" &&
+                    enabled: AppController.currentTopic !== "" &&
                              messageField.text.trim().length > 0
 
                     onClicked: {

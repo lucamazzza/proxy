@@ -287,11 +287,11 @@ private:
     }
 
     QJsonObject membershipDocument(const QString &userId = "user-1",
-                                   const QString &channelId = "channel-1") const
+                                   const QString &topicId = "topic-1") const
     {
         return {
             {"userId", userId},
-            {"channelId", channelId},
+            {"topicId", topicId},
             {"displayName", "Test User"},
             {"joinedAt", "2026-04-23T10:00:00.000Z"},
             {"lastSeenAt", "2026-04-23T10:00:00.000Z"},
@@ -313,12 +313,12 @@ private:
         };
     }
 
-    QJsonObject messageDocument(const QString &channelId = "channel-1",
+    QJsonObject messageDocument(const QString &topicId = "topic-1",
                                 qint64 sequenceNumber = 1,
                                 const QString &messageId = "message-1") const
     {
         return {
-            {"channelId", channelId},
+            {"topicId", topicId},
             {"senderId", "sender-1"},
             {"messageId", messageId},
             {"sequenceNumber", sequenceNumber},
@@ -354,7 +354,7 @@ private slots:
         QCOMPARE(client.connectionState(), ConnectionState::Disconnected);
         QCOMPARE(client.connectionStateText(), QString("Disconnected"));
         QCOMPARE(client.isAuthenticated(), false);
-        QCOMPARE(client.activeChannel(), QString());
+        QCOMPARE(client.activeTopic(), QString());
         QVERIFY(client.sessionInfo().sessionId.isEmpty());
         QVERIFY(client.sessionInfo().userId.isEmpty());
     }
@@ -535,24 +535,24 @@ private slots:
         FakeRateLimiter &limiter = deps.rateLimiter();
 
         AppcommClient client(validConfig(), deps.take());
-        QSignalSpy joinedSpy(&client, &AppcommClient::joinedChannel);
+        QSignalSpy joinedSpy(&client, &AppcommClient::joinedTopic);
 
         client.createGuestSession();
         emit sdk.requestSuccess(sessionResponse("session-1", "user-1"));
 
         emit sdk.requestSuccess(
-            membershipResponse(membershipDocument("user-1", "channel-42"))
+            membershipResponse(membershipDocument("user-1", "topic-42"))
             );
 
-        QCOMPARE(client.activeChannel(), QString("channel-42"));
+        QCOMPARE(client.activeTopic(), QString("topic-42"));
         QCOMPARE(joinedSpy.count(), 1);
-        QCOMPARE(joinedSpy.first().at(0).toString(), QString("channel-42"));
+        QCOMPARE(joinedSpy.first().at(0).toString(), QString("topic-42"));
 
         QCOMPARE(sdk.listDocumentsCalls, 2);
         QCOMPARE(sdk.lastConfig.collectionId, QString("messages"));
         QCOMPARE(sdk.lastQueries.size(), 3);
         QCOMPARE(sdk.lastQueries.at(0).toString(),
-                 QString("{\"method\":\"equal\",\"attribute\":\"channelId\",\"values\":[\"channel-42\"]}"));
+                 QString("{\"method\":\"equal\",\"attribute\":\"topicId\",\"values\":[\"topic-42\"]}"));
         QCOMPARE(sdk.lastQueries.at(1).toString(),
                  QString("{\"method\":\"orderDesc\",\"attribute\":\"sequenceNumber\"}"));
         QCOMPARE(sdk.lastQueries.at(2).toString(),
@@ -596,7 +596,7 @@ private slots:
         emit sdk.requestSuccess(
             membershipResponse(QJsonObject{
                 {"userId", "user-1"},
-                {"channelId", ""}
+                {"topicId", ""}
             })
             );
 
@@ -605,7 +605,7 @@ private slots:
                  QString("Invalid membership document."));
     }
 
-    void joinChannel_trimsChannelEmitsSignalAndLoadsMessages()
+    void joinTopic_trimsChannelEmitsSignalAndLoadsMessages()
     {
         FakeDependencies deps;
         FakeClientSdk &sdk = deps.clientSdk();
@@ -614,19 +614,19 @@ private slots:
         FakeRateLimiter &limiter = deps.rateLimiter();
 
         AppcommClient client(validConfig(), deps.take());
-        QSignalSpy joinedSpy(&client, &AppcommClient::joinedChannel);
+        QSignalSpy joinedSpy(&client, &AppcommClient::joinedTopic);
 
-        client.joinChannel("  channel-1  ");
+        client.joinTopic("  topic-1  ");
 
-        QCOMPARE(client.activeChannel(), QString("channel-1"));
+        QCOMPARE(client.activeTopic(), QString("topic-1"));
         QCOMPARE(joinedSpy.count(), 1);
-        QCOMPARE(joinedSpy.first().at(0).toString(), QString("channel-1"));
+        QCOMPARE(joinedSpy.first().at(0).toString(), QString("topic-1"));
 
         QCOMPARE(sdk.listDocumentsCalls, 1);
         QCOMPARE(sdk.lastConfig.collectionId, QString("messages"));
     }
 
-    void joinChannel_emptyEmitsError()
+    void joinTopic_emptyEmitsError()
     {
         FakeDependencies deps;
         FakeClientSdk &sdk = deps.clientSdk();
@@ -637,15 +637,15 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
-        client.joinChannel("   ");
+        client.joinTopic("   ");
 
-        QCOMPARE(client.activeChannel(), QString());
+        QCOMPARE(client.activeTopic(), QString());
         QCOMPARE(sdk.listDocumentsCalls, 0);
         QCOMPARE(errorSpy.count(), 1);
-        QCOMPARE(errorSpy.first().at(0).toString(), QString("Channel ID cannot be empty."));
+        QCOMPARE(errorSpy.first().at(0).toString(), QString("Topic ID cannot be empty."));
     }
 
-    void leaveChannel_withoutChannelDoesNothing()
+    void leaveTopic_withoutChannelDoesNothing()
     {
         FakeDependencies deps;
         FakeClientSdk &sdk = deps.clientSdk();
@@ -654,14 +654,14 @@ private slots:
         FakeRateLimiter &limiter = deps.rateLimiter();
 
         AppcommClient client(validConfig(), deps.take());
-        QSignalSpy leftSpy(&client, &AppcommClient::leftChannel);
+        QSignalSpy leftSpy(&client, &AppcommClient::leftTopic);
 
-        client.leaveChannel();
+        client.leaveTopic();
 
         QCOMPARE(leftSpy.count(), 0);
     }
 
-    void leaveChannel_withChannelClearsAndEmitsSignal()
+    void leaveTopic_withChannelClearsAndEmitsSignal()
     {
         FakeDependencies deps;
         FakeClientSdk &sdk = deps.clientSdk();
@@ -670,14 +670,14 @@ private slots:
         FakeRateLimiter &limiter = deps.rateLimiter();
 
         AppcommClient client(validConfig(), deps.take());
-        QSignalSpy leftSpy(&client, &AppcommClient::leftChannel);
+        QSignalSpy leftSpy(&client, &AppcommClient::leftTopic);
 
-        client.joinChannel("channel-1");
-        client.leaveChannel();
+        client.joinTopic("topic-1");
+        client.leaveTopic();
 
-        QCOMPARE(client.activeChannel(), QString());
+        QCOMPARE(client.activeTopic(), QString());
         QCOMPARE(leftSpy.count(), 1);
-        QCOMPARE(leftSpy.first().at(0).toString(), QString("channel-1"));
+        QCOMPARE(leftSpy.first().at(0).toString(), QString("topic-1"));
     }
 
     void connectToServer_withoutChannelDoesNothing()
@@ -707,7 +707,7 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy stateSpy(&client, &AppcommClient::connectionStateChanged);
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
         client.connectToServer();
 
         QCOMPARE(client.connectionState(), ConnectionState::Connecting);
@@ -727,7 +727,7 @@ private slots:
 
         AppcommClient client(validConfig(), deps.take());
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
         client.connectToServer();
         client.connectToServer();
 
@@ -746,7 +746,7 @@ private slots:
 
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
         client.connectToServer();
 
         QCOMPARE(errorSpy.last().at(0).toString(),
@@ -821,7 +821,7 @@ private slots:
         QCOMPARE(realtime.disconnectFromServerCalls, 1);
     }
 
-    void leaveChannel_whenConnectedDisconnects()
+    void leaveTopic_whenConnectedDisconnects()
     {
         FakeDependencies deps;
         FakeClientSdk &sdk = deps.clientSdk();
@@ -831,12 +831,12 @@ private slots:
 
         AppcommClient client(validConfig(), deps.take());
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
         emit realtime.connected();
 
-        client.leaveChannel();
+        client.leaveTopic();
 
-        QCOMPARE(client.activeChannel(), QString());
+        QCOMPARE(client.activeTopic(), QString());
         QCOMPARE(client.connectionState(), ConnectionState::Disconnecting);
         QCOMPARE(realtime.disconnectFromServerCalls, 1);
     }
@@ -852,7 +852,7 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
         client.sendMessage(QJsonObject{{"text", "hello"}});
 
         QCOMPARE(errorSpy.last().at(0).toString(),
@@ -877,7 +877,7 @@ private slots:
         client.sendMessage(QJsonObject{{"text", "hello"}});
 
         QCOMPARE(errorSpy.last().at(0).toString(),
-                 QString("Cannot send message: no active channel."));
+                 QString("Cannot send message: no active topic."));
         QCOMPARE(sdk.createDocumentCalls, 0);
     }
 
@@ -896,7 +896,7 @@ private slots:
         client.createGuestSession();
         emit sdk.requestSuccess(sessionResponse());
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
         client.sendMessage(QJsonObject{{"text", "hello"}});
 
         QCOMPARE(limiter.allowRequestCalls, 1);
@@ -919,7 +919,7 @@ private slots:
         client.createGuestSession();
         emit sdk.requestSuccess(sessionResponse());
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
         client.sendMessage(QJsonObject{{"text", "hello"}});
 
         QCOMPARE(errorSpy.last().at(0).toString(),
@@ -940,14 +940,14 @@ private slots:
         client.createGuestSession();
         emit sdk.requestSuccess(sessionResponse("session-1", "user-1"));
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
         client.sendMessage(QJsonObject{{"text", "hello"}});
 
         QCOMPARE(limiter.allowRequestCalls, 1);
         QCOMPARE(sdk.createDocumentCalls, 1);
         QCOMPARE(sdk.lastConfig.collectionId, QString("pendingmessages"));
 
-        QCOMPARE(sdk.lastData.value("channelId").toString(), QString("channel-1"));
+        QCOMPARE(sdk.lastData.value("topicId").toString(), QString("topic-1"));
         QCOMPARE(sdk.lastData.value("senderId").toString(), QString("user-1"));
         QVERIFY(!sdk.lastData.value("messageId").toString().isEmpty());
         QVERIFY(sdk.lastData.value("payload").isString());
@@ -980,7 +980,7 @@ private slots:
                  QString("Cannot load membership: missing user ID."));
     }
 
-    void loadChannelMessages_withoutChannelEmitsError()
+    void loadTopicMessages_withoutChannelEmitsError()
     {
         FakeDependencies deps;
         FakeClientSdk &sdk = deps.clientSdk();
@@ -991,14 +991,14 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy errorSpy(&client, &AppcommClient::errorOccurred);
 
-        client.loadChannelMessages();
+        client.loadTopicMessages();
 
         QCOMPARE(errorSpy.count(), 1);
         QCOMPARE(errorSpy.first().at(0).toString(),
-                 QString("Cannot load messages: no active channel."));
+                 QString("Cannot load messages: no active topic."));
     }
 
-    void loadChannelMessages_customLimitIsUsed()
+    void loadTopicMessages_customLimitIsUsed()
     {
         FakeDependencies deps;
         FakeClientSdk &sdk = deps.clientSdk();
@@ -1008,14 +1008,14 @@ private slots:
 
         AppcommClient client(validConfig(), deps.take());
 
-        client.joinChannel("channel-1");
-        client.loadChannelMessages(12);
+        client.joinTopic("topic-1");
+        client.loadTopicMessages(12);
 
         QCOMPARE(sdk.lastQueries.at(2).toString(),
                  QString("{\"method\":\"limit\",\"values\":[12]}"));
     }
 
-    void loadChannelMessages_invalidLimitFallsBackTo50()
+    void loadTopicMessages_invalidLimitFallsBackTo50()
     {
         FakeDependencies deps;
         FakeClientSdk &sdk = deps.clientSdk();
@@ -1025,8 +1025,8 @@ private slots:
 
         AppcommClient client(validConfig(), deps.take());
 
-        client.joinChannel("channel-1");
-        client.loadChannelMessages(0);
+        client.joinTopic("topic-1");
+        client.loadTopicMessages(0);
 
         QCOMPARE(sdk.lastQueries.at(2).toString(),
                  QString("{\"method\":\"limit\",\"values\":[16]}"));
@@ -1043,11 +1043,11 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
 
         emit sdk.requestSuccess(messagesResponse(QJsonArray{
-            messageDocument("channel-1", 1, "msg-1"),
-            messageDocument("channel-1", 2, "msg-2")
+            messageDocument("topic-1", 1, "msg-1"),
+            messageDocument("topic-1", 2, "msg-2")
         }));
 
         QCOMPARE(messageSpy.count(), 2);
@@ -1076,12 +1076,12 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
 
         emit sdk.requestSuccess(messagesResponse(QJsonArray{
-            messageDocument("channel-1", 20, "msg-20"),
-            messageDocument("channel-1", 19, "msg-19"),
-            messageDocument("channel-1", 18, "msg-18")
+            messageDocument("topic-1", 20, "msg-20"),
+            messageDocument("topic-1", 19, "msg-19"),
+            messageDocument("topic-1", 18, "msg-18")
         }));
 
         QCOMPARE(messageSpy.count(), 3);
@@ -1112,16 +1112,16 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
 
-        QJsonObject invalid = messageDocument("channel-1", 1, "invalid");
+        QJsonObject invalid = messageDocument("topic-1", 1, "invalid");
         invalid.remove("messageId");
 
         emit sdk.requestSuccess(messagesResponse(QJsonArray{
             invalid,
-            messageDocument("other-channel", 1, "wrong-channel"),
-            messageDocument("channel-1", 1, "msg-1"),
-            messageDocument("channel-1", 1, "duplicate")
+            messageDocument("other-topic", 1, "wrong-topic"),
+            messageDocument("topic-1", 1, "msg-1"),
+            messageDocument("topic-1", 1, "duplicate")
         }));
 
         QCOMPARE(messageSpy.count(), 1);
@@ -1143,10 +1143,10 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
 
         emit realtime.eventReceived(QJsonObject{
-            {"payload", messageDocument("channel-1", 1, "rt-1")}
+            {"payload", messageDocument("topic-1", 1, "rt-1")}
         });
 
         QCOMPARE(messageSpy.count(), 1);
@@ -1168,12 +1168,12 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
 
         emit realtime.eventReceived(QJsonObject{
             {"data", QJsonObject{
                          {"payload", QJsonObject{
-                                         {"data", messageDocument("channel-1", 1, "nested-1")}
+                                         {"data", messageDocument("topic-1", 1, "nested-1")}
                                      }}
                      }}
         });
@@ -1197,7 +1197,7 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
 
         emit realtime.eventReceived(QJsonObject{
             {"events", QJsonArray{"something"}}
@@ -1236,11 +1236,11 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
 
         emit recovery.messagesRecovered(QJsonArray{
-            messageDocument("channel-1", 1, "recovered-1"),
-            messageDocument("channel-1", 2, "recovered-2")
+            messageDocument("topic-1", 1, "recovered-1"),
+            messageDocument("topic-1", 2, "recovered-2")
         });
 
         QCOMPARE(messageSpy.count(), 2);
@@ -1257,11 +1257,11 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy messageSpy(&client, &AppcommClient::messageReceived);
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
 
         emit recovery.messagesRecovered(QJsonArray{
             QString("not-an-object"),
-            messageDocument("channel-1", 1, "recovered-1")
+            messageDocument("topic-1", 1, "recovered-1")
         });
 
         QCOMPARE(messageSpy.count(), 1);
@@ -1298,10 +1298,10 @@ private slots:
         client.createGuestSession();
         emit sdk.requestSuccess(sessionResponse("session-1", "user-1"));
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
 
         QCOMPARE(client.isAuthenticated(), true);
-        QCOMPARE(client.activeChannel(), QString("channel-1"));
+        QCOMPARE(client.activeTopic(), QString("topic-1"));
 
         client.logout();
 
@@ -1309,7 +1309,7 @@ private slots:
         QCOMPARE(sdk.lastSessionId, QString("session-1"));
 
         QCOMPARE(client.isAuthenticated(), false);
-        QCOMPARE(client.activeChannel(), QString());
+        QCOMPARE(client.activeTopic(), QString());
         QVERIFY(client.sessionInfo().sessionId.isEmpty());
         QVERIFY(client.sessionInfo().userId.isEmpty());
         QVERIFY(authSpy.count() >= 2);
@@ -1328,7 +1328,7 @@ private slots:
         client.createGuestSession();
         emit sdk.requestSuccess(sessionResponse("session-1", "user-1"));
 
-        client.joinChannel("channel-1");
+        client.joinTopic("topic-1");
         emit realtime.connected();
 
         client.logout();
@@ -1336,7 +1336,7 @@ private slots:
         QCOMPARE(client.connectionState(), ConnectionState::Disconnecting);
         QCOMPARE(realtime.disconnectFromServerCalls, 1);
         QCOMPARE(client.isAuthenticated(), false);
-        QCOMPARE(client.activeChannel(), QString());
+        QCOMPARE(client.activeTopic(), QString());
     }
 };
 

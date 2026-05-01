@@ -113,7 +113,7 @@ QJsonArray collectionPermissions(bool guestAccessEnabled) {
 bool Session::isValid() const {
     const QString normalizedStatus = status.trimmed().toLower();
     return !sessionId.trimmed().isEmpty()
-        && !channelId.trimmed().isEmpty()
+        && !topicId.trimmed().isEmpty()
         && createdAt.isValid()
         && (normalizedStatus == "open" || normalizedStatus == "closed");
 }
@@ -121,7 +121,7 @@ bool Session::isValid() const {
 QJsonObject Session::toJson() const {
     QJsonObject obj;
     obj["sessionId"] = sessionId;
-    obj["channelId"] = channelId;
+    obj["topicId"] = topicId;
     obj["userIds"] = toJsonArray(userIds);
     obj["createdAt"] = createdAt.toString(Qt::ISODate);
     obj["status"] = status;
@@ -131,19 +131,19 @@ QJsonObject Session::toJson() const {
 Session Session::fromJson(const QJsonObject &obj) {
     Session session;
     const QJsonValue sessionIdValue = obj.value("sessionId");
-    const QJsonValue channelIdValue = obj.value("channelId");
+    const QJsonValue topicIdValue = obj.value("topicId");
     const QJsonValue userIdsValue = obj.value("userIds");
     const QJsonValue createdAtValue = obj.value("createdAt");
     const QJsonValue statusValue = obj.value("status");
     if (!sessionIdValue.isString()
-        || !channelIdValue.isString()
+        || !topicIdValue.isString()
         || !userIdsValue.isArray()
         || !createdAtValue.isString()
         || !statusValue.isString()) {
         return {};
     }
     session.sessionId = sessionIdValue.toString().trimmed();
-    session.channelId = channelIdValue.toString().trimmed();
+    session.topicId = topicIdValue.toString().trimmed();
     const QJsonArray userIdsArray = userIdsValue.toArray();
     for (const QJsonValue &userIdValue : userIdsArray) {
         if (userIdValue.isString()) {
@@ -638,40 +638,40 @@ bool BackendService::findSingleDocument(const QString &collectionId,
     return true;
 }
 
-bool BackendService::ensureChannelExists(const QString &channelId, QString *errorMessage) {
+bool BackendService::ensureTopicExists(const QString &topicId, QString *errorMessage) {
     const QJsonArray queries = {
-        equalQuery("channelId", channelId),
+        equalQuery("topicId", topicId),
         "limit(1)"
     };
-    QJsonObject channelDocument;
-    if (!findSingleDocument(m_config.channelsCollectionId, queries, &channelDocument, errorMessage)) {
+    QJsonObject topicDocument;
+    if (!findSingleDocument(m_config.topicsCollectionId, queries, &topicDocument, errorMessage)) {
         if (errorMessage
             && errorMessage->contains("Document not found", Qt::CaseInsensitive)) {
-            *errorMessage = QString("Channel not found: %1").arg(channelId);
+            *errorMessage = QString("Topic not found: %1").arg(topicId);
         }
         return false;
     }
     return true;
 }
 
-bool BackendService::createChannel(const QString &name,
-                                   QJsonObject *createdChannel,
+bool BackendService::createTopic(const QString &name,
+                                   QJsonObject *createdTopic,
                                    QString *errorMessage) {
     if (name.trimmed().isEmpty()) {
         if (errorMessage) {
-            *errorMessage = "Channel name cannot be empty";
+            *errorMessage = "Topic name cannot be empty";
         }
         return false;
     }
     for (int attempt = 0; attempt < 5; ++attempt) {
-        QJsonObject channel;
-        channel["channelId"] = makeUuid();
-        channel["name"] = name.trimmed();
-        channel["createdAt"] = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+        QJsonObject topic;
+        topic["topicId"] = makeUuid();
+        topic["name"] = name.trimmed();
+        topic["createdAt"] = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
         QString createError;
-        if (createDocument(m_config.channelsCollectionId, channel, nullptr, &createError)) {
-            if (createdChannel) {
-                *createdChannel = channel;
+        if (createDocument(m_config.topicsCollectionId, topic, nullptr, &createError)) {
+            if (createdTopic) {
+                *createdTopic = topic;
             }
             return true;
         }
@@ -684,7 +684,7 @@ bool BackendService::createChannel(const QString &name,
         }
     }
     if (errorMessage) {
-        *errorMessage = "Unable to generate a unique channel ID";
+        *errorMessage = "Unable to generate a unique topic ID";
     }
     return false;
 }
@@ -854,10 +854,10 @@ bool BackendService::listCollections(QJsonArray *collections, QString *errorMess
     return true;
 }
 
-bool BackendService::listChannels(QJsonArray *channels, QString *errorMessage) {
-    if (!channels) {
+bool BackendService::listTopics(QJsonArray *topics, QString *errorMessage) {
+    if (!topics) {
         if (errorMessage) {
-            *errorMessage = "Internal error: channels output pointer is null";
+            *errorMessage = "Internal error: topics output pointer is null";
         }
         return false;
     }
@@ -865,29 +865,29 @@ bool BackendService::listChannels(QJsonArray *channels, QString *errorMessage) {
         "orderAsc(\"createdAt\")",
         "limit(1000)"
     };
-    QJsonArray channelDocuments;
-    if (!listDocuments(m_config.channelsCollectionId, queries, &channelDocuments, errorMessage)) {
+    QJsonArray topicDocuments;
+    if (!listDocuments(m_config.topicsCollectionId, queries, &topicDocuments, errorMessage)) {
         return false;
     }
     QJsonArray result;
-    for (const QJsonValue &channelValue : channelDocuments) {
-        const QJsonObject channelObject = channelValue.toObject();
-        QJsonObject normalizedChannel;
-        normalizedChannel["channelId"] = channelObject.value("channelId").toString();
-        normalizedChannel["name"] = channelObject.value("name").toString();
-        normalizedChannel["createdAt"] = channelObject.value("createdAt").toString();
-        result.append(normalizedChannel);
+    for (const QJsonValue &topicValue : topicDocuments) {
+        const QJsonObject topicObject = topicValue.toObject();
+        QJsonObject normalizedTopic;
+        normalizedTopic["topicId"] = topicObject.value("topicId").toString();
+        normalizedTopic["name"] = topicObject.value("name").toString();
+        normalizedTopic["createdAt"] = topicObject.value("createdAt").toString();
+        result.append(normalizedTopic);
     }
-    *channels = result;
+    *topics = result;
     return true;
 }
 
-bool BackendService::deleteDocumentsByChannel(const QString &collectionId,
-                                              const QString &channelId,
+bool BackendService::deleteDocumentsByTopic(const QString &collectionId,
+                                              const QString &topicId,
                                               QString *errorMessage) {
     while (true) {
         const QJsonArray queries = {
-            equalQuery("channelId", channelId),
+            equalQuery("topicId", topicId),
             "limit(100)"
         };
         QJsonArray documents;
@@ -912,59 +912,59 @@ bool BackendService::deleteDocumentsByChannel(const QString &collectionId,
     }
 }
 
-bool BackendService::removeChannel(const QString &channelId, QString *errorMessage) {
-    const QString normalizedChannelId = channelId.trimmed();
-    if (normalizedChannelId.isEmpty()) {
+bool BackendService::removeTopic(const QString &topicId, QString *errorMessage) {
+    const QString normalizedTopicId = topicId.trimmed();
+    if (normalizedTopicId.isEmpty()) {
         if (errorMessage) {
-            *errorMessage = "Channel ID cannot be empty";
+            *errorMessage = "Topic ID cannot be empty";
         }
         return false;
     }
-    QJsonObject channelDocument;
-    const QJsonArray channelQueries = {
-        equalQuery("channelId", normalizedChannelId),
+    QJsonObject topicDocument;
+    const QJsonArray topicQueries = {
+        equalQuery("topicId", normalizedTopicId),
         "limit(1)"
     };
-    if (!findSingleDocument(m_config.channelsCollectionId, channelQueries, &channelDocument, errorMessage)) {
+    if (!findSingleDocument(m_config.topicsCollectionId, topicQueries, &topicDocument, errorMessage)) {
         return false;
     }
-    if (!deleteDocumentsByChannel(m_config.membersCollectionId, normalizedChannelId, errorMessage)) {
+    if (!deleteDocumentsByTopic(m_config.membersCollectionId, normalizedTopicId, errorMessage)) {
         return false;
     }
-    if (!deleteDocumentsByChannel(m_config.incomingMessagesCollectionId, normalizedChannelId, errorMessage)) {
+    if (!deleteDocumentsByTopic(m_config.incomingMessagesCollectionId, normalizedTopicId, errorMessage)) {
         return false;
     }
-    if (!deleteDocumentsByChannel(m_config.messagesCollectionId, normalizedChannelId, errorMessage)) {
+    if (!deleteDocumentsByTopic(m_config.messagesCollectionId, normalizedTopicId, errorMessage)) {
         return false;
     }
-    const QString channelDocumentId = channelDocument.value("$id").toString();
-    if (channelDocumentId.trimmed().isEmpty()) {
+    const QString topicDocumentId = topicDocument.value("$id").toString();
+    if (topicDocumentId.trimmed().isEmpty()) {
         if (errorMessage) {
-            *errorMessage = "Unable to resolve channel document ID";
+            *errorMessage = "Unable to resolve topic document ID";
         }
         return false;
     }
-    return deleteDocument(m_config.channelsCollectionId, channelDocumentId, errorMessage);
+    return deleteDocument(m_config.topicsCollectionId, topicDocumentId, errorMessage);
 }
 
-bool BackendService::addMember(const QString &channelId,
+bool BackendService::addMember(const QString &topicId,
                                const QString &userId,
                                const QString &displayName,
                                QJsonObject *member,
                                QString *errorMessage) {
-    const QString normalizedChannelId = channelId.trimmed();
+    const QString normalizedTopicId = topicId.trimmed();
     const QString normalizedUserId = userId.trimmed();
-    if (normalizedChannelId.isEmpty() || normalizedUserId.isEmpty()) {
+    if (normalizedTopicId.isEmpty() || normalizedUserId.isEmpty()) {
         if (errorMessage) {
-            *errorMessage = "Channel ID and User ID are required";
+            *errorMessage = "Topic ID and User ID are required";
         }
         return false;
     }
-    if (!ensureChannelExists(normalizedChannelId, errorMessage)) {
+    if (!ensureTopicExists(normalizedTopicId, errorMessage)) {
         return false;
     }
     QJsonArray existingQueries = {
-        equalQuery("channelId", normalizedChannelId),
+        equalQuery("topicId", normalizedTopicId),
         equalQuery("userId", normalizedUserId),
         "limit(1)"
     };
@@ -974,8 +974,8 @@ bool BackendService::addMember(const QString &channelId,
     }
     if (!existingDocuments.isEmpty()) {
         const QJsonObject existingMemberObject = existingDocuments.first().toObject();
-        const appcomm::model::ChannelMember existingMember =
-            appcomm::model::ChannelMember::fromJson(existingMemberObject);
+        const appcomm::model::TopicMember existingMember =
+            appcomm::model::TopicMember::fromJson(existingMemberObject);
         if (member) {
             if (!existingMember.userId.trimmed().isEmpty()) {
                 *member = existingMember.toJson();
@@ -985,8 +985,8 @@ bool BackendService::addMember(const QString &channelId,
         }
         return true;
     }
-    appcomm::model::ChannelMember newMember;
-    newMember.channelId = normalizedChannelId;
+    appcomm::model::TopicMember newMember;
+    newMember.topicId = normalizedTopicId;
     newMember.userId = normalizedUserId;
     newMember.displayName = displayName.trimmed().isEmpty() ? normalizedUserId : displayName.trimmed();
     newMember.joinedAt = QDateTime::currentDateTimeUtc();
@@ -1001,24 +1001,24 @@ bool BackendService::addMember(const QString &channelId,
     return true;
 }
 
-bool BackendService::removeMember(const QString &channelId,
+bool BackendService::removeMember(const QString &topicId,
                                   const QString &userId,
                                   QString *errorMessage)
 {
-    const QString normalizedChannelId = channelId.trimmed();
+    const QString normalizedTopicId = topicId.trimmed();
     const QString normalizedUserId = userId.trimmed();
-    if (normalizedChannelId.isEmpty() || normalizedUserId.isEmpty()) {
+    if (normalizedTopicId.isEmpty() || normalizedUserId.isEmpty()) {
         if (errorMessage) {
-            *errorMessage = "Channel ID and User ID are required";
+            *errorMessage = "Topic ID and User ID are required";
         }
         return false;
     }
-    if (!ensureChannelExists(normalizedChannelId, errorMessage)) {
+    if (!ensureTopicExists(normalizedTopicId, errorMessage)) {
         return false;
     }
     QJsonObject memberDocument;
     const QJsonArray queries = {
-        equalQuery("channelId", normalizedChannelId),
+        equalQuery("topicId", normalizedTopicId),
         equalQuery("userId", normalizedUserId),
         "limit(1)"
     };
@@ -1035,7 +1035,7 @@ bool BackendService::removeMember(const QString &channelId,
     return deleteDocument(m_config.membersCollectionId, documentId, errorMessage);
 }
 
-bool BackendService::listMembers(const QString &channelId,
+bool BackendService::listMembers(const QString &topicId,
                                  QJsonArray *members,
                                  QString *errorMessage) {
     if (!members) {
@@ -1044,18 +1044,18 @@ bool BackendService::listMembers(const QString &channelId,
         }
         return false;
     }
-    const QString normalizedChannelId = channelId.trimmed();
-    if (normalizedChannelId.isEmpty()) {
+    const QString normalizedTopicId = topicId.trimmed();
+    if (normalizedTopicId.isEmpty()) {
         if (errorMessage) {
-            *errorMessage = "Channel ID is required";
+            *errorMessage = "Topic ID is required";
         }
         return false;
     }
-    if (!ensureChannelExists(normalizedChannelId, errorMessage)) {
+    if (!ensureTopicExists(normalizedTopicId, errorMessage)) {
         return false;
     }
     const QJsonArray queries = {
-        equalQuery("channelId", normalizedChannelId),
+        equalQuery("topicId", normalizedTopicId),
         "orderAsc(\"joinedAt\")",
         "limit(1000)"
     };
@@ -1065,8 +1065,8 @@ bool BackendService::listMembers(const QString &channelId,
     }
     QJsonArray result;
     for (const QJsonValue &memberValue : memberDocuments) {
-        const appcomm::model::ChannelMember parsedMember =
-            appcomm::model::ChannelMember::fromJson(memberValue.toObject());
+        const appcomm::model::TopicMember parsedMember =
+            appcomm::model::TopicMember::fromJson(memberValue.toObject());
         if (!parsedMember.userId.trimmed().isEmpty()) {
             result.append(parsedMember.toJson());
         }
@@ -1075,23 +1075,23 @@ bool BackendService::listMembers(const QString &channelId,
     return true;
 }
 
-bool BackendService::createSession(const QString &channelId,
+bool BackendService::createSession(const QString &topicId,
                                    const QStringList &userIds,
                                    QJsonObject *createdSession,
                                    QString *errorMessage) {
-    const QString normalizedChannelId = channelId.trimmed();
-    if (normalizedChannelId.isEmpty()) {
+    const QString normalizedTopicId = topicId.trimmed();
+    if (normalizedTopicId.isEmpty()) {
         if (errorMessage) {
-            *errorMessage = "Channel ID is required";
+            *errorMessage = "Topic ID is required";
         }
         return false;
     }
-    if (!ensureChannelExists(normalizedChannelId, errorMessage)) {
+    if (!ensureTopicExists(normalizedTopicId, errorMessage)) {
         return false;
     }
     Session session;
     session.sessionId = makeUuid();
-    session.channelId = normalizedChannelId;
+    session.topicId = normalizedTopicId;
     session.userIds = deduplicateUsers(userIds);
     session.createdAt = QDateTime::currentDateTimeUtc();
     session.status = "open";
@@ -1172,7 +1172,7 @@ bool BackendService::closeSession(const QString &sessionId, QString *errorMessag
     return deleteDocument(m_config.sessionsCollectionId, documentId, errorMessage);
 }
 
-bool BackendService::readMessages(const QString &channelId,
+bool BackendService::readMessages(const QString &topicId,
                                   const QString &messageId,
                                   int limit,
                                   QJsonArray *messages,
@@ -1183,10 +1183,10 @@ bool BackendService::readMessages(const QString &channelId,
         }
         return false;
     }
-    const QString normalizedChannelId = channelId.trimmed();
-    if (normalizedChannelId.isEmpty()) {
+    const QString normalizedTopicId = topicId.trimmed();
+    if (normalizedTopicId.isEmpty()) {
         if (errorMessage) {
-            *errorMessage = "Channel ID is required";
+            *errorMessage = "Topic ID is required";
         }
         return false;
     }
@@ -1197,7 +1197,7 @@ bool BackendService::readMessages(const QString &channelId,
         return false;
     }
     QJsonArray queries;
-    queries.append(equalQuery("channelId", normalizedChannelId));
+    queries.append(equalQuery("topicId", normalizedTopicId));
     if (!messageId.trimmed().isEmpty()) {
         queries.append(equalQuery("messageId", messageId.trimmed()));
     }
@@ -1230,7 +1230,7 @@ bool BackendService::readMessages(const QString &channelId,
     QJsonArray result;
     for (const appcomm::model::Message &message : parsedMessages) {
         QJsonObject messageObject;
-        messageObject["channelId"] = message.channelId;
+        messageObject["topicId"] = message.topicId;
         messageObject["senderId"] = message.senderId;
         messageObject["messageId"] = message.messageId;
         messageObject["sequenceNumber"] = message.sequenceNumber;
@@ -1243,20 +1243,20 @@ bool BackendService::readMessages(const QString &channelId,
     return true;
 }
 
-bool BackendService::createMessage(const QString &channelId,
+bool BackendService::createMessage(const QString &topicId,
                                    const QString &senderId,
                                    const QJsonObject &payload,
                                    QJsonObject *createdMessage,
                                    QString *errorMessage) {
-    const QString normalizedChannelId = channelId.trimmed();
+    const QString normalizedTopicId = topicId.trimmed();
     const QString normalizedSenderId = senderId.trimmed();
-    if (normalizedChannelId.isEmpty() || normalizedSenderId.isEmpty()) {
+    if (normalizedTopicId.isEmpty() || normalizedSenderId.isEmpty()) {
         if (errorMessage) {
-            *errorMessage = "Channel ID and sender ID are required";
+            *errorMessage = "Topic ID and sender ID are required";
         }
         return false;
     }
-    if (!ensureChannelExists(normalizedChannelId, errorMessage)) {
+    if (!ensureTopicExists(normalizedTopicId, errorMessage)) {
         return false;
     }
     constexpr int maxSequenceAttempts = 5;
@@ -1265,7 +1265,7 @@ bool BackendService::createMessage(const QString &channelId,
     for (int attempt = 0; attempt < maxSequenceAttempts; ++attempt) {
         qint64 nextSequenceNumber = 0;
         const QJsonArray sequenceQueries = {
-            equalQuery("channelId", normalizedChannelId),
+            equalQuery("topicId", normalizedTopicId),
             "orderDesc(\"sequenceNumber\")",
             "limit(1)"
         };
@@ -1279,7 +1279,7 @@ bool BackendService::createMessage(const QString &channelId,
         }
 
         appcomm::model::Message message;
-        message.channelId = normalizedChannelId;
+        message.topicId = normalizedTopicId;
         message.senderId = normalizedSenderId;
         message.messageId = makeUuid();
         message.sequenceNumber = nextSequenceNumber;
@@ -1293,7 +1293,7 @@ bool BackendService::createMessage(const QString &channelId,
         if (createResult.success) {
             if (createdMessage) {
                 QJsonObject outputMessage;
-                outputMessage["channelId"] = message.channelId;
+                outputMessage["topicId"] = message.topicId;
                 outputMessage["senderId"] = message.senderId;
                 outputMessage["messageId"] = message.messageId;
                 outputMessage["sequenceNumber"] = message.sequenceNumber;
@@ -1420,7 +1420,7 @@ int BackendService::runEchoService(QString *errorMessage) {
 
         qint64 nextSequenceNumber = 0;
         const QJsonArray sequenceQueries = {
-            equalQuery("channelId", incoming.pendingMessage.channelId),
+            equalQuery("topicId", incoming.pendingMessage.topicId),
             "orderDesc(\"sequenceNumber\")",
             "limit(1)"
         };
@@ -1440,7 +1440,7 @@ int BackendService::runEchoService(QString *errorMessage) {
         }
 
         appcomm::model::Message userMessage;
-        userMessage.channelId = incoming.pendingMessage.channelId;
+        userMessage.topicId = incoming.pendingMessage.topicId;
         userMessage.senderId = incoming.pendingMessage.senderId;
         userMessage.messageId = incoming.pendingMessage.messageId;
         userMessage.sequenceNumber = nextSequenceNumber;

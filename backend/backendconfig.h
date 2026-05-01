@@ -15,7 +15,7 @@ struct BackendConfig {
     QString messagesCollectionId = "messages";
     QString incomingMessagesCollectionId = "pendingmessages";
     QString membersCollectionId = "members";
-    QString channelsCollectionId = "channels";
+    QString topicsCollectionId = "topics";
     QString sessionsCollectionId = "sessions";
 
     bool isValid() const;

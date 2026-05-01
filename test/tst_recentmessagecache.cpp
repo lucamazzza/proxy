@@ -67,7 +67,7 @@ void tst_recentmessagecache::addSingleMessage() {
     RecentMessageCache cache;
     model::Message msg;
     msg.messageId = "msg1";
-    msg.channelId = "channel1";
+    msg.topicId = "channel1";
     msg.senderId = "user1";
     msg.timestamp = QDateTime::currentDateTime();
     msg.payload = QJsonObject{{"text", "Hello"}};
@@ -85,7 +85,7 @@ void tst_recentmessagecache::addMultipleMessages() {
     for (int i = 0; i < 10; i++) {
         model::Message msg;
         msg.messageId = QString("msg%1").arg(i);
-        msg.channelId = "channel1";
+        msg.topicId = "channel1";
         msg.senderId = "user1";
         msg.timestamp = QDateTime::currentDateTime();
         msg.payload = QJsonObject{{"index", i}};
@@ -102,7 +102,7 @@ void tst_recentmessagecache::updateExistingMessage() {
     
     model::Message msg1;
     msg1.messageId = "msg1";
-    msg1.channelId = "channel1";
+    msg1.topicId = "channel1";
     msg1.senderId = "user1";
     msg1.timestamp = QDateTime::currentDateTime();
     msg1.payload = QJsonObject{{"text", "Original"}};
@@ -112,7 +112,7 @@ void tst_recentmessagecache::updateExistingMessage() {
     
     model::Message msg2;
     msg2.messageId = "msg1";
-    msg2.channelId = "channel1";
+    msg2.topicId = "channel1";
     msg2.senderId = "user1";
     msg2.timestamp = QDateTime::currentDateTime();
     msg2.payload = QJsonObject{{"text", "Updated"}};
@@ -131,7 +131,7 @@ void tst_recentmessagecache::checkContains() {
     
     model::Message msg;
     msg.messageId = "msg1";
-    msg.channelId = "channel1";
+    msg.topicId = "channel1";
     msg.senderId = "user1";
     msg.timestamp = QDateTime::currentDateTime();
     msg.payload = QJsonObject{{"test", true}};
@@ -146,7 +146,7 @@ void tst_recentmessagecache::getMessage() {
     
     model::Message msgIn;
     msgIn.messageId = "msg1";
-    msgIn.channelId = "channel1";
+    msgIn.topicId = "channel1";
     msgIn.senderId = "user1";
     msgIn.timestamp = QDateTime::currentDateTime();
     msgIn.payload = QJsonObject{{"value", 42}};
@@ -164,7 +164,7 @@ void tst_recentmessagecache::getAllMessages() {
     for (int i = 0; i < 5; i++) {
         model::Message msg;
         msg.messageId = QString("msg%1").arg(i);
-        msg.channelId = "channel1";
+        msg.topicId = "channel1";
         msg.senderId = "user1";
         msg.timestamp = QDateTime::currentDateTime();
         msg.payload = QJsonObject{{"index", i}};
@@ -184,7 +184,7 @@ void tst_recentmessagecache::respectCapacity() {
     for (int i = 0; i < 3; i++) {
         model::Message msg;
         msg.messageId = QString("msg%1").arg(i);
-        msg.channelId = "channel1";
+        msg.topicId = "channel1";
         msg.senderId = "user1";
         msg.timestamp = QDateTime::currentDateTime();
         msg.payload = QJsonObject();
@@ -199,7 +199,7 @@ void tst_recentmessagecache::evictOldestMessage() {
     
     model::Message msg0;
     msg0.messageId = "msg0";
-    msg0.channelId = "channel1";
+    msg0.topicId = "channel1";
     msg0.senderId = "user1";
     msg0.timestamp = QDateTime::currentDateTime();
     msg0.payload = QJsonObject{{"value", 0}};
@@ -207,7 +207,7 @@ void tst_recentmessagecache::evictOldestMessage() {
     
     model::Message msg1;
     msg1.messageId = "msg1";
-    msg1.channelId = "channel1";
+    msg1.topicId = "channel1";
     msg1.senderId = "user1";
     msg1.timestamp = QDateTime::currentDateTime();
     msg1.payload = QJsonObject{{"value", 1}};
@@ -215,7 +215,7 @@ void tst_recentmessagecache::evictOldestMessage() {
     
     model::Message msg2;
     msg2.messageId = "msg2";
-    msg2.channelId = "channel1";
+    msg2.topicId = "channel1";
     msg2.senderId = "user1";
     msg2.timestamp = QDateTime::currentDateTime();
     msg2.payload = QJsonObject{{"value", 2}};
@@ -225,7 +225,7 @@ void tst_recentmessagecache::evictOldestMessage() {
     
     model::Message msg3;
     msg3.messageId = "msg3";
-    msg3.channelId = "channel1";
+    msg3.topicId = "channel1";
     msg3.senderId = "user1";
     msg3.timestamp = QDateTime::currentDateTime();
     msg3.payload = QJsonObject{{"value", 3}};
@@ -253,7 +253,7 @@ void tst_recentmessagecache::getMessagesSinceValid() {
     for (int i = 0; i < 5; i++) {
         model::Message msg;
         msg.messageId = QString("msg%1").arg(i);
-        msg.channelId = "channel1";
+        msg.topicId = "channel1";
         msg.senderId = "user1";
         msg.timestamp = QDateTime::currentDateTime();
         msg.payload = QJsonObject{{"index", i}};
@@ -272,7 +272,7 @@ void tst_recentmessagecache::getMessagesSinceInvalid() {
     
     model::Message msg1;
     msg1.messageId = "msg1";
-    msg1.channelId = "channel1";
+    msg1.topicId = "channel1";
     msg1.senderId = "user1";
     msg1.timestamp = QDateTime::currentDateTime();
     msg1.payload = QJsonObject();
@@ -280,7 +280,7 @@ void tst_recentmessagecache::getMessagesSinceInvalid() {
     
     model::Message msg2;
     msg2.messageId = "msg2";
-    msg2.channelId = "channel1";
+    msg2.topicId = "channel1";
     msg2.senderId = "user1";
     msg2.timestamp = QDateTime::currentDateTime();
     msg2.payload = QJsonObject();
@@ -304,7 +304,7 @@ void tst_recentmessagecache::getMessagesSinceLast() {
     
     model::Message msg1;
     msg1.messageId = "msg1";
-    msg1.channelId = "channel1";
+    msg1.topicId = "channel1";
     msg1.senderId = "user1";
     msg1.timestamp = QDateTime::currentDateTime();
     msg1.payload = QJsonObject();
@@ -312,7 +312,7 @@ void tst_recentmessagecache::getMessagesSinceLast() {
     
     model::Message msg2;
     msg2.messageId = "msg2";
-    msg2.channelId = "channel1";
+    msg2.topicId = "channel1";
     msg2.senderId = "user1";
     msg2.timestamp = QDateTime::currentDateTime();
     msg2.payload = QJsonObject();
@@ -320,7 +320,7 @@ void tst_recentmessagecache::getMessagesSinceLast() {
     
     model::Message msg3;
     msg3.messageId = "msg3";
-    msg3.channelId = "channel1";
+    msg3.topicId = "channel1";
     msg3.senderId = "user1";
     msg3.timestamp = QDateTime::currentDateTime();
     msg3.payload = QJsonObject();
@@ -337,7 +337,7 @@ void tst_recentmessagecache::addEmptyMessageId() {
     
     model::Message msg;
     msg.messageId = "";
-    msg.channelId = "channel1";
+    msg.topicId = "channel1";
     msg.senderId = "user1";
     msg.timestamp = QDateTime::currentDateTime();
     msg.payload = QJsonObject{{"test", true}};
@@ -353,7 +353,7 @@ void tst_recentmessagecache::zeroCapacity() {
     
     model::Message msg;
     msg.messageId = "msg1";
-    msg.channelId = "channel1";
+    msg.topicId = "channel1";
     msg.senderId = "user1";
     msg.timestamp = QDateTime::currentDateTime();
     msg.payload = QJsonObject();
@@ -369,7 +369,7 @@ void tst_recentmessagecache::clearCache() {
     for (int i = 0; i < 10; i++) {
         model::Message msg;
         msg.messageId = QString("msg%1").arg(i);
-        msg.channelId = "channel1";
+        msg.topicId = "channel1";
         msg.senderId = "user1";
         msg.timestamp = QDateTime::currentDateTime();
         msg.payload = QJsonObject();
@@ -390,7 +390,7 @@ void tst_recentmessagecache::duplicateMessages() {
     
     model::Message msg1;
     msg1.messageId = "msg1";
-    msg1.channelId = "channel1";
+    msg1.topicId = "channel1";
     msg1.senderId = "user1";
     msg1.timestamp = QDateTime::currentDateTime();
     msg1.payload = QJsonObject{{"version", 1}};
@@ -398,7 +398,7 @@ void tst_recentmessagecache::duplicateMessages() {
     
     model::Message msg2;
     msg2.messageId = "msg2";
-    msg2.channelId = "channel1";
+    msg2.topicId = "channel1";
     msg2.senderId = "user1";
     msg2.timestamp = QDateTime::currentDateTime();
     msg2.payload = QJsonObject{{"version", 1}};
@@ -406,7 +406,7 @@ void tst_recentmessagecache::duplicateMessages() {
     
     model::Message msg1Updated;
     msg1Updated.messageId = "msg1";
-    msg1Updated.channelId = "channel1";
+    msg1Updated.topicId = "channel1";
     msg1Updated.senderId = "user1";
     msg1Updated.timestamp = QDateTime::currentDateTime();
     msg1Updated.payload = QJsonObject{{"version", 2}};
@@ -424,7 +424,7 @@ void tst_recentmessagecache::maintainInsertionOrder() {
     
     model::Message msg3;
     msg3.messageId = "msg3";
-    msg3.channelId = "channel1";
+    msg3.topicId = "channel1";
     msg3.senderId = "user1";
     msg3.timestamp = QDateTime::currentDateTime();
     msg3.payload = QJsonObject();
@@ -432,7 +432,7 @@ void tst_recentmessagecache::maintainInsertionOrder() {
     
     model::Message msg1;
     msg1.messageId = "msg1";
-    msg1.channelId = "channel1";
+    msg1.topicId = "channel1";
     msg1.senderId = "user1";
     msg1.timestamp = QDateTime::currentDateTime();
     msg1.payload = QJsonObject();
@@ -440,7 +440,7 @@ void tst_recentmessagecache::maintainInsertionOrder() {
     
     model::Message msg2;
     msg2.messageId = "msg2";
-    msg2.channelId = "channel1";
+    msg2.topicId = "channel1";
     msg2.senderId = "user1";
     msg2.timestamp = QDateTime::currentDateTime();
     msg2.payload = QJsonObject();
@@ -458,7 +458,7 @@ void tst_recentmessagecache::orderAfterEviction() {
     
     model::Message msg1;
     msg1.messageId = "msg1";
-    msg1.channelId = "channel1";
+    msg1.topicId = "channel1";
     msg1.senderId = "user1";
     msg1.timestamp = QDateTime::currentDateTime();
     msg1.payload = QJsonObject();
@@ -466,7 +466,7 @@ void tst_recentmessagecache::orderAfterEviction() {
     
     model::Message msg2;
     msg2.messageId = "msg2";
-    msg2.channelId = "channel1";
+    msg2.topicId = "channel1";
     msg2.senderId = "user1";
     msg2.timestamp = QDateTime::currentDateTime();
     msg2.payload = QJsonObject();
@@ -474,7 +474,7 @@ void tst_recentmessagecache::orderAfterEviction() {
     
     model::Message msg3;
     msg3.messageId = "msg3";
-    msg3.channelId = "channel1";
+    msg3.topicId = "channel1";
     msg3.senderId = "user1";
     msg3.timestamp = QDateTime::currentDateTime();
     msg3.payload = QJsonObject();
@@ -482,7 +482,7 @@ void tst_recentmessagecache::orderAfterEviction() {
     
     model::Message msg4;
     msg4.messageId = "msg4";
-    msg4.channelId = "channel1";
+    msg4.topicId = "channel1";
     msg4.senderId = "user1";
     msg4.timestamp = QDateTime::currentDateTime();
     msg4.payload = QJsonObject();

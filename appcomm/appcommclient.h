@@ -31,7 +31,7 @@ namespace client {
  *
  * It manages:
  * - authentication
- * - channel lifecycle
+ * - topic lifecycle
  * - message sending/receiving
  * - connection state exposure
  *
@@ -96,16 +96,16 @@ public:
     bool isAuthenticated() const;
     model::SessionInfo sessionInfo() const;
 
-    //Channel
-    void joinChannel(const QString &channelId);
-    void leaveChannel();
-    QString activeChannel() const;
+    // Topic
+    void joinTopic(const QString &topicId);
+    void leaveTopic();
+    QString activeTopic() const;
 
     //Messaging
     void sendMessage(const QJsonObject &payload);
 
     void loadMembership();
-    void loadChannelMessages(int limit = 16);
+    void loadTopicMessages(int limit = 16);
 signals:
     //Authentication
     void authenticationStateChanged();
@@ -113,9 +113,9 @@ signals:
     //Connection
     void connectionStateChanged();
 
-    //Channel
-    void joinedChannel(const QString &channelId);
-    void leftChannel(const QString &channelId);
+    // Topic
+    void joinedTopic(const QString &topicId);
+    void leftTopic(const QString &topicId);
 
     //Messaging
     void messageReceived(const model::Message &message);

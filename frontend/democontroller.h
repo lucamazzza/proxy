@@ -14,7 +14,7 @@ class DemoController : public QObject
     Q_OBJECT
 
     Q_PROPERTY(QString connectionState READ connectionState NOTIFY connectionStateChanged)
-    Q_PROPERTY(QString currentChannel READ currentChannel NOTIFY currentChannelChanged)
+    Q_PROPERTY(QString currentTopic READ currentTopic NOTIFY currentTopicChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
     Q_PROPERTY(bool authenticated READ authenticated NOTIFY authenticatedChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
@@ -26,7 +26,7 @@ public:
                             QObject *parent = nullptr);
 
     QString connectionState() const;
-    QString currentChannel() const;
+    QString currentTopic() const;
     QString errorMessage() const;
     bool authenticated() const;
     bool busy() const;
@@ -41,7 +41,7 @@ public:
 
 signals:
     void connectionStateChanged();
-    void currentChannelChanged();
+    void currentTopicChanged();
     void errorMessageChanged();
     void authenticatedChanged();
     void busyChanged();
@@ -53,7 +53,7 @@ signals:
 private slots:
     void onAuthenticationStateChanged();
     void onConnectionStateChanged();
-    void onJoinedChannel(const QString &channelId);
+    void onJoinedTopic(const QString &topicId);
     void onMessageReceived(const appcomm::model::Message &message);
     void onErrorOccurred(const QString &error);
 
@@ -65,7 +65,7 @@ private:
     };
 
     void setConnectionState(const QString &state);
-    void setCurrentChannel(const QString &channel);
+    void setCurrentTopic(const QString &topic);
     void setErrorMessage(const QString &message);
     void setAuthenticated(bool authenticated);
     void setBusy(bool busy);
@@ -78,7 +78,7 @@ private:
     std::unique_ptr<appcomm::client::AppcommClient> m_client;
 
     QString m_connectionState = "Disconnected";
-    QString m_currentChannel;
+    QString m_currentTopic;
     QString m_errorMessage;
     QString m_userId;
 

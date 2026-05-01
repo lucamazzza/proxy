@@ -45,7 +45,7 @@ bool BackendConfig::isValid() const {
         && !messagesCollectionId.trimmed().isEmpty()
         && !incomingMessagesCollectionId.trimmed().isEmpty()
         && !membersCollectionId.trimmed().isEmpty()
-        && !channelsCollectionId.trimmed().isEmpty()
+        && !topicsCollectionId.trimmed().isEmpty()
         && !sessionsCollectionId.trimmed().isEmpty();
 }
 
@@ -59,7 +59,7 @@ QJsonObject BackendConfig::toJson() const {
     obj["messagesCollectionId"] = messagesCollectionId;
     obj["incomingMessagesCollectionId"] = incomingMessagesCollectionId;
     obj["membersCollectionId"] = membersCollectionId;
-    obj["channelsCollectionId"] = channelsCollectionId;
+    obj["topicsCollectionId"] = topicsCollectionId;
     obj["sessionsCollectionId"] = sessionsCollectionId;
     return obj;
 }
@@ -75,7 +75,7 @@ BackendConfig BackendConfig::fromJson(const QJsonObject &obj) {
     config.incomingMessagesCollectionId =
         readString(obj, "incomingMessagesCollectionId", "pendingmessages");
     config.membersCollectionId = readString(obj, "membersCollectionId", "members");
-    config.channelsCollectionId = readString(obj, "channelsCollectionId", "channels");
+    config.topicsCollectionId = readString(obj, "topicsCollectionId", "topics");
     config.sessionsCollectionId = readString(obj, "sessionsCollectionId", "sessions");
     return config;
 }

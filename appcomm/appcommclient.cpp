@@ -263,7 +263,7 @@ void AppcommClient::connectToServer()
         return;
     }
 
-    if (d->m_clientState.activeChannelId.trimmed().isEmpty()) {
+    if (d->m_clientState.activeTopicId.trimmed().isEmpty()) {
         return;
     }
 
@@ -279,11 +279,11 @@ void AppcommClient::connectToServer()
 
     setConnectionState(ConnectionState::Connecting);
 
-    const QString channel =
+    const QString topic =
         QString("databases.%1.collections.%2.documents")
             .arg(d->m_baseConfig.dbId, d->m_appConfig.messagesCollectionId);
 
-    d->m_realtime->connectToChannels({channel});
+    d->m_realtime->connectToChannels({topic});
 }
 
 void AppcommClient::disconnectFromServer()
@@ -380,46 +380,46 @@ appcomm::model::SessionInfo AppcommClient::sessionInfo() const
     return d->m_sessionInfo;
 }
 
-// Channel
+// Topic
 
-void AppcommClient::joinChannel(const QString &channelId)
+void AppcommClient::joinTopic(const QString &topicId)
 {
-    const QString trimmedChannelId = channelId.trimmed();
+    const QString trimmedTopicId = topicId.trimmed();
 
-    if (trimmedChannelId.isEmpty()) {
-        emit errorOccurred("Channel ID cannot be empty.");
+    if (trimmedTopicId.isEmpty()) {
+        emit errorOccurred("Topic ID cannot be empty.");
         return;
     }
 
-    d->m_clientState.activeChannelId = trimmedChannelId;
-    d->m_messageProcessor->reset(trimmedChannelId);
+    d->m_clientState.activeTopicId = trimmedTopicId;
+    d->m_messageProcessor->reset(trimmedTopicId);
 
-    emit joinedChannel(trimmedChannelId);
+    emit joinedTopic(trimmedTopicId);
 
-    loadChannelMessages();
+    loadTopicMessages();
 }
 
-void AppcommClient::leaveChannel()
+void AppcommClient::leaveTopic()
 {
-    const QString oldChannelId = d->m_clientState.activeChannelId;
+    const QString oldTopicId = d->m_clientState.activeTopicId;
 
-    if (oldChannelId.isEmpty()) {
+    if (oldTopicId.isEmpty()) {
         return;
     }
 
-    d->m_clientState.activeChannelId.clear();
+    d->m_clientState.activeTopicId.clear();
     d->m_messageProcessor->reset(QString());
 
-    emit leftChannel(oldChannelId);
+    emit leftTopic(oldTopicId);
 
     if (d->m_connectionState == ConnectionState::Connected) {
         disconnectFromServer();
     }
 }
 
-QString AppcommClient::activeChannel() const
+QString AppcommClient::activeTopic() const
 {
-    return d->m_clientState.activeChannelId;
+    return d->m_clientState.activeTopicId;
 }
 
 // Messaging
@@ -431,8 +431,8 @@ void AppcommClient::sendMessage(const QJsonObject &payload)
         return;
     }
 
-    if (d->m_clientState.activeChannelId.trimmed().isEmpty()) {
-        emit errorOccurred("Cannot send message: no active channel.");
+    if (d->m_clientState.activeTopicId.trimmed().isEmpty()) {
+        emit errorOccurred("Cannot send message: no active topic.");
         return;
     }
 
@@ -457,7 +457,7 @@ void AppcommClient::sendMessage(const QJsonObject &payload)
     }
 
     appcomm::model::PendingMessage msg;
-    msg.channelId = d->m_clientState.activeChannelId;
+    msg.topicId = d->m_clientState.activeTopicId;
     msg.senderId = d->m_sessionInfo.userId;
     msg.messageId = QUuid::createUuid().toString(QUuid::WithoutBraces);
     msg.timestamp = QDateTime::currentDateTimeUtc();
@@ -498,14 +498,14 @@ void AppcommClient::loadMembership()
     d->m_client->listDocuments(config, queries);
 }
 
-void AppcommClient::loadChannelMessages(int limit)
+void AppcommClient::loadTopicMessages(int limit)
 {
     if (limit <= 0) {
         limit = 16;
     }
 
-    if (d->m_clientState.activeChannelId.trimmed().isEmpty()) {
-        emit errorOccurred("Cannot load messages: no active channel.");
+    if (d->m_clientState.activeTopicId.trimmed().isEmpty()) {
+        emit errorOccurred("Cannot load messages: no active topic.");
         return;
     }
 
@@ -523,8 +523,8 @@ void AppcommClient::loadChannelMessages(int limit)
         d->configForCollection(d->m_appConfig.messagesCollectionId);
 
     QJsonArray queries;
-    queries.append(QString("{\"method\":\"equal\",\"attribute\":\"channelId\",\"values\":[\"%1\"]}")
-                       .arg(d->m_clientState.activeChannelId));
+    queries.append(QString("{\"method\":\"equal\",\"attribute\":\"topicId\",\"values\":[\"%1\"]}")
+                       .arg(d->m_clientState.activeTopicId));
     queries.append("{\"method\":\"orderDesc\",\"attribute\":\"sequenceNumber\"}");
     queries.append(QString("{\"method\":\"limit\",\"values\":[%1]}").arg(limit));
 
@@ -587,20 +587,20 @@ void AppcommClient::onRequestSuccess(const QJsonObject &data)
             return;
         }
 
-        const model::ChannelMember member =
-            model::ChannelMember::fromJson(documents.first().toObject());
+        const model::TopicMember member =
+            model::TopicMember::fromJson(documents.first().toObject());
 
-        if (member.userId.trimmed().isEmpty() || member.channelId.trimmed().isEmpty()) {
+        if (member.userId.trimmed().isEmpty() || member.topicId.trimmed().isEmpty()) {
             emit errorOccurred("Invalid membership document.");
             return;
         }
 
-        d->m_clientState.activeChannelId = member.channelId;
-        d->m_messageProcessor->reset(member.channelId);
+        d->m_clientState.activeTopicId = member.topicId;
+        d->m_messageProcessor->reset(member.topicId);
 
-        emit joinedChannel(member.channelId);
+        emit joinedTopic(member.topicId);
 
-        loadChannelMessages();
+        loadTopicMessages();
         return;
     }
 

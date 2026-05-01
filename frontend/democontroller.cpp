@@ -17,8 +17,8 @@ DemoController::DemoController(const appcomm::model::AppCommConfig &config,
     connect(m_client.get(), &appcomm::client::AppcommClient::connectionStateChanged,
             this, &DemoController::onConnectionStateChanged);
 
-    connect(m_client.get(), &appcomm::client::AppcommClient::joinedChannel,
-            this, &DemoController::onJoinedChannel);
+    connect(m_client.get(), &appcomm::client::AppcommClient::joinedTopic,
+            this, &DemoController::onJoinedTopic);
 
     connect(m_client.get(), &appcomm::client::AppcommClient::messageReceived,
             this, &DemoController::onMessageReceived);
@@ -32,9 +32,9 @@ QString DemoController::connectionState() const
     return m_connectionState;
 }
 
-QString DemoController::currentChannel() const
+QString DemoController::currentTopic() const
 {
-    return m_currentChannel;
+    return m_currentTopic;
 }
 
 QString DemoController::errorMessage() const
@@ -113,8 +113,8 @@ void DemoController::sendMessage(const QString &text)
         return;
     }
 
-    if (m_currentChannel.isEmpty()) {
-        setErrorMessage("No channel assigned to this user.");
+    if (m_currentTopic.isEmpty()) {
+        setErrorMessage("No topic assigned to this user.");
         return;
     }
 
@@ -133,7 +133,7 @@ void DemoController::logout()
     m_chatOpened = false;
 
     setAuthenticated(false);
-    setCurrentChannel(QString());
+    setCurrentTopic(QString());
     setConnectionState("Disconnected");
     setUserId(QString());
     setBusy(false);
@@ -164,9 +164,9 @@ void DemoController::onConnectionStateChanged()
     setConnectionState(m_client->connectionStateText());
 }
 
-void DemoController::onJoinedChannel(const QString &channelId)
+void DemoController::onJoinedTopic(const QString &topicId)
 {
-    setCurrentChannel(channelId);
+    setCurrentTopic(topicId);
     setBusy(false);
 
     if (m_loginMode == LoginMode::Email && !m_chatOpened) {
@@ -221,14 +221,14 @@ void DemoController::setConnectionState(const QString &state)
     emit connectionStateChanged();
 }
 
-void DemoController::setCurrentChannel(const QString &channel)
+void DemoController::setCurrentTopic(const QString &topic)
 {
-    if (m_currentChannel == channel) {
+    if (m_currentTopic == topic) {
         return;
     }
 
-    m_currentChannel = channel;
-    emit currentChannelChanged();
+    m_currentTopic = topic;
+    emit currentTopicChanged();
 }
 
 void DemoController::setErrorMessage(const QString &message)

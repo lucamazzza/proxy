@@ -27,8 +27,8 @@ std::optional<model::Message> MessageProcessor::processIncoming(
         return std::nullopt;
     }
 
-    if (!m_clientState->activeChannelId.isEmpty() &&
-        message.channelId != m_clientState->activeChannelId) {
+    if (!m_clientState->activeTopicId.isEmpty() &&
+        message.topicId != m_clientState->activeTopicId) {
         return std::nullopt;
     }
 
@@ -59,8 +59,8 @@ bool MessageProcessor::hasGap(const model::Message& message) const {
     return message.sequenceNumber > m_clientState->lastReceivedSequence + 1;
 }
 
-void MessageProcessor::reset(const QString& channelId) {
-    m_clientState->activeChannelId = channelId;
+void MessageProcessor::reset(const QString& topicId) {
+    m_clientState->activeTopicId = topicId;
     m_clientState->lastReceivedSequence = -1;
     m_clientState->lastReceivedMessageId.clear();
 }

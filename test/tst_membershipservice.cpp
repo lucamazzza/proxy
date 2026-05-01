@@ -18,10 +18,10 @@ void tst_membershipservice::createActiveMember_setsExpectedDefaults() {
     MembershipService service;
     const QDateTime joinedAt = QDateTime::currentDateTimeUtc();
 
-    const appcomm::model::ChannelMember member =
+    const appcomm::model::TopicMember member =
         service.createActiveMember("  room-1  ", "  user-9  ", joinedAt);
 
-    QCOMPARE(member.channelId, QString("room-1"));
+    QCOMPARE(member.topicId, QString("room-1"));
     QCOMPARE(member.userId, QString("user-9"));
     QCOMPARE(member.joinedAt, joinedAt);
     QCOMPARE(member.lastSeenAt, joinedAt);
@@ -31,8 +31,8 @@ void tst_membershipservice::createActiveMember_setsExpectedDefaults() {
 void tst_membershipservice::parseMembers_filtersInvalidEntries() {
     MembershipService service;
 
-    appcomm::model::ChannelMember validMember;
-    validMember.channelId = "room-1";
+    appcomm::model::TopicMember validMember;
+    validMember.topicId = "room-1";
     validMember.userId = "user-9";
     validMember.displayName = "User Nine";
     validMember.joinedAt = QDateTime::currentDateTimeUtc();
@@ -40,12 +40,12 @@ void tst_membershipservice::parseMembers_filtersInvalidEntries() {
     validMember.isActive = true;
 
     const QJsonObject validDoc = validMember.toJson();
-    const QJsonObject invalidDoc = QJsonObject{{"channelId", "room-1"}};
+    const QJsonObject invalidDoc = QJsonObject{{"topicId", "room-1"}};
     const QJsonArray docs = {validDoc, invalidDoc};
 
-    const QList<appcomm::model::ChannelMember> members = service.parseMembers(docs);
+    const QList<appcomm::model::TopicMember> members = service.parseMembers(docs);
     QCOMPARE(members.size(), 1);
-    QCOMPARE(members.first().channelId, QString("room-1"));
+    QCOMPARE(members.first().topicId, QString("room-1"));
     QCOMPARE(members.first().userId, QString("user-9"));
 }
 
@@ -53,7 +53,7 @@ void tst_membershipservice::resolveDocumentId_extractsId() {
     MembershipService service;
     const QJsonObject doc = {
         {"$id", "doc-123"},
-        {"channelId", "room-1"}
+        {"topicId", "room-1"}
     };
 
     QCOMPARE(service.resolveDocumentId(doc), QString("doc-123"));

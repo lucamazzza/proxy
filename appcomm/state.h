@@ -36,7 +36,7 @@ Q_NAMESPACE
 struct ClientState {
     qint64 lastReceivedSequence = -1; ///< Number sequence of the last message received
     QString lastReceivedMessageId;    ///< ID of the last message received (used for ordering or recovery)
-    QString activeChannelId;          ///< Identifier of the currently active channel
+    QString activeTopicId;          ///< Identifier of the currently active topic
     bool authenticated = false;       ///< Indicates whether the client is authenticated
 };
 

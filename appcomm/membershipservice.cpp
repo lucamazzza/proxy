@@ -13,11 +13,11 @@ MembershipService::MembershipService(QObject *parent)
     : QObject{parent}
 {}
 
-appcomm::model::ChannelMember MembershipService::createActiveMember(const QString &channelId,
+appcomm::model::TopicMember MembershipService::createActiveMember(const QString &topicId,
                                                                     const QString &userId,
                                                                     const QDateTime &joinedAt) const {
-    appcomm::model::ChannelMember member;
-    member.channelId = channelId.trimmed();
+    appcomm::model::TopicMember member;
+    member.topicId = topicId.trimmed();
     member.userId = userId.trimmed();
     member.joinedAt = joinedAt;
     member.lastSeenAt = joinedAt;
@@ -25,15 +25,15 @@ appcomm::model::ChannelMember MembershipService::createActiveMember(const QStrin
     return member;
 }
 
-QList<appcomm::model::ChannelMember> MembershipService::parseMembers(const QJsonArray &documents) const {
-    QList<appcomm::model::ChannelMember> members;
+QList<appcomm::model::TopicMember> MembershipService::parseMembers(const QJsonArray &documents) const {
+    QList<appcomm::model::TopicMember> members;
     for (const QJsonValue &docValue : documents) {
         if (!docValue.isObject()) {
             continue;
         }
-        const appcomm::model::ChannelMember member =
-            appcomm::model::ChannelMember::fromJson(docValue.toObject());
-        if (!member.userId.trimmed().isEmpty() && !member.channelId.trimmed().isEmpty()) {
+        const appcomm::model::TopicMember member =
+            appcomm::model::TopicMember::fromJson(docValue.toObject());
+        if (!member.userId.trimmed().isEmpty() && !member.topicId.trimmed().isEmpty()) {
             members.append(member);
         }
     }

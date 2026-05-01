@@ -214,7 +214,7 @@ public:
      * @brief Lists documents in the configured collection with optional query filters.
      *
      * @param config Connection configuration with database and collection IDs
-     * @param queries Optional array of query strings (e.g., ["equal(\"channelId\",\"general\")", "limit(100)"])
+     * @param queries Optional array of query strings (e.g., ["equal(\"topicId\",\"general\")", "limit(100)"])
      */
     void listDocuments(const ConnectionConfig &config, const QJsonArray &queries = QJsonArray()) override;
 

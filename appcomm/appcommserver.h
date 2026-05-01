@@ -1,6 +1,6 @@
 /*!
  * @file appcommserver.h
- * @brief Server-side communication component for managing channels, users, and messages
+ * @brief Server-side communication component for managing topics, users, and messages
  *
  * @copyright Copyright (c) 2026 SUPSI
  */
@@ -29,10 +29,10 @@ namespace server {
 
 /*!
  * @class AppcommServer
- * @brief Server component for managing communication channels, users, and messages
+ * @brief Server component for managing communication topics, users, and messages
  *
  * This class provides server-side functionality for creating and managing
- * communication channels, users, and message broadcasting. It interfaces
+ * communication topics, users, and message broadcasting. It interfaces
  * with Appwrite backend services to provide persistent storage and real-time
  * communication capabilities.
  */
@@ -68,24 +68,24 @@ public:
      */
     void createIndexes();
 
-    // Channel Management
+    // Topic Management
 
     /*!
-     * @brief Creates a new communication channel
-     * @param channel Channel information
+     * @brief Creates a new communication topic
+     * @param topic Topic information
      */
-    void createChannel(const model::Channel &channel);
+    void createTopic(const model::Topic &topic);
 
     /*!
-     * @brief Deletes a channel and all its messages
-     * @param channelId Channel identifier
+     * @brief Deletes a topic and all its messages
+     * @param topicId Topic identifier
      */
-    void deleteChannel(const QString &channelId);
+    void deleteTopic(const QString &topicId);
 
     /*!
-     * @brief Lists all available channels
+     * @brief Lists all available topics
      */
-    void listChannels();
+    void listTopics();
 
     // User Management
 
@@ -111,17 +111,17 @@ public:
     // Message Management
 
     /*!
-     * @brief Broadcasts a message to all clients in a channel
+     * @brief Broadcasts a message to all clients in a topic
      * @param message Message to broadcast
      */
     void broadcastMessage(const model::Message &message);
 
     /*!
-     * @brief Retrieves messages from a channel
-     * @param channelId Channel identifier
+     * @brief Retrieves messages from a topic
+     * @param topicId Topic identifier
      * @param limit Maximum number of messages (default 16)
      */
-    void getChannelMessages(const QString &channelId, int limit = 16);
+    void getTopicMessages(const QString &topicId, int limit = 16);
 
     /*!
      * @brief Deletes a specific message
@@ -132,24 +132,24 @@ public:
     // Membership Management
 
     /*!
-     * @brief Adds a user to a channel
-     * @param channelId Channel identifier
+     * @brief Adds a user to a topic
+     * @param topicId Topic identifier
      * @param userId User identifier
      */
-    void addChannelMember(const QString &channelId, const QString &userId);
+    void addTopicMember(const QString &topicId, const QString &userId);
 
     /*!
-     * @brief Removes a user from a channel
-     * @param channelId Channel identifier
+     * @brief Removes a user from a topic
+     * @param topicId Topic identifier
      * @param userId User identifier
      */
-    void removeChannelMember(const QString &channelId, const QString &userId);
+    void removeTopicMember(const QString &topicId, const QString &userId);
 
     /*!
-     * @brief Gets all members of a channel
-     * @param channelId Channel identifier
+     * @brief Gets all members of a topic
+     * @param topicId Topic identifier
      */
-    void getChannelMembers(const QString &channelId);
+    void getTopicMembers(const QString &topicId);
 
     // State Queries
 
@@ -160,17 +160,17 @@ public:
     bool isInitialized() const;
 
     /*!
-     * @brief Gets all channels
-     * @return List of channels
+     * @brief Gets all topics
+     * @return List of topics
      */
-    QList<model::Channel> channels() const;
+    QList<model::Topic> topics() const;
 
     /*!
-     * @brief Gets a specific channel
-     * @param channelId Channel identifier
-     * @return Channel or invalid channel if not found
+     * @brief Gets a specific topic
+     * @param topicId Topic identifier
+     * @return Topic or invalid topic if not found
      */
-    model::Channel getChannel(const QString &channelId) const;
+    model::Topic getTopic(const QString &topicId) const;
 
 signals:
 
@@ -193,32 +193,32 @@ signals:
      */
     void initializationError(int code, const QString &message);
 
-    // Channel signals
+    // Topic signals
 
     /*!
-     * @brief Emitted when a channel is created
-     * @param channel Created channel
+     * @brief Emitted when a topic is created
+     * @param topic Created topic
      */
-    void channelCreated(const model::Channel &channel);
+    void topicCreated(const model::Topic &topic);
 
     /*!
-     * @brief Emitted when a channel is deleted
-     * @param channelId Deleted channel ID
+     * @brief Emitted when a topic is deleted
+     * @param topicId Deleted topic ID
      */
-    void channelDeleted(const QString &channelId);
+    void topicDeleted(const QString &topicId);
 
     /*!
-     * @brief Emitted when channels are listed
-     * @param channels List of channels
+     * @brief Emitted when topics are listed
+     * @param topics List of topics
      */
-    void channelsListed(const QList<model::Channel> &channels);
+    void topicsListed(const QList<model::Topic> &topics);
 
     /*!
-     * @brief Emitted when a channel operation fails
+     * @brief Emitted when a topic operation fails
      * @param code Error code
      * @param message Error message
      */
-    void channelError(int code, const QString &message);
+    void topicError(int code, const QString &message);
 
     // User signals
 
@@ -277,25 +277,25 @@ signals:
     // Membership signals
 
     /*!
-     * @brief Emitted when a member is added to a channel
+     * @brief Emitted when a member is added to a topic
      * @param member Added member
      */
-    void memberAdded(const model::ChannelMember &member);
+    void memberAdded(const model::TopicMember &member);
 
     /*!
-     * @brief Emitted when a member is removed from a channel
-     * @param channelId Channel ID
+     * @brief Emitted when a member is removed from a topic
+     * @param topicId Topic ID
      * @param userId User ID
      */
-    void memberRemoved(const QString &channelId, const QString &userId);
+    void memberRemoved(const QString &topicId, const QString &userId);
 
     /*!
-     * @brief Emitted when channel members are listed
-     * @param channelId Channel ID
+     * @brief Emitted when topic members are listed
+     * @param topicId Topic ID
      * @param members List of members
      */
-    void membersListed(const QString &channelId,
-                       const QList<model::ChannelMember> &members);
+    void membersListed(const QString &topicId,
+                       const QList<model::TopicMember> &members);
 
     /*!
      * @brief Emitted when a membership operation fails
@@ -348,11 +348,11 @@ private:
      */
     class Private;
     Private *d;                     ///< Pointer to private implementation
-    QString m_deletingChannelId;
+    QString m_deletingTopicId;
     QString m_originalCollectionId;
-    QString m_removingChannelId;
+    QString m_removingTopicId;
     QString m_removingUserId;
-    QString m_queryingChannelId;
+    QString m_queryingTopicId;
 };
 
 } // namespace server

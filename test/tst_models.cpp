@@ -23,7 +23,7 @@ private slots:
     void testUserIsValid_trimmedEmail();
     void testUserIsValid_bothMissing();
 
-    //Channel
+    // Topic
     void testChannelIsValid_valid();
     void testChannelIsValid_missingUserId();
     void testChannelIsValid_missingEmail();
@@ -33,11 +33,11 @@ private slots:
 
     // Message - isValid
     void testMessageIsValid_valid();
-    void testMessageIsValid_missingChannelId();
+    void testMessageIsValid_missingTopicId();
     void testMessageIsValid_missingSenderId();
     void testMessageIsValid_missingMessageId();
     void testMessageIsValid_invalidTimestamp();
-    void testMessageIsValid_trimmedChannelId();
+    void testMessageIsValid_trimmedTopicId();
     void testMessageIsValid_trimmedSenderId();
     void testMessageIsValid_trimmedMessageId();
 
@@ -63,13 +63,13 @@ private slots:
     void testSessionInfoFromJson_missingField();
     void testSessionInfoFromJson_invalidDateContent();
 
-    // ChannelMember
-    void testChannelMemberToJson();
-    void testChannelMemberFromJson_valid();
-    void testChannelMemberFromJson_invalidTypes();
-    void testChannelMemberFromJson_missingField();
-    void testChannelMemberFromJson_invalidDateContent();
-    void testChannelMemberRoundTrip();
+    // TopicMember
+    void testTopicMemberToJson();
+    void testTopicMemberFromJson_valid();
+    void testTopicMemberFromJson_invalidTypes();
+    void testTopicMemberFromJson_missingField();
+    void testTopicMemberFromJson_invalidDateContent();
+    void testTopicMemberRoundTrip();
 
     // AppCommConfig
     void testAppCommConfigIsValid_valid();
@@ -145,62 +145,62 @@ void tst_models::testUserIsValid_bothMissing()
 
 void tst_models::testChannelIsValid_valid()
 {
-    Channel channel;
-    channel.channelId = "c1";
-    channel.name = "channelname";
+    Topic topic;
+    topic.topicId = "c1";
+    topic.name = "channelname";
 
-    QVERIFY(channel.isValid());
+    QVERIFY(topic.isValid());
 }
 
 void tst_models::testChannelIsValid_missingUserId()
 {
-    Channel channel;
-    channel.channelId = "";
-    channel.name = "channelname";
+    Topic topic;
+    topic.topicId = "";
+    topic.name = "channelname";
 
-    QVERIFY(!channel.isValid());
+    QVERIFY(!topic.isValid());
 }
 
 void tst_models::testChannelIsValid_missingEmail()
 {
-    Channel channel;
-    channel.channelId = "c1";
-    channel.name = "";
+    Topic topic;
+    topic.topicId = "c1";
+    topic.name = "";
 
-    QVERIFY(!channel.isValid());
+    QVERIFY(!topic.isValid());
 }
 
 void tst_models::testChannelIsValid_trimmedUserId()
 {
-    Channel channel;
-    channel.channelId = "   ";
-    channel.name = "channelname";
+    Topic topic;
+    topic.topicId = "   ";
+    topic.name = "channelname";
 
-    QVERIFY(!channel.isValid());
+    QVERIFY(!topic.isValid());
 }
 
 void tst_models::testChannelIsValid_trimmedEmail()
 {
-    Channel channel;
-    channel.channelId = "c1";
-    channel.name = "   ";
+    Topic topic;
+    topic.topicId = "c1";
+    topic.name = "   ";
 
-    QVERIFY(!channel.isValid());
+    QVERIFY(!topic.isValid());
 }
 
 void tst_models::testChannelIsValid_bothMissing()
 {
-    Channel channel;
-    channel.channelId = "";
-    channel.name = "";
+    Topic topic;
+    topic.topicId = "";
+    topic.name = "";
 
-    QVERIFY(!channel.isValid());
+    QVERIFY(!topic.isValid());
 }
 
 void tst_models::testMessageIsValid_valid()
 {
     Message msg;
-    msg.channelId = "c1";
+    msg.topicId = "c1";
     msg.senderId = "u1";
     msg.messageId = "m1";
     msg.timestamp = QDateTime::currentDateTimeUtc();
@@ -210,10 +210,10 @@ void tst_models::testMessageIsValid_valid()
     QVERIFY(msg.isValid());
 }
 
-void tst_models::testMessageIsValid_missingChannelId()
+void tst_models::testMessageIsValid_missingTopicId()
 {
     Message msg;
-    msg.channelId = "";
+    msg.topicId = "";
     msg.senderId = "u1";
     msg.messageId = "m1";
     msg.timestamp = QDateTime::currentDateTimeUtc();
@@ -224,7 +224,7 @@ void tst_models::testMessageIsValid_missingChannelId()
 void tst_models::testMessageIsValid_missingSenderId()
 {
     Message msg;
-    msg.channelId = "c1";
+    msg.topicId = "c1";
     msg.senderId = "";
     msg.messageId = "m1";
     msg.timestamp = QDateTime::currentDateTimeUtc();
@@ -235,7 +235,7 @@ void tst_models::testMessageIsValid_missingSenderId()
 void tst_models::testMessageIsValid_missingMessageId()
 {
     Message msg;
-    msg.channelId = "c1";
+    msg.topicId = "c1";
     msg.senderId = "u1";
     msg.messageId = "";
     msg.timestamp = QDateTime::currentDateTimeUtc();
@@ -246,7 +246,7 @@ void tst_models::testMessageIsValid_missingMessageId()
 void tst_models::testMessageIsValid_invalidTimestamp()
 {
     Message msg;
-    msg.channelId = "c1";
+    msg.topicId = "c1";
     msg.senderId = "u1";
     msg.messageId = "m1";
     msg.timestamp = QDateTime(); // invalido
@@ -254,10 +254,10 @@ void tst_models::testMessageIsValid_invalidTimestamp()
     QVERIFY(!msg.isValid());
 }
 
-void tst_models::testMessageIsValid_trimmedChannelId()
+void tst_models::testMessageIsValid_trimmedTopicId()
 {
     Message msg;
-    msg.channelId = "   ";
+    msg.topicId = "   ";
     msg.senderId = "u1";
     msg.messageId = "m1";
     msg.timestamp = QDateTime::currentDateTimeUtc();
@@ -268,7 +268,7 @@ void tst_models::testMessageIsValid_trimmedChannelId()
 void tst_models::testMessageIsValid_trimmedSenderId()
 {
     Message msg;
-    msg.channelId = "c1";
+    msg.topicId = "c1";
     msg.senderId = "   ";
     msg.messageId = "m1";
     msg.timestamp = QDateTime::currentDateTimeUtc();
@@ -279,7 +279,7 @@ void tst_models::testMessageIsValid_trimmedSenderId()
 void tst_models::testMessageIsValid_trimmedMessageId()
 {
     Message msg;
-    msg.channelId = "c1";
+    msg.topicId = "c1";
     msg.senderId = "u1";
     msg.messageId = "   ";
     msg.timestamp = QDateTime::currentDateTimeUtc();
@@ -290,7 +290,7 @@ void tst_models::testMessageIsValid_trimmedMessageId()
 void tst_models::testMessageToJson()
 {
     Message msg;
-    msg.channelId = "c1";
+    msg.topicId = "c1";
     msg.senderId = "u1";
     msg.messageId = "m1";
     msg.sequenceNumber = 42;
@@ -303,7 +303,7 @@ void tst_models::testMessageToJson()
 
     QJsonObject obj = msg.toJson();
 
-    QCOMPARE(obj.value("channelId").toString(), QString("c1"));
+    QCOMPARE(obj.value("topicId").toString(), QString("c1"));
     QCOMPARE(obj.value("senderId").toString(), QString("u1"));
     QCOMPARE(obj.value("messageId").toString(), QString("m1"));
     QCOMPARE(obj.value("sequenceNumber").toInt(), 42);
@@ -314,7 +314,7 @@ void tst_models::testMessageToJson()
 void tst_models::testMessageFromJson_valid()
 {
     QJsonObject obj{
-        {"channelId", "c1"},
+        {"topicId", "c1"},
         {"senderId", "u1"},
         {"messageId", "m1"},
         {"sequenceNumber", 42},
@@ -328,7 +328,7 @@ void tst_models::testMessageFromJson_valid()
 
     Message msg = Message::fromJson(obj);
 
-    QCOMPARE(msg.channelId, QString("c1"));
+    QCOMPARE(msg.topicId, QString("c1"));
     QCOMPARE(msg.senderId, QString("u1"));
     QCOMPARE(msg.messageId, QString("m1"));
     QCOMPARE(msg.sequenceNumber, 42LL);
@@ -343,7 +343,7 @@ void tst_models::testMessageFromJson_valid()
 void tst_models::testMessageFromJson_invalidTypes()
 {
     QJsonObject obj{
-        {"channelId", 123}, // dovrebbe essere string
+        {"topicId", 123}, // dovrebbe essere string
         {"senderId", "u1"},
         {"messageId", "m1"},
         {"sequenceNumber", "wrong-type"},
@@ -354,7 +354,7 @@ void tst_models::testMessageFromJson_invalidTypes()
 
     Message msg = Message::fromJson(obj);
 
-    QVERIFY(msg.channelId.isEmpty());
+    QVERIFY(msg.topicId.isEmpty());
     QVERIFY(msg.senderId.isEmpty());
     QVERIFY(msg.messageId.isEmpty());
     QCOMPARE(msg.sequenceNumber, -1LL);
@@ -366,7 +366,7 @@ void tst_models::testMessageFromJson_invalidTypes()
 void tst_models::testMessageFromJson_missingField()
 {
     QJsonObject obj{
-        // manca channelId
+        // manca topicId
         {"senderId", "u1"},
         {"messageId", "m1"},
         {"sequenceNumber", 42},
@@ -377,7 +377,7 @@ void tst_models::testMessageFromJson_missingField()
 
     Message msg = Message::fromJson(obj);
 
-    QVERIFY(msg.channelId.isEmpty());
+    QVERIFY(msg.topicId.isEmpty());
     QVERIFY(msg.senderId.isEmpty());
     QVERIFY(msg.messageId.isEmpty());
     QCOMPARE(msg.sequenceNumber, -1LL);
@@ -389,7 +389,7 @@ void tst_models::testMessageFromJson_missingField()
 void tst_models::testMessageFromJson_invalidTimestampContent()
 {
     QJsonObject obj{
-        {"channelId", "c1"},
+        {"topicId", "c1"},
         {"senderId", "u1"},
         {"messageId", "m1"},
         {"sequenceNumber", 42},
@@ -400,7 +400,7 @@ void tst_models::testMessageFromJson_invalidTimestampContent()
 
     Message msg = Message::fromJson(obj);
 
-    QCOMPARE(msg.channelId, QString("c1"));
+    QCOMPARE(msg.topicId, QString("c1"));
     QCOMPARE(msg.senderId, QString("u1"));
     QCOMPARE(msg.messageId, QString("m1"));
     QCOMPARE(msg.sequenceNumber, 42LL);
@@ -414,7 +414,7 @@ void tst_models::testMessageFromJson_invalidTimestampContent()
 void tst_models::testMessageRoundTrip()
 {
     Message original;
-    original.channelId = "c1";
+    original.topicId = "c1";
     original.senderId = "u1";
     original.messageId = "m1";
     original.sequenceNumber = 42;
@@ -429,7 +429,7 @@ void tst_models::testMessageRoundTrip()
     QJsonObject json = original.toJson();
     Message copy = Message::fromJson(json);
 
-    QCOMPARE(copy.channelId, original.channelId);
+    QCOMPARE(copy.topicId, original.topicId);
     QCOMPARE(copy.senderId, original.senderId);
     QCOMPARE(copy.messageId, original.messageId);
     QCOMPARE(copy.timestamp, original.timestamp);
@@ -440,7 +440,7 @@ void tst_models::testMessageRoundTrip()
 void tst_models::testMessageFromJson_missingSequenceNumber()
 {
     QJsonObject obj{
-        {"channelId", "c1"},
+        {"topicId", "c1"},
         {"senderId", "u1"},
         {"messageId", "m1"},
         {"timestamp", "2026-03-20T12:00:00Z"},
@@ -450,7 +450,7 @@ void tst_models::testMessageFromJson_missingSequenceNumber()
 
     Message msg = Message::fromJson(obj);
 
-    QCOMPARE(msg.channelId, QString("c1"));
+    QCOMPARE(msg.topicId, QString("c1"));
     QCOMPARE(msg.senderId, QString("u1"));
     QCOMPARE(msg.messageId, QString("m1"));
     QCOMPARE(msg.sequenceNumber, -1LL);
@@ -462,7 +462,7 @@ void tst_models::testMessageFromJson_missingSequenceNumber()
 void tst_models::testMessageFromJson_invalidSequenceNumberType()
 {
     QJsonObject obj{
-        {"channelId", "c1"},
+        {"topicId", "c1"},
         {"senderId", "u1"},
         {"messageId", "m1"},
         {"sequenceNumber", "abc"},
@@ -473,7 +473,7 @@ void tst_models::testMessageFromJson_invalidSequenceNumberType()
 
     Message msg = Message::fromJson(obj);
 
-    QCOMPARE(msg.channelId, QString("c1"));
+    QCOMPARE(msg.topicId, QString("c1"));
     QCOMPARE(msg.senderId, QString("u1"));
     QCOMPARE(msg.messageId, QString("m1"));
     QCOMPARE(msg.sequenceNumber, -1LL);
@@ -580,11 +580,11 @@ void tst_models::testSessionInfoFromJson_invalidDateContent()
     QVERIFY(!session.expiresAt.isValid());
 }
 
-void tst_models::testChannelMemberToJson()
+void tst_models::testTopicMemberToJson()
 {
-    ChannelMember member;
+    TopicMember member;
     member.userId = "u1";
-    member.channelId = "c1";
+    member.topicId = "c1";
     member.displayName = "Manu";
     member.joinedAt = QDateTime::fromString("2026-03-20T10:00:00Z", Qt::ISODate);
     member.lastSeenAt = QDateTime::fromString("2026-03-20T11:00:00Z", Qt::ISODate);
@@ -593,112 +593,112 @@ void tst_models::testChannelMemberToJson()
     QJsonObject obj = member.toJson();
 
     QCOMPARE(obj.value("userId").toString(), QString("u1"));
-    QCOMPARE(obj.value("channelId").toString(), QString("c1"));
+    QCOMPARE(obj.value("topicId").toString(), QString("c1"));
     QCOMPARE(obj.value("displayName").toString(), QString("Manu"));
     QCOMPARE(obj.value("joinedAt").toString(), QString("2026-03-20T10:00:00Z"));
     QCOMPARE(obj.value("lastSeenAt").toString(), QString("2026-03-20T11:00:00Z"));
     QCOMPARE(obj.value("isActive").toBool(), true);
 }
 
-void tst_models::testChannelMemberFromJson_valid()
+void tst_models::testTopicMemberFromJson_valid()
 {
     QJsonObject obj{
         {"userId", "u1"},
-        {"channelId", "c1"},
+        {"topicId", "c1"},
         {"displayName", "Manu"},
         {"joinedAt", "2026-03-20T10:00:00Z"},
         {"lastSeenAt", "2026-03-20T11:00:00Z"},
         {"isActive", true}
     };
 
-    ChannelMember member = ChannelMember::fromJson(obj);
+    TopicMember member = TopicMember::fromJson(obj);
 
     QCOMPARE(member.userId, QString("u1"));
-    QCOMPARE(member.channelId, QString("c1"));
+    QCOMPARE(member.topicId, QString("c1"));
     QCOMPARE(member.displayName, QString("Manu"));
     QCOMPARE(member.joinedAt, QDateTime::fromString("2026-03-20T10:00:00Z", Qt::ISODate));
     QCOMPARE(member.lastSeenAt, QDateTime::fromString("2026-03-20T11:00:00Z", Qt::ISODate));
     QCOMPARE(member.isActive, true);
 }
 
-void tst_models::testChannelMemberFromJson_invalidTypes()
+void tst_models::testTopicMemberFromJson_invalidTypes()
 {
     QJsonObject obj{
         {"userId", "u1"},
-        {"channelId", "c1"},
+        {"topicId", "c1"},
         {"displayName", "Manu"},
         {"joinedAt", "2026-03-20T10:00:00Z"},
         {"lastSeenAt", "2026-03-20T11:00:00Z"},
         {"isActive", "true"} // sbagliato: deve essere bool
     };
 
-    ChannelMember member = ChannelMember::fromJson(obj);
+    TopicMember member = TopicMember::fromJson(obj);
 
     QVERIFY(member.userId.isEmpty());
-    QVERIFY(member.channelId.isEmpty());
+    QVERIFY(member.topicId.isEmpty());
     QVERIFY(member.displayName.isEmpty());
     QVERIFY(!member.joinedAt.isValid());
     QVERIFY(!member.lastSeenAt.isValid());
     QCOMPARE(member.isActive, false);
 }
 
-void tst_models::testChannelMemberFromJson_missingField()
+void tst_models::testTopicMemberFromJson_missingField()
 {
     QJsonObject obj{
         {"userId", "u1"},
-        {"channelId", "c1"},
+        {"topicId", "c1"},
         // manca displayName
         {"joinedAt", "2026-03-20T10:00:00Z"},
         {"lastSeenAt", "2026-03-20T11:00:00Z"},
         {"isActive", true}
     };
 
-    ChannelMember member = ChannelMember::fromJson(obj);
+    TopicMember member = TopicMember::fromJson(obj);
 
     QVERIFY(member.userId.isEmpty());
-    QVERIFY(member.channelId.isEmpty());
+    QVERIFY(member.topicId.isEmpty());
     QVERIFY(member.displayName.isEmpty());
     QVERIFY(!member.joinedAt.isValid());
     QVERIFY(!member.lastSeenAt.isValid());
     QCOMPARE(member.isActive, false);
 }
 
-void tst_models::testChannelMemberFromJson_invalidDateContent()
+void tst_models::testTopicMemberFromJson_invalidDateContent()
 {
     QJsonObject obj{
         {"userId", "u1"},
-        {"channelId", "c1"},
+        {"topicId", "c1"},
         {"displayName", "Manu"},
         {"joinedAt", "not-a-date"},
         {"lastSeenAt", "still-not-a-date"},
         {"isActive", true}
     };
 
-    ChannelMember member = ChannelMember::fromJson(obj);
+    TopicMember member = TopicMember::fromJson(obj);
 
     QCOMPARE(member.userId, QString("u1"));
-    QCOMPARE(member.channelId, QString("c1"));
+    QCOMPARE(member.topicId, QString("c1"));
     QCOMPARE(member.displayName, QString("Manu"));
     QVERIFY(!member.joinedAt.isValid());
     QVERIFY(!member.lastSeenAt.isValid());
     QCOMPARE(member.isActive, true);
 }
 
-void tst_models::testChannelMemberRoundTrip()
+void tst_models::testTopicMemberRoundTrip()
 {
-    ChannelMember original;
+    TopicMember original;
     original.userId = "u1";
-    original.channelId = "c1";
+    original.topicId = "c1";
     original.displayName = "Manu";
     original.joinedAt = QDateTime::fromString("2026-03-20T10:00:00Z", Qt::ISODate);
     original.lastSeenAt = QDateTime::fromString("2026-03-20T11:00:00Z", Qt::ISODate);
     original.isActive = true;
 
     QJsonObject json = original.toJson();
-    ChannelMember copy = ChannelMember::fromJson(json);
+    TopicMember copy = TopicMember::fromJson(json);
 
     QCOMPARE(copy.userId, original.userId);
-    QCOMPARE(copy.channelId, original.channelId);
+    QCOMPARE(copy.topicId, original.topicId);
     QCOMPARE(copy.displayName, original.displayName);
     QCOMPARE(copy.joinedAt, original.joinedAt);
     QCOMPARE(copy.lastSeenAt, original.lastSeenAt);

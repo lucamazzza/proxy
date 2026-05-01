@@ -15,15 +15,15 @@ bool User::isValid() const {
     && !email.trimmed().isEmpty(); //trimmed() rimuove spazi bianchi a inizio e fine stringa QT.
 }
 
-//Channel
-bool Channel::isValid() const {
-    return !channelId.trimmed().isEmpty()
+// Topic
+bool Topic::isValid() const {
+    return !topicId.trimmed().isEmpty()
     && !name.trimmed().isEmpty();
 }
 
 //Message
 bool Message::isValid() const {
-    return !channelId.trimmed().isEmpty()
+    return !topicId.trimmed().isEmpty()
     && !senderId.trimmed().isEmpty()
         && !messageId.trimmed().isEmpty()
         && timestamp.isValid();
@@ -31,7 +31,7 @@ bool Message::isValid() const {
 
 QJsonObject Message::toJson() const {
     QJsonObject obj;
-    obj["channelId"] = channelId;
+    obj["topicId"] = topicId;
     obj["senderId"] = senderId;
     obj["messageId"] = messageId;
     obj["sequenceNumber"] = sequenceNumber;
@@ -44,7 +44,7 @@ QJsonObject Message::toJson() const {
 Message Message::fromJson(const QJsonObject& obj) {
     Message message;
 
-    const QJsonValue channelIdValue = obj.value("channelId");
+    const QJsonValue topicIdValue = obj.value("topicId");
     const QJsonValue senderIdValue = obj.value("senderId");
     const QJsonValue messageIdValue = obj.value("messageId");
     const QJsonValue sequenceNumberValue = obj.value("sequenceNumber");
@@ -52,7 +52,7 @@ Message Message::fromJson(const QJsonObject& obj) {
     const QJsonValue payloadValue = obj.value("payload");
     const QJsonValue isEchoValue = obj.value("isEcho");
 
-    if (!channelIdValue.isString()
+    if (!topicIdValue.isString()
         || !senderIdValue.isString()
         || !messageIdValue.isString()
         || !timestampValue.isString()
@@ -60,7 +60,7 @@ Message Message::fromJson(const QJsonObject& obj) {
         return {};
     }
 
-    message.channelId = channelIdValue.toString().trimmed();
+    message.topicId = topicIdValue.toString().trimmed();
     message.senderId = senderIdValue.toString().trimmed();
     message.messageId = messageIdValue.toString().trimmed();
     message.sequenceNumber = sequenceNumberValue.isDouble()
@@ -84,7 +84,7 @@ Message Message::fromJson(const QJsonObject& obj) {
 
 // PendingMessage
 bool PendingMessage::isValid() const {
-    return !channelId.trimmed().isEmpty()
+    return !topicId.trimmed().isEmpty()
     && !senderId.trimmed().isEmpty()
         && !messageId.trimmed().isEmpty()
         && timestamp.isValid();
@@ -92,7 +92,7 @@ bool PendingMessage::isValid() const {
 
 QJsonObject PendingMessage::toJson() const {
     QJsonObject obj;
-    obj["channelId"] = channelId;
+    obj["topicId"] = topicId;
     obj["senderId"] = senderId;
     obj["messageId"] = messageId;
     obj["timestamp"] = timestamp.toString(Qt::ISODate);
@@ -103,20 +103,20 @@ QJsonObject PendingMessage::toJson() const {
 PendingMessage PendingMessage::fromJson(const QJsonObject &obj) {
     PendingMessage message;
 
-    const QJsonValue channelIdValue = obj.value("channelId");
+    const QJsonValue topicIdValue = obj.value("topicId");
     const QJsonValue senderIdValue = obj.value("senderId");
     const QJsonValue messageIdValue = obj.value("messageId");
     const QJsonValue timestampValue = obj.value("timestamp");
     const QJsonValue payloadValue = obj.value("payload");
 
-    if (!channelIdValue.isString()
+    if (!topicIdValue.isString()
         || !senderIdValue.isString()
         || !messageIdValue.isString()
         || !timestampValue.isString()) {
         return {};
     }
 
-    message.channelId = channelIdValue.toString().trimmed();
+    message.topicId = topicIdValue.toString().trimmed();
     message.senderId = senderIdValue.toString().trimmed();
     message.messageId = messageIdValue.toString().trimmed();
     message.timestamp = QDateTime::fromString(timestampValue.toString(), Qt::ISODate);
@@ -165,11 +165,11 @@ SessionInfo SessionInfo::fromJson(const QJsonObject& obj) {
     return sessionInfo;
 }
 
-//ChannelMember
-QJsonObject ChannelMember::toJson() const {
+//TopicMember
+QJsonObject TopicMember::toJson() const {
     QJsonObject obj;
     obj["userId"] = userId;
-    obj["channelId"] = channelId;
+    obj["topicId"] = topicId;
     obj["displayName"] = displayName;
     obj["joinedAt"] = joinedAt.toString(Qt::ISODate);
     obj["lastSeenAt"] = lastSeenAt.toString(Qt::ISODate);
@@ -177,18 +177,18 @@ QJsonObject ChannelMember::toJson() const {
     return obj;
 }
 
-ChannelMember ChannelMember::fromJson(const QJsonObject& obj) {
-    ChannelMember member;
+TopicMember TopicMember::fromJson(const QJsonObject& obj) {
+    TopicMember member;
 
     const QJsonValue userIdValue = obj.value("userId");
-    const QJsonValue channelIdValue = obj.value("channelId");
+    const QJsonValue topicIdValue = obj.value("topicId");
     const QJsonValue displayNameValue = obj.value("displayName");
     const QJsonValue joinedAtValue = obj.value("joinedAt");
     const QJsonValue lastSeenAtValue = obj.value("lastSeenAt");
     const QJsonValue isActiveValue = obj.value("isActive");
 
     if (!userIdValue.isString()
-        || !channelIdValue.isString()
+        || !topicIdValue.isString()
         || !displayNameValue.isString()
         || !joinedAtValue.isString()
         || !lastSeenAtValue.isString()
@@ -197,7 +197,7 @@ ChannelMember ChannelMember::fromJson(const QJsonObject& obj) {
     }
 
     member.userId = userIdValue.toString().trimmed();
-    member.channelId = channelIdValue.toString().trimmed();
+    member.topicId = topicIdValue.toString().trimmed();
     member.displayName = displayNameValue.toString().trimmed();
     member.joinedAt = QDateTime::fromString(joinedAtValue.toString(), Qt::ISODate);
     member.lastSeenAt = QDateTime::fromString(lastSeenAtValue.toString(), Qt::ISODate);

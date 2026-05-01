@@ -26,13 +26,13 @@ QString MessageQueryService::equalQuery(const QString &key, const QString &value
     return QString("equal(\"%1\",[\"%2\"])").arg(key, escapeQueryValue(value));
 }
 
-QJsonArray MessageQueryService::channelMessages(const QString &channelId, int limit) const {
+QJsonArray MessageQueryService::topicMessages(const QString &topicId, int limit) const {
     QJsonArray queries;
-    const QString trimmedChannelId = channelId.trimmed();
-    if (trimmedChannelId.isEmpty()) {
+    const QString trimmedTopicId = topicId.trimmed();
+    if (trimmedTopicId.isEmpty()) {
         return queries;
     }
-    queries.append(equalQuery("channelId", trimmedChannelId));
+    queries.append(equalQuery("topicId", trimmedTopicId));
     queries.append("orderDesc(\"sequenceNumber\")");
     if (limit > 0) {
         queries.append(QString("limit(%1)").arg(limit));
@@ -40,29 +40,29 @@ QJsonArray MessageQueryService::channelMessages(const QString &channelId, int li
     return queries;
 }
 
-QJsonArray MessageQueryService::channelDocuments(const QString &channelId, int limit) const {
+QJsonArray MessageQueryService::topicDocuments(const QString &topicId, int limit) const {
     QJsonArray queries;
-    const QString trimmedChannelId = channelId.trimmed();
-    if (trimmedChannelId.isEmpty()) {
+    const QString trimmedTopicId = topicId.trimmed();
+    if (trimmedTopicId.isEmpty()) {
         return queries;
     }
-    queries.append(equalQuery("channelId", trimmedChannelId));
+    queries.append(equalQuery("topicId", trimmedTopicId));
     if (limit > 0) {
         queries.append(QString("limit(%1)").arg(limit));
     }
     return queries;
 }
 
-QJsonArray MessageQueryService::channelMemberDocuments(const QString &channelId,
+QJsonArray MessageQueryService::topicMemberDocuments(const QString &topicId,
                                                        const QString &userId,
                                                        int limit) const {
     QJsonArray queries;
-    const QString trimmedChannelId = channelId.trimmed();
+    const QString trimmedTopicId = topicId.trimmed();
     const QString trimmedUserId = userId.trimmed();
-    if (trimmedChannelId.isEmpty() || trimmedUserId.isEmpty()) {
+    if (trimmedTopicId.isEmpty() || trimmedUserId.isEmpty()) {
         return queries;
     }
-    queries.append(equalQuery("channelId", trimmedChannelId));
+    queries.append(equalQuery("topicId", trimmedTopicId));
     queries.append(equalQuery("userId", trimmedUserId));
     if (limit > 0) {
         queries.append(QString("limit(%1)").arg(limit));
@@ -83,14 +83,14 @@ QJsonArray MessageQueryService::messageDocuments(const QString &messageId, int l
     return queries;
 }
 
-QJsonArray MessageQueryService::lastSequenceForChannel(const QString &channelId) const {
+QJsonArray MessageQueryService::lastSequenceForTopic(const QString &topicId) const {
     QJsonArray queries;
-    const QString trimmedChannelId = channelId.trimmed();
-    if (trimmedChannelId.isEmpty()) {
+    const QString trimmedTopicId = topicId.trimmed();
+    if (trimmedTopicId.isEmpty()) {
         return queries;
     }
 
-    queries.append(equalQuery("channelId", trimmedChannelId));
+    queries.append(equalQuery("topicId", trimmedTopicId));
     queries.append("orderDesc(\"sequenceNumber\")");
     queries.append("limit(1)");
     return queries;

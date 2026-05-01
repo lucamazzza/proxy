@@ -77,21 +77,21 @@ public:
     bool isDuplicate(const model::Message& message) const;
 
     /*!
-     * @brief Resets the message processing state for a given channel.
+     * @brief Resets the message processing state for a given topic.
      *
-     * Clears or reinitializes the relevant state associated with the specified channel,
+     * Clears or reinitializes the relevant state associated with the specified topic,
      * allowing message processing to restart from a clean state.
      *
-     * @param channelId Identifier of the channel to reset.
+     * @param topicId Identifier of the topic to reset.
      */
-    void reset(const QString& channelId);
+    void reset(const QString& topicId);
 
 private:
 
     /*!
      * @brief Pointer to the client state used for message processing.
      *
-     * Stores information such as the last received message and active channel.
+     * Stores information such as the last received message and active topic.
      * This pointer is not owned by MessageProcessor.
      */
     ClientState* m_clientState;
