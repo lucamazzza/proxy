@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['ratelimiter_0',['RateLimiter',['../classappcomm_1_1client_1_1RateLimiter.html',1,'appcomm::client::RateLimiter'],['../classappcomm_1_1client_1_1RateLimiter.html#a7abafe44a46c916d9c202f214b468b13',1,'appcomm::client::RateLimiter::RateLimiter()']]],
+  ['ratelimiter_2ecpp_1',['ratelimiter.cpp',['../ratelimiter_8cpp.html',1,'']]],
+  ['ratelimiter_2eh_2',['ratelimiter.h',['../ratelimiter_8h.html',1,'']]],
+  ['ratelimitexceeded_3',['RateLimitExceeded',['../namespaceappcomm_1_1errormodel.html#a82e92fbd3ba42b52cdad8691d7f4a73eac7433990fc11e0ae16d6974bbf8b2f44',1,'appcomm::errormodel']]],
+  ['realtime_4',['Realtime',['../classappcomm_1_1Realtime.html',1,'appcomm']]],
+  ['realtime_2ecpp_5',['realtime.cpp',['../realtime_8cpp.html',1,'']]],
+  ['recentmessagecache_6',['RecentMessageCache',['../classappcomm_1_1client_1_1RecentMessageCache.html',1,'appcomm::client::RecentMessageCache'],['../classappcomm_1_1client_1_1RecentMessageCache.html#a5daf756043bfb9bd7841b3d08fe71748',1,'appcomm::client::RecentMessageCache::RecentMessageCache()']]],
+  ['recentmessagecache_2ecpp_7',['recentmessagecache.cpp',['../recentmessagecache_8cpp.html',1,'']]],
+  ['recentmessagecache_2eh_8',['recentmessagecache.h',['../recentmessagecache_8h.html',1,'']]],
+  ['reconnecting_9',['Reconnecting',['../namespaceappcomm_1_1client.html#aa159f1e7a679d99137279f2e14882468a80154864ebe36b3db0acd51f9b10f568',1,'appcomm::client']]],
+  ['recoveryerror_10',['recoveryError',['../classappcomm_1_1client_1_1RecoveryManager.html#ae56f8a76b7393ae7f8365f966b7b9d57',1,'appcomm::client::RecoveryManager']]],
+  ['recoverymanager_11',['RecoveryManager',['../classappcomm_1_1client_1_1RecoveryManager.html',1,'appcomm::client::RecoveryManager'],['../classappcomm_1_1client_1_1RecoveryManager.html#a54fa6ec38468fff51347b66dda973075',1,'appcomm::client::RecoveryManager::RecoveryManager()']]],
+  ['recoverymanager_2ecpp_12',['recoverymanager.cpp',['../recoverymanager_8cpp.html',1,'']]],
+  ['recoverymanager_2eh_13',['recoverymanager.h',['../recoverymanager_8h.html',1,'']]],
+  ['refillrate_14',['refillRate',['../classappcomm_1_1client_1_1RateLimiter.html#a875de5ea044fcad7f637ae7328d3c118',1,'appcomm::client::RateLimiter']]],
+  ['removetopicmember_15',['removeTopicMember',['../classappcomm_1_1server_1_1AppcommServer.html#a6fd5305da2f54b604d547de64188b130',1,'appcomm::server::AppcommServer']]],
+  ['request_16',['request',['../classappcomm_1_1client_1_1RecoveryManager.html#a3623f7926bdaf2633001fe9053c54fa3',1,'appcomm::client::RecoveryManager']]],
+  ['requesterror_17',['requestError',['../classappwritesdk_1_1BaseSDK.html#aa005668d86aeb9bbb453e130e7b5630c',1,'appwritesdk::BaseSDK']]],
+  ['requestfrom_18',['requestFrom',['../classappcomm_1_1client_1_1RecoveryManager.html#a0ae29dd123d271f7d7e6bb97241ddb4e',1,'appcomm::client::RecoveryManager']]],
+  ['requestfullresync_19',['requestFullResync',['../classappcomm_1_1client_1_1RecoveryManager.html#ae043e414dd89fafad5bc364033618937',1,'appcomm::client::RecoveryManager']]],
+  ['requestsuccess_20',['requestSuccess',['../classappwritesdk_1_1BaseSDK.html#abd95b8216d3ec93130371ff6cdb49848',1,'appwritesdk::BaseSDK']]],
+  ['reset_21',['reset',['../classappcomm_1_1client_1_1MessageProcessor.html#ae23e835ba5331b6d2904369f93a10626',1,'appcomm::client::MessageProcessor::reset()'],['../classappcomm_1_1client_1_1RateLimiter.html#a82e9e35f3050e9ea7a96a9d8f1e97ac3',1,'appcomm::client::RateLimiter::reset()']]],
+  ['resolvedocumentid_22',['resolveDocumentId',['../classappcomm_1_1server_1_1MembershipService.html#a40aed041cf18e2c751faf51155cfe671',1,'appcomm::server::MembershipService']]],
+  ['resynccompleted_23',['resyncCompleted',['../classappcomm_1_1client_1_1RecoveryManager.html#a4e3ee265aa98d83c9c4d3e272b049baa',1,'appcomm::client::RecoveryManager']]],
+  ['runcleanup_24',['runCleanup',['../classappcomm_1_1server_1_1GarbageCollector.html#aab0d1ca498c4d3f3a1e0f0ae38ecb503',1,'appcomm::server::GarbageCollector']]]
+];
