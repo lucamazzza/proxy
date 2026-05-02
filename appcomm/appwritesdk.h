@@ -131,6 +131,8 @@ protected:
      * Shared pointer to the network manager used for all HTTP requests.
      */
     QNetworkAccessManager *m_network;
+    QByteArray m_fallbackCookies;
+    QByteArray m_appwriteSession;
 
     /*!
      * @brief Creates a configured HTTP request with Appwrite headers.
@@ -148,6 +150,7 @@ protected:
      * @param reply The reply received.
      */
     void parseErrorResponse(QNetworkReply *reply);
+    void captureAuthHeaders(QNetworkReply *reply);
 };
 
 /*!

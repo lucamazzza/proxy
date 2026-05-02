@@ -8,7 +8,7 @@
 % Fonts
 \usepackage{microtype} % Improves text spacing
 \usepackage{fontspec}
-Rsetmainfont[Scale=0.95]{Helvetica}
+\setmainfont[Scale=0.95]{Helvetica}
 \setmonofont[Scale=0.9]{IBM Plex Mono}
 \newfontfamily\titlefont{Times New Roman}
 \usepackage{todonotes}
@@ -23,7 +23,6 @@ Rsetmainfont[Scale=0.95]{Helvetica}
     bindingoffset=1cm, % Extra 1cm added purely for the binding side
     headheight=15pt
 ]{geometry}
-
 
 % Headers and Footers
 \setlength{\headheight}{15pt} % Fix warning about header height
@@ -628,10 +627,10 @@ del quale crea quattro Collezioni principali:
     \item \textbf{channels}: Ogni documento in questa collezione rappresenta un "Canale" logico di comunicazione (es. una 
     stanza di chat), contenente metadati come il nome e la data di creazione.
     
-    \item \textbf{messages}: Contiene tutti i messaggi scambiati. Ogni documento è logicamente associato a un \texttt{channelId}
+    \item \textbf{messages}: Contiene tutti i messaggi scambiati. Ogni documento è logicamente associato a un \texttt{topicId}
     e contiene il payload, il mittente e un \texttt{sequenceNumber} per l'ordinamento globale.
     
-    \item \textbf{members}: Mappa l'associazione molti-a-molti tra utenti e canali, gestendo lo stato di presenza e di attività.
+    \item \textbf{members}: Mappa l'associazione molti-a-uno tra utenti e canali, gestendo lo stato di presenza e di attività.
     
     \item \textbf{sessions}: Gestisce il ciclo di vita logico delle sessioni temporanee di comunicazione.
 \end{enumerate}
@@ -658,13 +657,13 @@ Il modello definisce diverse entità fondamentali:
 \begin{itemize}
     \item \textbf{User}: rappresenta un utente tramite identificatore e email, con metodo \texttt{isValid()} per 
         verificare la consistenza dei dati;
-    \item \textbf{Channel}: identifica un canale di comunicazione tramite un ID e un nome visibile in UI;O
+    \item \textbf{Topic}: identifica un canale di comunicazione tramite un ID e un nome visibile in UI;
     \item \textbf{Message}: rappresenta l'unità base della comunicazione. Contiene un identificatore del canale, un 
         identificatore del mittente, uno per il messaggio, un timestamp in formato UTC, un payload generico in formato 
         JSON ed un flag \texttt{isEcho} per distinguere messaggi generati localmente da quelli ricevuti dal server.
     \item \textbf{SessionInfo}: contiene metadati relativi alla sessione, inclusi tipo di autenticazione 
         e timestamp di creazione e scadenza;
-    \item \textbf{ChannelMember}: descrive la presenza di un utente in un canale, includendo stato di attività e 
+    \item \textbf{TopicMember}: descrive la presenza di un utente in un canale, includendo stato di attività e 
         informazioni temporali;
     \item \textbf{PersistencePolicy}: definisce le politiche di persistenza (\gls{TTL}) per messaggi, sessioni e canali inattivi;
     \item \textbf{AppcommConfig}: contiene i parametri di configurazione necessari per connettersi al backend Appwrite.
@@ -796,7 +795,7 @@ client->createEmailSession(config, "user@example.com", "password123");
 // Invio messaggio
 QJsonObject msg;
 msg["payload"] = "Hello, World!";
-msg["channelId"] = "room-01";
+msg["topicId"] = "room-01";
 client->createDocument(config, msg);
 \end{minted}
 
@@ -1036,7 +1035,7 @@ In particolare, essa include:
     \item \textbf{lastReceivedMessageId}: identificatore dell'ultimo messaggio ricevuto, utile per operazioni di recovery o 
     deduplicazione;
     
-    \item \textbf{activeChannelId}: identificatore del canale attualmente attivo, che definisce il contesto della comunicazione;
+    \item \textbf{activeTopicId}: identificatore del canale attualmente attivo, che definisce il contesto della comunicazione;
     
     \item \textbf{authenticated}: flag che indica se il client ha completato con successo il processo di autenticazione, 
     impostato di default a false per indicare che l'utente non è autenticato.
@@ -1055,7 +1054,7 @@ L'identificatore del messaggio, invece, può essere utilizzato per prevenire dup
 
 \subsection{Contesto di comunicazione}
 
-Il campo \texttt{activeChannelId} definisce il contesto corrente in cui il client opera. Questo consente di filtrare i messaggi
+Il campo \texttt{activeTopicId} definisce il contesto corrente in cui il client opera. Questo consente di filtrare i messaggi
 rilevanti e di limitare le operazioni al canale attivo.
 
 Separare esplicitamente il canale attivo evita ambiguità e semplifica la gestione della comunicazione in presenza di più canali.
@@ -1144,7 +1143,7 @@ Il processore mantiene un riferimento a un oggetto \texttt{ClientState}, da cui 
 decisioni sui messaggi ricevuti. In particolare, vengono utilizzati:
 
 \begin{itemize}
-    \item \texttt{activeChannelId}, per verificare che il messaggio appartenga al canale attualmente selezionato;
+    \item \texttt{activeTopicId}, per verificare che il messaggio appartenga al canale attualmente selezionato;
     \item \texttt{lastReceivedSequence}, per controllare l'ordine dei messaggi e individuare duplicati o gap.
 \end{itemize}
 
@@ -1198,7 +1197,7 @@ Questo aggiornamento centralizzato garantisce coerenza tra il flusso dei messagg
 Il metodo \texttt{reset()} consente di reinizializzare il processore rispetto a un nuovo canale attivo. In particolare, esso:
 
 \begin{itemize}
-    \item aggiorna il valore di \texttt{activeChannelId};
+    \item aggiorna il valore di \texttt{activeTopicId};
     \item reimposta \texttt{lastReceivedSequence} a \texttt{-1}.
 \end{itemize}
 
@@ -1240,7 +1239,7 @@ sottoscrizione ai canali desiderati e di interpretare i messaggi JSON ricevuti d
 
 Appwrite organizza gli eventi secondo un modello gerarchico. 
 \textit{Nota Terminologica:} Per evitare ambiguità, è importante distinguere i "Canali Logici" (le stanze di chat identificate dal 
-\texttt{channelId} nel nostro dominio) dai "Canali Realtime" (o \textit{Topics}) utilizzati dall'API di Appwrite per il multiplexing
+\texttt{topicId} nel nostro dominio) dai "Canali Realtime" (o \textit{Topics}) utilizzati dall'API di Appwrite per il multiplexing
 degli eventi.
 
 Il formato dei canali realtime di Appwrite segue la convenzione:
@@ -1418,8 +1417,8 @@ Questo componente funge anche da autorità centrale per la gestione degli spazi 
 
 \subsubsection{Creazione e permessi}
 
-All'invocazione del metodo \texttt{createChannel()}, il server non si limita solamente alla creazione di un documento 
-(che andrà a popolare la collezione \texttt{channels} con i metadati di base come \texttt{channelId}, \texttt{name} e \texttt{createdAt}),
+All'invocazione del metodo \texttt{createTopic()}, il server non si limita solamente alla creazione di un documento 
+(che andrà a popolare la collezione \texttt{channels} con i metadati di base come \texttt{topicId}, \texttt{name} e \texttt{createdAt}),
 bensì definisce delle regole d'accesso affinché i client possano interagire con il canale in modo sicuro.
 Questi permessi vengono configurati in modalità "broadcast", permettendo la lettura a tutti i membri autorizzati.
 
@@ -1450,9 +1449,8 @@ sbloccando le funzionalità operative del \texttt{BackendService}.
 \subsection{Descrizione generale}
 
 La classe \texttt{AppcommClient} rappresenta la \textit{façade} di alto livello del lato client del sistema appcomm.  
-Essa fornisce un'interfaccia pubblica semplificata per i layer di presentazione (ad esempio QML o Qt Widgets, che nel nostro caso specifico è il contenuto di appfrontend), nascondendo la complessità dei componenti sottostanti tramite una classe \texttt{Private} secondo il pattern PIMPL\footnote{\url{https://en.cppreference.com/w/cpp/language/pimpl.html}}, come fatto per l'API dedicata al Server.
+Essa fornisce un'interfaccia pubblica semplificata per i layer di presentazione (ad esempio QML o Qt Widgets, che nel nostro caso specifico è il contenuto di del frontend), nascondendo la complessità dei componenti sottostanti tramite una classe \texttt{Private} secondo il pattern PIMPL\footnote{\url{https://en.cppreference.com/w/cpp/language/pimpl.html}}, come fatto per l'API dedicata al Server.
 
-\vspace{2cm}
 \noindent La classe si occupa di coordinare l'autenticazione dell'utente, la gestione del canale attivo, il caricamento iniziale dei
 messaggi dal database, la ricezione dei messaggi in tempo reale, la gestione del recupero di messaggi mancanti, e l'esposizione dello
 stato di connessione alla UI.
@@ -1474,15 +1472,14 @@ stato di connessione alla UI.
 
 \subsection{Flusso operativo}
 
-Il comportamento del client segue il seguente flusso:
+Il comportamento del client segue il seguente flusso (\ref{fig:SequenceClient}):
 
-%\begin{figure}[h]
-%\centering
-%\includegraphics[width=0.8\textwidth]{client_operational_flow.png} % Placeholder per il diagramma
-%\caption{Sequence Diagram UML inizializzazione e sincronizzazione Client.}
-%\label{fig:client_operational_flow}
-%\end{figure}
-\todo{Client Sequence Diagram}
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{SequenceDiagramAppcommClient.png} 
+\caption{Sequence Diagram UML inizializzazione e sincronizzazione Client.}
+\label{fig:SequenceClient}
+\end{figure}
 
 \begin{enumerate}
     \item Creazione dell’istanza con una configurazione valida
@@ -1515,7 +1512,7 @@ enum class ConnectionState {
 struct ClientState {
     qint64 lastReceivedSequence = -1; ///< Sequence last message received
     QString lastReceivedMessageId;    ///< ID of the last message received 
-    QString activeChannelId;          ///< Id of the currently active channel
+    QString activeTopicId;            ///< Id of the currently active topic channel
     bool authenticated = false;       ///< Whether client is authenticated
 };
 \end{minted}
@@ -1533,15 +1530,15 @@ e viene avviato automaticamente il caricamento della membership.
 
 Il client mantiene un singolo canale attivo per volta.
 
-Quando viene chiamato \texttt{joinChannel()} il canale viene validato e salvato, lo stato del \texttt{MessageProcessor} viene
-resettato, viene emesso il segnale \texttt{joinedChannel} ed infine viene avviato il caricamento dei messaggi dal database.
+Quando viene chiamato \texttt{joinTopic()} il canale viene validato e salvato, lo stato del \texttt{MessageProcessor} viene
+resettato, viene emesso il segnale \texttt{joinedTopic} ed infine viene avviato il caricamento dei messaggi dal database.
 
-Quando viene chiamato \texttt{leaveChannel()} il canale attivo viene rimosso, viene emesso il segnale \texttt{leftChannel} e la
+Quando viene chiamato \texttt{leaveTopic()} il canale attivo viene rimosso, viene emesso il segnale \texttt{leftTopic} e la
 connessione realtime viene chiusa se attiva.
 
 \subsection{Caricamento dei messaggi}
 
-I messaggi vengono caricati dal database tramite query filtrate per \texttt{channelId} e ordinate per \texttt{sequenceNumber} crescente.
+I messaggi vengono caricati dal database tramite query filtrate per \texttt{topicId} e ordinate per \texttt{sequenceNumber} crescente.
 
 Ogni messaggio recuperato viene dapprima convertito in oggetto \texttt{Message}, viene poi processato dal 
 \texttt{MessageProcessor}, se valido, viene inserito nella cache, ed infine viene emesso tramite il segnale
@@ -1609,7 +1606,8 @@ Dal punto di vista operativo la combinazione tra \gls{SDK} asincrono, processame
 pulizia automatica realizza un'infrastruttura robusta rispetto a disconnessioni, duplicazioni e carichi variabili.
 Parallelamente il layer server espone primitive amministrative sufficienti per governare il provisioning, canali e membership,
 mantenendo centralizzate le operazioni privilegiate.
-\todo{A proposito del frontend...}
+
+Il frontend completa questa struttura fornendo un punto di accesso concreto alle funzionalità del client. Attraverso il controller Qt e le schermate QML, lo stato interno di \texttt{AppcommClient} viene reso osservabile dall'utente: autenticazione, topic attivo, messaggi ricevuti, errori e stato della connessione realtime vengono propagati all'interfaccia senza spostare nella vista la logica di comunicazione. In questo modo, il frontend rimane un layer di presentazione leggero, ma sufficiente a dimostrare l'integrazione della libreria in un'applicazione reale.
 
 Nel complesso, le scelte implementative traducono i principi architetturali in un artefatto software (ri)utilizzabile.
 Questo costituisce la base su cui il capitolo successivo presenta il Proof of Concept, ossia la validazione pratica del modello
@@ -1620,15 +1618,16 @@ attraverso un flusso end-to-end.
 Questo capitolo descrive l'implementazione del software di test e dimostrazione, utilizzato per validare l'architettura ed il
 funzionamento della libreria \texttt{appcomm}, come per fornire un esempio per una futura integrazione in qualsiasi altro sistema.
 
-Il \textit{Proof of Concept} è un'applicazione standalone, che simula il comportamento di un server di provisioning e gestione, con
-un client che invia e riceve messaggi attraverso l'infrastruttura.
+Il \textit{Proof of Concept} è un'applicazione standalone, che simula il comportamento di un server di provisioning e gestione, con un client che invia e riceve messaggi attraverso l'infrastruttura.
 
 La finalità del PoC non è coprire tutti i casi di utilizzo in produzione, ma bensì di dimostrare in modo riproducibile che i
 meccanismi fondamentali progettati nei capitoli precedenti funzionino in un contesto reale; bootstrap automatico dell'ambiente
 Appwrite, gestione amministrativa delle entità, pubblicazione e ricezione dei messaggi, integrazione con il canale realtime e
 comportamento di risposta del backend in modalità "echo".
 
-\todo{A proposito del frontend...}
+Il PoC include inoltre un frontend dimostrativo realizzato con Qt/QML, pensato per validare l'integrazione della libreria \texttt{appcomm} dal punto di vista di un'applicazione client. L'interfaccia grafica dialoga con la libreria tramite un controller Qt, che espone a QML le funzionalità essenziali di \texttt{AppcommClient}: autenticazione, invio dei messaggi, visualizzazione dello stato di connessione e logout. 
+Il frontend non ha lo scopo di coprire tutte le funzionalità di un'applicazione finale, ma di fornire un'interfaccia 
+sufficiente a verificare il funzionamento end-to-end del sistema.
 
 In questa prospettiva, il PoC agisce come banco di prova; collega la teoria architetturale alla pratica esecutiva e rende osservabili
 i punti critici del sistema, come la coerenza della configurazione, l'ordine dei messaggi e la correttezza del provisioning iniziale.
@@ -1679,14 +1678,91 @@ operazione.
 
 \subsection{Assegnazione del numero di sequenza}
 
-\todo{Explain inbox/outbox system}
+Il backend risulta utile anche per risolvere un problema architetturale del sistema; infatti la
+gestione del numero di sequenza non può essere svolta dal client in un contesto dove i messaggi
+si trovano nella stessa tabella per tutti i canali, in quanto non è capace di sapere quale sarebbe
+il prossimo da assegnare.
+
+Questo compito viene coperto dal server il quale, tramite un sistema di \textit{Inbox/Outbox},
+assegna e sposta i messaggi verso chi deve leggerli:
+sono presenti due collection, all'interno di Appwrite, una per i messaggi in entrata, ai quali
+non è ancora assegnato il sequence number (outbox), una per i messaggi per i quali la sequenza
+è presente e sono stati inoltrati (inbox).
+
+Il backend server è in ascolto sulla collezione \texttt{pendingmessages} (outbox) e, alla ricezione
+di un nuovo messaggio, questo viene copiato nella collezione \texttt{messages} (inbox) e gli viene
+assegnato il corretto sequence number (\ref{fig:pending-sequence}).
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.5\textwidth]{proxy_sequence_pending.png}
 \caption{Sequence Diagram del sistema Inbox/Outbox}
-\label{fig:client_operational_flow}
+\label{fig:pending-sequence}
 \end{figure}
+
+\newpage
+
+\section{Frontend}
+
+Il frontend del PoC rappresenta il punto di ingresso lato utente per interagire con la libreria \texttt{appcomm}. A differenza di
+un'applicazione completa, il suo scopo non è fornire un'interfaccia definitiva o coprire tutti gli scenari di utilizzo, ma dimostrare
+in modo immediato e osservabile il comportamento del client durante le operazioni fondamentali: autenticazione, caricamento della
+cronologia dei messaggi, invio dei messaggi, ricezione realtime e logout.
+
+L'interfaccia è stata realizzata con Qt/QML e si appoggia a un controller Qt che espone alla vista le funzionalità principali del
+client. La logica di comunicazione rimane incapsulata all'interno di \texttt{AppcommClient}, mentre il frontend si occupa di
+rappresentare lo stato dell'applicazione e di inoltrare le azioni dell'utente alla libreria tramite un controller.
+
+\subsection{Requisiti di validazione}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{1.4cm}p{12cm}@{}}
+\toprule
+\textbf{ID} & \textbf{Descrizione} \\ \midrule
+\texttt{R-20} & Il frontend permette l'accesso tramite sessione guest \\
+\texttt{R-21} & Il frontend permette l'accesso tramite credenziali email \\
+\texttt{R-22} & Il frontend visualizza lo stato della connessione realtime \\
+\texttt{R-23} & Il frontend mostra i messaggi caricati dal topic assegnato \\
+\texttt{R-24} & Il frontend permette l'invio di nuovi messaggi \\
+\texttt{R-25} & Il frontend aggiorna la chat alla ricezione di nuovi messaggi \\
+\texttt{R-26} & Il frontend gestisce il caso di accesso guest non autorizzato \\
+\texttt{R-27} & Il frontend permette il logout e il ritorno alla schermata iniziale \\
+\bottomrule
+\end{tabular}
+\caption{Requisiti di validazione \texttt{Frontend}}
+\end{table}
+
+Nota: per quanto riguarda \texttt{R-20}, l'accesso è permesso tramite un bottone sulla schermata iniziale di login, però il guest non potrà accedere alla chat e gli apparirà invece una schermata di accesso negato perché ad oggi non esiste  un'implementazione che gestisce il caso in cui il guest abbia i permessi e di default i permessi per il guest sono disabilitati.  
+
+\subsection{Architettura del sistema}
+
+Il frontend è composto da schermate QML e da un controller C++ che funge da livello di adattamento tra l'interfaccia grafica e la
+libreria \texttt{appcomm}. Le schermate QML gestiscono esclusivamente la presentazione e le interazioni dell'utente, mentre il
+controller espone proprietà e metodi invocabili da QML, come login, invio messaggio e logout.
+
+Il componente centrale lato client è \texttt{AppcommClient}. Dopo una richiesta di autenticazione, esso crea la sessione Appwrite, recupera la membership associata all'utente, determina il \texttt{topicId} assegnato e carica gli ultimi 16 messaggi disponibili. Al termine della sincronizzazione iniziale, il client apre una sottoscrizione realtime alla collection dei messaggi, così da ricevere automaticamente gli aggiornamenti prodotti dal backend.
+
+Il controller riceve gli eventi emessi da \texttt{AppcommClient} tramite signal Qt e aggiorna lo stato esposto all'interfaccia grafica. In particolare, lo stato di autenticazione, l'identificativo dell'utente autenticato, lo stato della connessione, il topic corrente, gli errori e la lista dei messaggi sono mantenuti nel controller e notificati alla vista QML. Questo permette di mantenere separata la logica di comunicazione dalla logica di visualizzazione.
+
+\subsection{Flusso operativo del client}
+
+Il flusso operativo principale inizia dalla schermata di login, dalla quale l'utente può scegliere l'accesso guest oppure
+l'autenticazione tramite email. In entrambi i casi il controller inoltra la richiesta ad \texttt{AppcommClient}, che delega la
+creazione della sessione ad Appwrite tramite la nostra \gls{SDK}.
+
+Una volta ricevuta la sessione, il client salva in memoria le informazioni essenziali dell'utente, come l'identificativo della sessione, l'identificativo dell'utente e il tipo di autenticazione. Successivamente interroga la collection delle membership per individuare il topic associato all'utente. Se la membership è valida, il topic viene impostato come topic attivo e il frontend può accedere alla schermata di chat. Se invece non viene trovata alcuna membership associata all'utente, \texttt{AppcommClient} emette l'errore \texttt{No membership found for current user.}; nel caso di accesso guest, il controller interpreta questo errore come accesso non autorizzato e mostra la schermata dedicata. Se il documento di membership è presente ma non contiene dati validi, viene invece emesso l'errore \texttt{Invalid membership document.}.
+
+Prima di aprire la connessione realtime, il client carica una porzione iniziale della cronologia dei messaggi. Nel PoC vengono
+recuperati gli ultimi 16 messaggi disponibili in base al \texttt{sequenceNumber} che viene assegnato dal backend al momento della pubblicazione del messaggio definitivo nella collection dei messaggi; i documenti ricevuti vengono poi riordinati localmente in ordine crescente di sequenza prima di essere mostrati nella chat. Questa scelta permette di presentare all'utente il contesto più recente della conversazione senza dover scaricare l'intero storico.
+
+Dopo il caricamento iniziale, \texttt{AppcommClient} stabilisce la connessione realtime verso Appwrite. Da questo momento, ogni nuovo messaggio pubblicato nella collection viene ricevuto come evento realtime, elaborato dal client e propagato al controller tramite il signal di ricezione del messaggio. Il modello QML viene quindi aggiornato e la chat mostra automaticamente il nuovo contenuto.
+
+\section{Porting WebAssembly}
+
+È stata prevista una variante sperimentale del frontend compilabile per WebAssembly, con l'obiettivo di rendere la demo accessibile direttamente dal browser. Questa versione riutilizza la stessa interfaccia Qt/QML e la stessa logica di comunicazione della versione desktop, ma viene compilata per l'esecuzione in ambiente browser tramite Qt for WebAssembly \cite{qt_wasm}.
+
+Poiché il kit Qt for WebAssembly utilizzato include il modulo \texttt{Qt WebSockets}, anche la variante browser può utilizzare la sottoscrizione realtime verso Appwrite. In questo modo il PoC valida non solo il porting dell'interfaccia nel browser, ma anche il mantenimento del modello di comunicazione realtime già adottato nella versione desktop.
 
 \chapter{Test e validazione}
 
@@ -1863,7 +1939,7 @@ potrebbero estendere ulteriormente le capacità e la sicurezza della libreria re
 
 Spostando la complessità infrastrutturale su Appwrite, si è ottenuto un sistema dove il backend può operare in totale sicurezza
 dall'interno di una rete privata aggirando i firewall. La libreria è stata strutturata con un'architettura fortemente modulare che
-separa le responsabilità tra il core di comunicazione (\texttt{appcomm}), l'applicazione client con interfaccia Qt/QML (frontend) 
+separa le responsabilità tra il core di comunicazione (\texttt{appcomm}), l'applicazione client con interfaccia Qt/QML (appfrontend) 
 e l'applicazione server headless (backend).
 
 La scelta di utilizzare C++ e Qt, unita a WebAssembly per il deployment su browser, si è rivelata estremamente efficace, garantendo
@@ -1993,28 +2069,28 @@ backend users remove <userId>
 \begin{minted}{bash}
 backend channels list
 backend channels add <name>
-backend channels remove <channelId>
+backend channels remove <topicId>
 \end{minted}
 
 \subsection{Membri del canale}
 \begin{minted}{bash}
-backend members list <channelId>
-backend members add <channelId> <userId> [displayName]
-backend members remove <channelId> <userId>
+backend members list <topicId>
+backend members add <topicId> <userId> [displayName]
+backend members remove <topicId> <userId>
 \end{minted}
 
 \subsection{Sessioni}
 \begin{minted}{bash}
 backend sessions list
-backend sessions add <channelId> <userId> [userId ...]
+backend sessions add <topicId> <userId> [userId ...]
 backend sessions close <sessionId>
 \end{minted}
 
 \subsection{Messaggi}
 \begin{minted}{bash}
-backend messages list <channelId> [limit]
-backend messages find <channelId> <messageId> [limit]
-backend messages add <channelId> <senderId> <payloadJsonOrText>
+backend messages list <topicId> [limit]
+backend messages find <topicId> <messageId> [limit]
+backend messages add <topicId> <senderId> <payloadJsonOrText>
 backend messages remove <messageId>
 \end{minted}
 
@@ -2042,5 +2118,143 @@ backend messages remove <messageId>
 
 \chapter{Guida utente - Frontend}\label{chp:frontendguide}
 
-La presente guida descrive l'utilizzo...
+La presente guida descrive l'utilizzo dell'applicazione frontend del Proof of Concept, realizzata con Qt/QML. Il frontend permette di
+interagire con la libreria \texttt{appcomm} tramite un'interfaccia grafica minimale, consentendo il login, l'accesso alla chat,
+l'invio e la ricezione di messaggi e il logout.
+
+\section{Prerequisiti}
+
+\begin{itemize}
+    \item progetto compilato con target frontend disponibile;
+    \item istanza Appwrite raggiungibile e già configurata tramite backend;
+    \item servizio backend avviato, se si vuole osservare il comportamento di risposta automatica in modalità echo;
+    \item utente Appwrite esistente, nel caso di login tramite email;
+    \item membership associata all'utente, cioè un topic assegnato tramite il backend.
+\end{itemize}
+
+\noindent Per poter accedere correttamente alla schermata di chat, l'utente deve essere associato a un topic. In caso contrario il
+client non è in grado di determinare il contesto della conversazione e l'accesso alla chat non viene completato.
+
+\section{Avvio dell'applicazione}
+
+\noindent Dopo la compilazione del progetto, il frontend può essere avviato eseguendo il relativo binario generato dalla build Qt.
+
+\begin{minted}{bash}
+frontend
+\end{minted}
+
+\noindent Il nome effettivo dell'eseguibile può variare in base alla configurazione del progetto e dell'ambiente di build utilizzato.
+
+\section{Schermata iniziale}
+
+All'avvio, l'applicazione mostra una schermata di scelta del metodo di accesso. Da questa schermata è possibile:
+
+\begin{itemize}
+    \item accedere come guest;
+    \item accedere tramite credenziali email;
+\end{itemize}
+
+\section{Login tramite email}
+
+\noindent Per accedere tramite email è necessario seguire i seguenti punti:
+
+\begin{enumerate}
+    \item Selezionare l'opzione di login tramite email.
+    \item Inserire email e password.
+    \item Confermare il login.
+\end{enumerate}
+
+\noindent Se le credenziali sono corrette e l'utente possiede una membership valida, il client recupera il topic associato, carica gli ultimi 16 messaggi disponibili e apre la schermata di chat.
+
+\section{Login come guest}
+
+\noindent Il frontend permette anche di tentare l'accesso tramite sessione guest.
+
+\begin{enumerate}
+    \item Selezionare l'opzione di login guest.
+    \item Attendere la risposta del client.
+\end{enumerate}
+
+\noindent Nel PoC l'accesso guest viene utilizzato anche per validare il caso di utente non autorizzato. Se il guest non dispone dei permessi necessari o non possiede una membership associata, l'applicazione mostra una schermata dedicata di accesso negato. Da questa schermata è possibile tornare alla pagina iniziale di login.
+
+\section{Utilizzo della chat}
+
+Dopo un login completato correttamente, viene mostrata la schermata di chat. La schermata contiene:
+
+\begin{itemize}
+    \item il topic corrente assegnato all'utente;
+    \item lo stato della connessione realtime;
+    \item la lista dei 16 messaggi caricati con estetica da app di messaggistica;
+    \item il campo di input per inviare nuovi messaggi;
+    \item il bottone per inviare il testo inserito nel campo di imput;
+    \item il pulsante di logout.
+\end{itemize}
+
+\noindent All'apertura della chat, il client carica gli ultimi 16 messaggi disponibili per il topic assegnato. I messaggi vengono mostrati nell'interfaccia distinguendo quelli inviati dall'utente corrente da quelli ricevuti da altri utenti o generati dal backend.
+
+\section{Invio dei messaggi}
+
+\noindent Per inviare un messaggio:
+
+\begin{enumerate}
+    \item scrivere il testo nel campo di input;
+    \item premere il pulsante di invio ("send").
+\end{enumerate}
+
+\noindent Il messaggio viene inviato alla collection dei messaggi in attesa. Successivamente il backend lo processa, assegna il numero di sequenza e pubblica il messaggio definitivo nella collection dei messaggi. Se il servizio echo è attivo, viene generata anche una risposta automatica.
+
+\section{Ricezione dei messaggi}
+
+Il frontend riceve i nuovi messaggi tramite la connessione realtime aperta da \texttt{AppcommClient}. Quando un nuovo messaggio viene pubblicato su Appwrite, il client riceve l'evento, lo elabora e aggiorna automaticamente la lista mostrata nella chat.
+
+\section{Logout}
+
+\noindent Per terminare la sessione è possibile premere il pulsante di logout nella schermata di chat.
+
+\begin{enumerate}
+    \item Premere \texttt{Logout}.
+    \item Il client chiude la sessione corrente e disconnette il realtime.
+    \item Dopo una breve attesa di 2 secondi, l'applicazione torna alla schermata iniziale.
+\end{enumerate}
+
+\section{Errori comuni}
+
+\begin{itemize}
+    \item \texttt{No membership found for current user.}: l'utente esiste, ma non è associato ad alcun topic.
+    \item \texttt{Invalid membership document.}: il documento di membership esiste, ma non contiene dati validi.
+    \item \texttt{Guest access denied}: l'accesso guest non dispone dei permessi necessari.
+    \item \texttt{Rate limit exceeded.}: sono stati inviati troppi messaggi in un intervallo di tempo troppo breve.
+\end{itemize}
+
+\section{Flusso operativo consigliato}
+
+\begin{enumerate}
+    \item Configurare Appwrite tramite il backend.
+    \item Creare almeno un utente e un topic.
+    \item Associare l'utente al topic tramite membership.
+    \item Avviare il servizio backend in modalità echo, se richiesto dalla dimostrazione.
+    \item Avviare il frontend.
+    \item Effettuare il login con l'utente configurato.
+    \item Inviare messaggi e verificare la ricezione degli aggiornamenti in realtime.
+    \item Eseguire il logout per tornare alla schermata di login iniziale.
+\end{enumerate}
+
+\newpage
+
+\section{Avvio della versione WebAssembly}
+
+Dopo la compilazione del target WebAssembly, i file generati per l'esecuzione nel browser si trovano nella directory
+\texttt{build-wasm/frontend}. È possibile servirli tramite un semplice server HTTP locale:
+
+\begin{minted}{bash}
+cd build-wasm/frontend
+python -m http.server 8000
+\end{minted}
+
+\noindent L'applicazione è quindi raggiungibile da browser all'indirizzo:
+
+\begin{minted}{text}
+http://localhost:8000/appfrontend.html
+\end{minted}
+
 \end{document}

@@ -73,6 +73,7 @@ BaseSDK::BaseSDK(QNetworkAccessManager *mgr, QObject *parent)
 void BaseSDK::onResponseFinished() {
     QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
     if (!reply) return;
+    captureAuthHeaders(reply);
     reply->deleteLater();
     if (reply->error() == QNetworkReply::NoError) {
         QByteArray data = reply->readAll();
@@ -89,6 +90,22 @@ void BaseSDK::onResponseFinished() {
         }
     } else {
         parseErrorResponse(reply);
+    }
+}
+
+void BaseSDK::captureAuthHeaders(QNetworkReply *reply) {
+    if (!reply) {
+        return;
+    }
+
+    const QByteArray fallbackCookies = reply->rawHeader("X-Fallback-Cookies").trimmed();
+    if (!fallbackCookies.isEmpty()) {
+        m_fallbackCookies = fallbackCookies;
+    }
+
+    const QByteArray appwriteSession = reply->rawHeader("X-Appwrite-Session").trimmed();
+    if (!appwriteSession.isEmpty()) {
+        m_appwriteSession = appwriteSession;
     }
 }
 
@@ -120,6 +137,12 @@ QNetworkRequest BaseSDK::createBaseRequest(const ConnectionConfig &config,
     QNetworkRequest req((QUrl(fullUrl)));
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     req.setRawHeader("X-Appwrite-Project", config.projectId.toUtf8());
+    if (!m_fallbackCookies.isEmpty()) {
+        req.setRawHeader("X-Fallback-Cookies", m_fallbackCookies);
+    }
+    if (!m_appwriteSession.isEmpty()) {
+        req.setRawHeader("X-Appwrite-Session", m_appwriteSession);
+    }
     if (isAdmin && !config.apiKey.isEmpty()) {
         req.setRawHeader("X-Appwrite-Key", config.apiKey.toUtf8());
     }
