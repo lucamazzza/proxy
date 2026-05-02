@@ -1,6 +1,6 @@
 # This file is used to ignore files which are generated
 # ----------------------------------------------------------------------------
-
+[Bb]uild/
 *~
 *.autosave
 *.a
@@ -39,6 +39,12 @@ Thumbs.db
 *.pro.user*
 *.qbs.user*
 CMakeLists.txt.user*
+
+# CMake merge artifacts
+appcomm/*_BASE_*.txt
+appcomm/*_LOCAL_*.txt
+appcomm/*_REMOTE_*.txt
+appcomm/*_BACKUP_*.txt
 
 # xemacs temporary files
 *.flc
@@ -102,3 +108,17 @@ CMakeLists.txt.user*
 *.toc
 *.xdv
 _*
+
+# Configuration files with secrets
+config.json
+backend/config.json
+*.local.json
+
+# Environment files  
+.env
+.env.local
+.env.production
+
+# API Keys and secrets
+*.key
+secrets/

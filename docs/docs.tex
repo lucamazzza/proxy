@@ -8,18 +8,19 @@
 % Fonts
 \usepackage{microtype} % Improves text spacing
 \usepackage{fontspec}
-\setmainfont{Helvetica}
-\setmonofont{IBM Plex Mono}
+Rsetmainfont[Scale=0.95]{Helvetica}
+\setmonofont[Scale=0.9]{IBM Plex Mono}
 \newfontfamily\titlefont{Times New Roman}
+\usepackage{todonotes}
 
 % Page Layout & Margins
 \usepackage[
     a4paper,
     top=3.0cm,
     bottom=3.0cm,
-    inner=2.5cm,      % Big margin for binding (Left on Odd, Right on Even)
-    outer=2.5cm,      % Standard margin for edge (Right on Odd, Left on Even)
-    bindingoffset=1cm,% Extra 1cm added purely for the binding side
+    inner=2.5cm,
+    outer=2.5cm,
+    bindingoffset=1cm, % Extra 1cm added purely for the binding side
     headheight=15pt
 ]{geometry}
 
@@ -28,16 +29,16 @@
 \setlength{\headheight}{15pt} % Fix warning about header height
 \usepackage{fancyhdr}
 \pagestyle{fancy}
-\fancyhf{}                % Clear all defaults
+\fancyhf{}                    % Clear all defaults
 \newif\ifshowlogo
 \showlogotrue
 \newcommand{\blankpage}{
     \clearpage
-    \thispagestyle{empty} % No headers/footers
-    \showlogofalse        % No Logo <--- TURN OFF
-    \hbox{}               % Invisible content
+    \thispagestyle{empty}     % No headers/footers
+    \showlogofalse            % No Logo
+    \hbox{}                   % Invisible content
     \newpage
-    \showlogotrue         % Resume Logo <--- TURN ON
+    \showlogotrue             % Resume Logo
 }
 
 % Line thickness
@@ -46,14 +47,14 @@
 \renewcommand{\chaptermark}[1]{\markboth{#1}{}}
 
 % Style for Chapter pages (plain style usually suppresses headers, we override it)
-\fancyhead[LO]{\includegraphics[height=0.3cm]{header_small_logo.png}} % Left on Odd
+\fancyhead[LO]{\includegraphics[height=0.3cm]{header_small_logo.png}}      % Left on Odd
 \fancyhead[RO, LE]{\thepage}                                               % Right on Odd
 \fancyhead[RE]{\nouppercase{\leftmark}}
 \fancyfoot[LO, RE]{\footnotesize \textit{Proxy basato su Appwrite}}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
 \fancypagestyle{plain}{
-    \fancyhf{} % Clear defaults
+    \fancyhf{}                                                             % Clear defaults
     \fancyhead[LO]{\includegraphics[height=0.3cm]{header_small_logo.png}} 
     \fancyhead[RO, LE]{\thepage}
     \fancyhead[RE]{\nouppercase{\leftmark}} 
@@ -68,10 +69,10 @@
 
 % Chapter Format
 \titleformat{\chapter}[display]
-{\normalfont\huge\bfseries} % Format
+{\normalfont\huge\bfseries}      % Format
 {\chaptertitlename\ \thechapter} % Label (e.g., Capitolo 1)
-{20pt} % Separation
-{\Huge} % Title size
+{20pt}                           % Separation
+{\Huge}                          % Title size
 
 % Section Format
 \titleformat{\section}
@@ -121,7 +122,7 @@ fontsize=\small,
 }
 
 \usepackage{listings}
-\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
 \usepackage{geometry}
 \geometry{margin=2.5cm}
 
@@ -134,6 +135,16 @@ fontsize=\small,
 \usepackage[toc]{glossaries}
 \makeglossaries
 \loadglsentries{glossary.tex}
+
+% PDF Metadata
+\hypersetup{
+    pdftitle={Progetto di Semestre SP2526},
+    pdfauthor={Mazza Luca, Mondini Manuela},
+    pdfsubject={Proxy basato su Appwrite},
+    pdfkeywords={Appwrite, Proxy, C++, WebAssembly, Qt},
+    pdfproducer={XeLaTeX},
+    pdfcreator={XeLaTeX with hyperref}
+}
 
 \begin{document}
 
@@ -201,7 +212,7 @@ fontsize=\small,
 
 \noindent
 \field{Anno}{2025 / 2026}
-\vspace{5cm} % Space at the very bottom
+\vspace{5cm}                          % Space at the very bottom
 \hrule height 1pt width 0.5\textwidth % Thicker main divider line
 \vspace{8pt}
 \noindent
@@ -221,6 +232,7 @@ fontsize=\small,
 
 % List of Figures/Tables (Optional)
 \listoffigures
+\blankpage
 \listoftables
 \newpage
 
@@ -229,38 +241,46 @@ fontsize=\small,
 \pagenumbering{arabic}
 \chapter{Abstract}
 
-Le policy di sicurezza di rete moderne spesso isolano sia client che server rendendo
-impraticabili le connessioni dirette senza l'utilizzo di complesse configurazioni.
-Questo progetto espone il design e lo sviluppo di un'architettura client-server, pensata per superare le limitazioni
-imposte da firewall e \gls{NAT} nelle reti private.
-Il meccanismo centrale sostituisce le tradizionali connessioni socket con un approccio basato su 
-REST + WebSocket, utilizzando Appwrite\footnote{\url{https://appwrite.io}} \cite{appwrite_docs} come \gls{proxy}.
-Il sistema crea un canale di comunicazione sicuro su cui client e server interagiscono asincronamente 
-tramite eventi di creazione di documenti nel database di Appwrite.
+Lo sviluppo di applicazioni distribuite moderne richiede sistemi di comunicazione in tempo reale affidabili e reattivi. 
+Tuttavia, la gestione delle instabilità di rete e la sincronizzazione dello stato tra client e server introducono notevoli
+complessità architetturali.
 
-Viene quindi sviluppata una libreria modulare in C++ (con QT \cite{qt_docs}) per astrarre l'\gls{API} di Appwrite, implementando 
-funzionalità come la gestione delle sessioni, l'identificazione dei canali basata su \gls{UUID} e la 
-serializzazione dei payload in \gls{JSON}. L'implementazione di tale libreria viene validata attraverso lo sviluppo 
-di una semplice applicazione Proof of Concept (PoC), un frontend, realizzato con Qt/QML e compilato 
-con \gls{WebAssembly} \cite{wasm_spec} per l'esecuzione in browser, e un servizio backend nativo in C++.
+Questo documento presenta la progettazione e l'implementazione di appcomm, una libreria C++ nativa basata sul framework 
+Qt \cite{qt_docs}, ideata per astrarre e rendere resiliente la comunicazione tra applicazioni frontend e l'infrastruttura 
+Backend-as-a-Service Appwrite\footnote{\url{https://appwrite.io}} \cite{appwrite_docs}.
+
+L'architettura proposta si articola in tre macro-componenti: un wrapper SDK ottimizzato per l'integrazione asincrona,
+un ecosistema di resilienza client-side, un gestore di recupero per il riallineamento automatico e un limitatore di traffico 
+e un modulo server-side orchestratore dedicato al setup automatizzato dell'infrastruttura, alla gestione 
+dell'amministrazione del sistema.
+
+L'efficacia della libreria e delle scelte architetturali è stata validata attraverso lo sviluppo di un Proof of Concept
+completo. I risultati dimostrano come l'integrazione di questi moduli consenta alla libreria di auto-riparare lo stato locale
+dopo disconnessioni temporanee, garantendo la coerenza globale dei messaggi e offrendo agli sviluppatori un'interfaccia di
+comunicazione robusta, scalabile e fault-tolerant.
 
 \vspace{0.5cm}
 \noindent\rule{\textwidth}{0.5pt}
 \vspace{0.5cm}
 
-\noindent Modern security policies often restrict direct client-server communication, especially in private networks.
-This project details the design and development of a client-server architecture, designed to overcome the
-limitations of firewalls and NAT in private networks.
-The core mechanism replaces the traditional client-server socket connections with a
-REST + WebSocket based approach, using Appwrite as a Proxy.
-The system creates a secure communication channel on which clients and servers interact 
-asynchronously via document creation events in the Appwrite-hosted database.
+\noindent Developing modern distributed applications requires reliable and responsive real-time communication systems. 
+However, managing network instabilities, synchronizing state between client and server, and secure infrastructure provisioning
+introduces architectural complexity.
 
-A modular C++ (with QT) library is developed to abstract the Appwrite API, implementing features such as 
-session management, UUID-based channel identification and JSON payload serialization. 
-The implementation of said library is validated through the development of a simple Proof of Concept (PoC) 
-application, a frontend, built with Qt/QML and compiled with WebAssembly for browser-based execution, and a 
-native C++ backend service.
+This paper presents the design and implementation of appcomm, a native C++ library based on the Qt framework \cite{qt_docs}, 
+designed to abstract and resilient communication between frontend applications and the Appwrite \cite{appwrite_docs} 
+Backend-as-a-Service infrastructure.
+
+The proposed architecture is divided into three macro-components: an SDK wrapper optimized for asynchronous integration, 
+a client-side resilience ecosystem, a manager for automatic realignment, and a server-side orchestrator module dedicated 
+to automated infrastructure setup and management.
+
+The effectiveness of the library and its architectural choices was validated through the development of a comprehensive Proof of Concept. 
+The results demonstrate how the integration of these modules allows the library to self-repair local state after temporary
+disconnections, ensuring global message consistency and offering developers a robust, scalable, and fault-tolerant communication
+interface.
+
+\blankpage
 
 \chapter{Introduzione}
 
@@ -275,6 +295,8 @@ Il sistema deve garantire la sicurezza, fornendo accesso solamente ad utenti aut
 ai canali di comunicazione, delegando la gestione di credenziali, sicurezza e persistenza all'infrastruttura sottostante
 di Appwrite.
 
+\newpage
+
 Gli obbiettivi principali del lavoro sono articolati in diverse aree chiave:
 \begin{itemize}
 \item \textbf{Progettazione di un architettura sicura}: è necessario definire un modello di comunicazione dove il server
@@ -284,7 +306,7 @@ Gli obbiettivi principali del lavoro sono articolati in diverse aree chiave:
     lettura, aggiornamento e cancellazione (CRUD) per canali, sessioni, mentre invece il frontend si preoccupa
     semplicemente di connettersi a canali esistenti, inviare messaggi e ricevere notifiche di nuovi messaggi.
 
-\item \textbf{Sviluppo della libreria \texttt{appcom}}: una libreria modulare, scritta in C++ e basata su Qt, che 
+\item \textbf{Sviluppo della libreria \texttt{appcomm}}: una libreria modulare, scritta in C++ e basata su Qt, che 
     fornisca un'interfaccia semplice ed intuitiva per interagire con l'API di Appwrite è necessaria per la strutturazione
     del progetto; questa deve includere funzionalità per la gestione delle sessioni, l'identificazione dei canali
     basandosi su UUID, la serializzazione, validazione e impacchettamento dei payload e la gestione degli eventi di 
@@ -293,8 +315,8 @@ Gli obbiettivi principali del lavoro sono articolati in diverse aree chiave:
 \item \textbf{Proof of Concept}: per validare l'efficacia e il funzionamento corretto del sistema è necessario lo
     sviluppo di una semplice applicazione che dimostri la maniera di utilizzo della libreria in un contesto reale ed il
     funzionamento tecnico del meccanismo di comunicazione. Questa consiste in una chat semplice, dove un frontend,
-    costruito con Qt/QML e compilato con WebAssembly per l'esecuzione tramite web browser, comunica con un servizio
-    backend nativo in C++, attraverso i canali di comunicazione gestiti da Appwrite tramite \texttt{appcom}.
+    costruito con Qt/\gls{QML} e compilato con WebAssembly per l'esecuzione tramite web browser, comunica con un servizio
+    backend nativo in C++, attraverso i canali di comunicazione gestiti da Appwrite tramite \texttt{appcomm}.
     Per semplificare la dimostrazione, il backend si limita al ruolo di \textit{echo server}.
 
 \item \textbf{Bootstrap deploy}: per facilitare l'adozione dell'intermediario Appwrite in soluzioni esistenti, è
@@ -303,68 +325,1722 @@ Gli obbiettivi principali del lavoro sono articolati in diverse aree chiave:
     dimodoché sia possibile integrare Appwrite sia come "primo cambiamento" in un'architettura esistente, sia nel caso
     si necessiti di scalare orizzontalmente un sistema già configurato con questo proxy, permettendo di cambiare istanza
     in modo dinamico, senza necessità di riconfigurazione.
-
-\pagebreak
-
 \end{itemize}
+
+Il prodotto si avvale di uno stack tecnologico moderno e cross-platform, con l'obbiettivo di massimizzare la portabilità 
+e l'integrazione in diversi contesti applicativi, con un focus particolare su soluzioni web-based grazie alla 
+compilazione in WebAssembly.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Tecnologia} & \textbf{Ruolo}                                                            \\ \midrule
+Appwrite            & Funge da middleware (proxy) per la comunicazione tra client e server      \\
+C++                 & Linguaggio di programmazione per la libreria e il backend                 \\
+Qt                  & Framework per lo sviluppo della libreria e del frontend                   \\
+\gls{QML}           & Linguaggio per la definizione dell'interfaccia utente del frontend        \\
+WebAssembly         & Compilazione del frontend per l'esecuzione in browser                     \\
+JSON                & Formato per la serializzazione dei messaggi scambiati tra client e server \\
+Docker              & Contenitore per il deploy dell'istanza Appwrite e del backend             \\
+\bottomrule
+\end{tabular}
+\caption{Tecnologie utilizzate nel progetto}
+\end{table}
+
 \section{Pianificazione}
 
+Di seguito sono descritte le fasi principali che sono state pianificate per lo sviluppo del progetto. Il piano non è
+ovviamente rigido, data la natura iterativa dello sviluppo software, ma fornisce una roadmap generale per l'implementazione
+e la validazione del sistema.
+
+La presenza di un piano che non sia troppo statico è fondamentale per valorizzare l'obbiettivo di sviluppo piuttosto
+che la semplice realizzazione di un prodotto, permettendo di adeguarsi dinamicamente alle esigenze che potenzialmente
+emergono durante le varie fasi di sviluppo e di discussione con il relatore.
+
+Essendo anche le tecnologie usate relativamente nuove per tutti i membri del team, soprattutto per quanto riguarda
+\gls{Appwrite} e \gls{WebAssembly}, è stato necessario prevedere una fase iniziale di analisi e studio approfondito,
+prima di procedere con l'implementazione vera e propria, per garantire una comprensione solida dei
+meccanismi da implementare.
+
 \begin{enumerate}
-\item \textbf{Analisi:}
-\item \textbf{Applicazione demo:} 
-\item \textbf{Definire struttura API:}
+\item \textbf{Analisi}: occorre dello studio dedicato ad approfondire come possa essere utilizzato \gls{Appwrite}
+    come intermediario per la comunicazione tra client e server, comprendere come adattare l'API dello stesso alle esigenze
+    tecniche del progetto e studiare le tecnologie coinvolte;
+
+\item \textbf{Pianificazione}: è necessario definire un piano di sviluppo per quanto riguarda la libreria \texttt{appcomm},
+    identificando le funzionalità chiave da implementare, formalizzandole tramite delle task. Questo va ripetuto anche
+    per la parte di sviluppo del frontend e del backend;
+
+\item \textbf{Design}: è necessario definire un'architettura per la libreria \texttt{appcomm} che sia modulare, scalabile
+    e manutenibile, identificando i moduli chiave, le loro responsabilità e le interazioni tra di essi. Inoltre, è
+    necessario definire un'architettura generale per il sistema, identificando i componenti chiave, le loro responsabilità
+    e le interazioni tra di essi. Ciò include la produzione di diversi diagrammi che al meglio esplichino le scelte
+    architetturali, come ad esempio diagrammi delle classi, diagrammi di sequenza e diagrammi di flusso;
+
+\item \textbf{Implementazione Libreria}: occorre implementare dapprima la libreria \texttt{appcomm}, la quale verrà
+    implementata con il classico approccio per task, dove si analizza dapprima il relativo requisito, si implementa
+    quanto necessario per soddisfarlo, si definisce un'unità di test per validarne il funzionamento e si procede con
+    quanto segue. Lo sviluppo della libreria deve essere imperativamente preceduto da una fase di design dell'architettura
+    della stessa, per garantire una struttura modulare, scalabile e manutenibile;
+
+\item \textbf{Implementazione PoC}: una volta che la libreria à sufficientemente matura, è possibile procedere con lo
+    sviluppo del Proof of Concept, il quale ha l'unico scopo di validare il funzionamento tecnico del sistema, deve
+    quindi essere il più semplice possibile, limitato appunto alla dimostrazione del funzionamento della libreria;
+
+\item \textbf{Test e Validazione}: una volta che il PoC è completo, è necessario procedere con una fase di test e
+    validazione del prodotto finito, per garantire che tutte le funzionalità siano implementate correttamente e che il
+    sistema funzioni come previsto, dal punto di vista del client e da quello del server, in scenari di comunicazione
+    reali;
+
+\item \textbf{Documentazione}: parallelamente alle fasi di sviluppo, è necessario procedere con la stesura della
+    documentazione tecnica del progetto, che include sia la documentazione della libreria \texttt{appcomm}, sia un
+    manuale d'uso per il prodotto finito, che spieghi come utilizzare il sistema, come configurarlo e come integrarlo in
+    soluzioni esistenti. Questa guida utente riassume la documentazione tecnica integrata nei vari moduli della libreria,
+    fornendo esempi pratici di utilizzo e consigli di troubleshooting per facilitare l'adozione del sistema.
+
 \end{enumerate}
+
+Questo rapporto è stato scritto durante tutta la durata del progetto, parallelamente a tutte le fasi descritte sopra.
 
 \section{Requisiti}
 \begin{table}[h]
 \centering
-\begin{tabular}{@{}lp{8cm}l@{}}
+\begin{tabular}{@{}lp{11cm}l@{}}
 \toprule
-\textbf{ID} & \textbf{Descrizione} & \textbf{Note} \\ \midrule
-R-01 & \textit{Proxy} deve supportare l'API di Appwrite & -\\
-R-02 & X & \\
-R-03 & X & \\
-R-04 & X & \\
-R-05 & X & \\
-R-06 & X & \\
-R-07 & X & \\
-R-08 & X & \\
-R-09 & X & \\ 
+\textbf{ID}   & \textbf{Descrizione}                                                          & \textbf{Note}   \\ \midrule
+\texttt{R-01} & \textit{Appcomm} deve astrarre l'API di Appwrite                              & Modulo dedicato \\
+\texttt{R-02} & \textit{Appcomm} deve esporre lo stato di connessione con Appwrite            & -               \\
+\texttt{R-03} & \textit{Appcomm} detiene dei modelli di dominio                               & -               \\
+\texttt{R-04} & \textit{Appcomm} deve filtrare i messaggi sulla base del destinatario         & -               \\
+\texttt{R-05} & \textit{Appcomm} necessita un sistema di Recovery per i messaggi persi        & -               \\
+\texttt{R-06} & \textit{Appcomm} tiene una cache degli ultimi $n$ messaggi                    & -               \\
+\texttt{R-07} & \textit{Appcomm} immagazzina una policy di persistenza dei messaggi           & -               \\
+\texttt{R-08} & \textit{Appcomm} gestisce un modello unificato per gli errori                 & -               \\
+\texttt{R-09} & \textit{Appcomm} rende intercambiabile la modalità di comunicazione (RT/Poll) & -               \\
+\texttt{R-10} & \textit{Appcomm} fornisce un Wrapper per la gestione di connessione/eventi    & -               \\
+\texttt{R-11} & \textit{Appcomm} fornisce dei servizi per le query veloci                     & -               \\
+\texttt{R-12} & \textit{Appcomm} fornisce sistema di Garbage Collection di vecchi messaggi    & -               /\\
 \bottomrule
 \end{tabular}
-\caption{Requisiti del progetto}
+\caption{Requisiti di \texttt{Appcomm}}
 \end{table}
+
+\section{Conclusione}
+
+Questo capitolo ha definito il perimetro del progetto, chiarendo il problema da risolvere, il valore tecnico della
+soluzione ed i criteri con cui valutarne l'efficacia. In particolare, l'utilizzo di Appwrite come middleware, consente
+di spostare la complessità infrastrutturale verso un livello gestito, mantenendo il controllo della logica applicativa
+nelle implementazioni di backend in C++ e la qualità del software.
+
+La pianificazione proposta non rappresenta un semplice elenco di attività, ma una strategia incrementale che collega
+lo studio delle tecnologie, la progettazione architetturale, l'implementazione per task e la validazione continua.
+Questo approccio riduce il rischio tecnico, favorisce la tracciabilità delle decisioni e rende il progetto adattabile
+a soluzioni scaturenti da evoluzioni future, senza comprometterne la coerenza complessiva.
+
+Infine, i requisiti raccolti costituiscono il contratto funzionale dell'intera soluzione; ogni modulo introdotto nei
+capitoli successivi risponde direttamente ad almeno una delle esigenze esplicitate durante questa fase. In questo
+senso l'introduzione non è solo un contesto descrittivo, ma la base di riferimento che guida il design, implementazione
+e validazione del sistema end-to-end.
 
 \chapter{Stato dell'arte}
 
+L'interconnessione tra sistemi residenti in reti locali protette e interfacce web rappresenta una delle sfide
+architetturali più rilevanti nei sistemi distribuiti moderni. Il problema fondamentale risiede nella natura asimmetrica
+dei sistemi \gls{NAT} e \gls{Firewall}, che permettono, tipicamente senza particolari filtri, le connessioni \gls{outbound}
+ma bloccano sistematicamente i tentativi di accesso \gls{inbound}.
+
+Questo capitolo inquadra il progetto rispetto alle soluzioni già disponibil, evidenziandone i limiti, i trade-off e le
+opportunità delle principali strategie impiegate per superare le barriere di rete. L'obbiettivo non è soltanto presentare
+una rassenga tecnica, ma costruire un criterio di confronto utile a motivare la scelta architetturale adottata nel lavoro;
+un modello client-server mediato da una piattaforma BaaS e supportato da componenti nativi C++ e WebAssembly.
+
+L'analisi considera approcci infrastrutturali classici, protocolli orientati alla messaggistica e servizi cloud moderni,
+con attenzione agli aspetti che impattano direttamente il caso d'uso del progetto: sicurezza operativa, portabilità
+cross-platform, complessità di integrazione e sostenibilità di manutenzione. In questa prospettiva, il capitolo funge da
+ponte tra il problema introduttivo e le scelte di design che verranno formalizzate nel capitolo successivo.
+
+\newpage
+
+\section{Limiti delle infrastrutture di rete tradizionali}
+
+La maggior parte delle reti locali opera dietro configurazioni \gls{NAT} e \gls{Firewall} Stateful. Mentre queste tecnologie
+proteggono la rete interna, impediscono l'instaurazione di socket passivi all'interno della \gls{LAN}, che siano raggiungibili
+dall'esterno.
+
+Le soluztioni storiche, come il Port Forwarding o UPnP sono oggi considerate deprecate in contesti professionali a causa
+dell'elevata vulnerabilità ai vettori d'attacco \textit{Zero-day} e della dipendenza verso hardware di rete, che
+non garantisce la portabilità della soluzione.
+
+\section{Tecnologie di superamento dei \gls{Firewall}}
+
+Attualmente, le metodologie per consentire la comunicazione tra entità separate da barriere di rete si dividono
+in tre categorie principali, che rappresentano le soluzioni più \textit{tradizionali}; ognuna di queste ha dei limiti
+operativi specifici:
+
+\begin{itemize}
+
+\item\textbf{Port Forwarding \& Reverse Proxy}: Queste tecnologie prevedono l'apertura statica di porte direttamente sui
+    router, oppure di esporre alla rete \gls{WAN} un server che risiede invece nella \gls{LAN}. Sebbene possano essere efficienti,
+    aumentano la superficie di attacco del backend e richiedono privilegi di amministrazione sulla rete non sempre
+    disponibili in contesti aziendali o sotto reti mobili.
+
+\item\textbf{VPN (Virtual Private Network)}: Consiste nella creazione di un tunnel logico attraverso la rete, nel quale
+    è possibile comunicare direttamente in maniera sicura. Queste tuttavia introducono un importante overhead in termini
+    di latenza, e spesso richiedono l'installazione di software specifici per il client, rendendole inadatte per
+    per applicazioni web-based leggere o temporanee.
+
+\item\textbf{Protocolli Pub/Sub (\gls{MQTT}\footnote{\url{https://mqtt.org/}}/AMQP\footnote{\url{https://amqp.org/}})}: 
+    Utilizzano un broker centrale come punto di incontro. Sebbene ideali per l'IoT, la loro integrazione in ambienti
+    Web puro richiede spesso gateway \gls{WebSocket} aggiuntivi, complicando il deployment in architetture cross-platform.
+
+\end{itemize}
+
+\section{Protocolli di messaggistica e middleware}
+
+Esistono diverse tecnologie che tentano di risolvere il problema del \textit{punto di incontro} tra due entità separate.
+
+Tra queste appare \gls{REST}, il quale è de-facto lo standard per il web.
+Tuttavia \gls{REST} è per natura \textit{stateless}, ed è basato su un modello \texttt{request-response}. Per ottenere la
+bidirezionalità necessaria ad un sistema di controllo o ad una chat, richiede tecniche di Long Polling\footnote{\url{https://ably.com/topic/long-polling}},
+che risultano inefficienti in termini di banda e latenza.
+
+Un'altra tecnologia è WebRTC, il quale è un protocollo avanzato, mirato alla comunicazione Peer to Peer. Sebbene offra
+latenze minime, la sua implementazione in C++ nativo richiede librerie di enormi dimensioni ed è estremamente complessa
+da integrare in un sistema Wasm senza un server di segnalazione esterno.
+
+Infine è anche presente \gls{MQTT}, il quale è invece un protocollo leggero di tipo Pub/Sub. È molto efficace, ma la sicurezza
+è spesso delegata a strati esterni, e non offre una persistenza dei dati strutturata.
+
+\section{Il paradigma Backend-as-a-Service (BaaS)}\label{sec:baas}
+
+L'evoluzione dei servizi Cloud ha portato all'emergere di piattaforme BaaS\footnote{\url{https://geeksforgeeks.org/firebase/what-is-firebase/}}
+(come Firebase, Supabase o Appwrite).
+Queste soluzioni agiscono come un middleware neutro sulla rete pubblica. 
+Il vantaggio risiede nel fatto che sia il client che il server effettuano connessioni outbound verso la piattaforma,
+che sono permesse dai firewall standard, eliminando la necessità di esporre porte fisiche sul backend nativo.
+
+\section{Il ruolo di Appwrite come middleware evoluto}
+
+Appwrite si inserisce in questo scenario non solo come un database, ma come un Orchestratore di Backend.
+A differenza di un semplice broker di messaggi, Appwrite fornisce:
+
+\begin{itemize}
+\item\textbf{Identity Management}: L'integrazione nativa di sessioni utente (\gls{JWT} o Cookie) permette di proteggere i
+    canali di comunicazione senza dover implementare logiche di cifratura custom.
+
+\item\textbf{Protocollo Realtime}: Appwrite astrae la gestione dei socket. Il client si sottoscrive a un canale
+    (documento) e riceve notifiche push al variare dello stato, simulando una comunicazione diretta pur passando per
+    un proxy sicuro.
+
+\item\textbf{Self-Hosting/Cloud}: Seguendo la filosofia dell'indipendenza tecnologica, il supporto a Docker permette di
+    evitare il Vendor Lock-in, tipico di piattaforme come Firebase.
+
+\end{itemize}
+
+\section{WebAssembly e Qt}
+
+L'aspetto che porta l'innovazione più grande del progetto è la possibilità di utilizzare WebAssembly per compilare
+applicazioni Qt, per poi essere in grado di utilizzarle tramite Web Browser. Ciò permette di sviluppare una libreria
+unica, che funzioni per il backend in C++, e che sia compatibile con l'applicazione web del frontend.
+
+In tale situazione, è garantita la serializzazione e deserializzazione identica dei messaggi, la gestione identica degli
+errori e che i test di unità siano validi per l'intero ecosistema.
+
+\section{Comparativa delle tecnologie}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lp{4cm}lp{4cm}ll@{}}
+\toprule
+\textbf{Categoria} & \textbf{Soluzione} & \textbf{Persistenza} & \textbf{Sicurezza} \\ \midrule
+Direct             & Port Forwarding    & No                   & Bassa              \\
+Tunnel             & VPN/SSH            & No                   & Alta               \\
+Pub/Sub            & \gls{MQTT}         & Limitata             & Media              \\
+BaaS Proxy         & Appwrite           & Alta                 & Alta               \\
+\bottomrule
+\end{tabular}
+\caption{Analisi comparativa delle tecnologie}
+\end{table}
+
+\section{Conclusione}
+
+In conclusione, la soluzione proposta rappresenta un avanzamento rispetto ai metodi tradizionali di comunicazione 
+cross-network. Sfruttando la robustezza di un middleware BaaS e la portabilità del binario WebAssembly, il progetto 
+risolve i problemi di latenza, sicurezza e configurazione di rete in un'unica architettura software modulare e
+mantenibile.
+
+L'analisi comparativa mostra che le alternative più comuni tendono a massimizzare solo una parte del problema;
+alcune offrono bassa latenza ma richiedono infrastrutture complesse, altre semplificano il deployment ma non
+garantiscono persistenza strutturata o la sicurezza integrata. L'approccio basato su Appwrite invece, combina
+autenticazione, persistenza del documento e canali realtime in un unico punto di integrazione, riducendo la quantità
+di componenti specializzati da mantenere.
+
+Ne consegue che il contributo principale non è la semplice adozione di una tecnologia cloud, ma la definizione di una
+nuova composizione architetturale coerente con i vincoli reali del progetto; le reti private, il frontend web, il
+backend nativo e le necessità di evoluzione progressiva. Questa conclusione giustifica il passaggio al capitolo di
+design, dove le scelte teoriche qui discusse vengono tradotte in moduli software, responsabilità ben separate e
+flussi operativi verificabili.
+
 \chapter{Design e implementazione}
-\section{API}
-Di seguito è riportato un esempio di codice per l'inizializzazione.
+
+Questo capitolo descrive come i requisiti e le valutazioni tecnologiche precedenti siano trasformati in una struttura
+software concreta, con particolare attenzione alla separazione delle responsabilità, alla robustezza operativa e alla
+manetunibilità del codice nel medio periodo. L'obbiettivo è rendere esplicita la corrispondenza tra i problemi
+architetturali identificati e le soluzioni implementative adottate nei moduli della libreria \texttt{appcomm}.
+
+La trattazione segue un percorso progressivo; dapprima il modello di dominio e l'\gls{SDK} di accesso ad Appwrite, poi i
+componenti di resilienza, il modello di errore, la gestione dello stato del client, la pipeline di elaborazione dei
+messaggi, la comunicazione realtime ed infine le API client e server side. In questo modo il capitolo documenta sia
+le scelte di struttura sia i meccanismi di comportamento che garantiscono consistenza del protocollo, recupero di anomalie
+e del controllo di carico.
+
+La finalità è quella di fornire una base tecnica sufficientemente dettagliata da consentire l'estensione, revisione e
+integrazione in contesti applicativi differenti, mantenendo però un'architettura unitaria tra frontend e backend.
+
+\newpage
+
+\section{Panoramica dell'architettura e del dominio}
+Prima di analizzare i singoli moduli, è fondamentale definire la struttura ad alto livello del sistema. L'architettura si
+divide in tre attori principali:
+\begin{itemize}
+    \item \color{MidnightBlue}\textbf{Frontend (Client)}\color{black}: L'applicazione utente (compilata in WebAssembly) che utilizza \texttt{AppcommClient}
+    per inviare e ricevere messaggi e per mantenere sincronizzata la chat.
+    
+    \item \color{gray}\textbf{Backend Appwrite}\color{black}: L'infrastruttura BaaS che funge da proxy e database centrale. Gestisce le connessioni,
+    i permessi, gli eventi in tempo reale e lo storage persistente.
+    
+    \item \color{Maroon}\textbf{Backend (Server)}\color{black}: Un servizio backend nativo che utilizza \texttt{AppcommServer} (con privilegi amministrativi)
+    per il provisioning dell'infrastruttura, il routing avanzato e operazioni di manutenzione come la Garbage Collection.
+\end{itemize}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{proxy_sequenceDiagram.png} 
+\caption{Interazioni tra Client, Server e Appwrite}
+\label{fig:system_overview}
+\end{figure}
+
+\subsection{Struttura dei dati su Appwrite}
+Per supportare la logica di dominio, in fase di provisioning il Server genera un Database dedicato su Appwrite, all'interno 
+del quale crea quattro Collezioni principali:
+\begin{enumerate}
+    \item \textbf{channels}: Ogni documento in questa collezione rappresenta un "Canale" logico di comunicazione (es. una 
+    stanza di chat), contenente metadati come il nome e la data di creazione.
+    
+    \item \textbf{messages}: Contiene tutti i messaggi scambiati. Ogni documento è logicamente associato a un \texttt{channelId}
+    e contiene il payload, il mittente e un \texttt{sequenceNumber} per l'ordinamento globale.
+    
+    \item \textbf{members}: Mappa l'associazione molti-a-molti tra utenti e canali, gestendo lo stato di presenza e di attività.
+    
+    \item \textbf{sessions}: Gestisce il ciclo di vita logico delle sessioni temporanee di comunicazione.
+\end{enumerate}
+
+\section{Modello di dominio}
+
+Per disaccoppiare la logica applicativa dalla rappresentazione JSON dei dati, il progetto introduce un modulo di dominio
+centralizzato definito nel file \texttt{model.h}. Questo modulo raccoglie tutte le strutture dati utilizzate nello scambio
+di informazioni tra frontend, proxy e backend.
+
+L'obiettivo è fornire una rappresentazione tipizzata e coerente delle entità del sistema, evitando la manipolazione 
+diretta di oggetti \texttt{QJsonObject} nei livelli superiori.
+
+\subsection{Struttura del modulo}
+
+Tutte le entità sono definite all'interno del namespace \texttt{model}, che rappresenta il punto di accesso unico per 
+il dominio applicativo. Le strutture sono progettate per essere in primis leggere e facilmente serializzabili,
+indipendenti dal trasporto di dati e riutilizzabili tra i diversi moduli del sistema.
+
+\subsection{Entità principali}
+
+Il modello definisce diverse entità fondamentali:
+
+\begin{itemize}
+    \item \textbf{User}: rappresenta un utente tramite identificatore e email, con metodo \texttt{isValid()} per 
+        verificare la consistenza dei dati;
+    \item \textbf{Channel}: identifica un canale di comunicazione tramite un ID e un nome visibile in UI;O
+    \item \textbf{Message}: rappresenta l'unità base della comunicazione. Contiene un identificatore del canale, un 
+        identificatore del mittente, uno per il messaggio, un timestamp in formato UTC, un payload generico in formato 
+        JSON ed un flag \texttt{isEcho} per distinguere messaggi generati localmente da quelli ricevuti dal server.
+    \item \textbf{SessionInfo}: contiene metadati relativi alla sessione, inclusi tipo di autenticazione 
+        e timestamp di creazione e scadenza;
+    \item \textbf{ChannelMember}: descrive la presenza di un utente in un canale, includendo stato di attività e 
+        informazioni temporali;
+    \item \textbf{PersistencePolicy}: definisce le politiche di persistenza (\gls{TTL}) per messaggi, sessioni e canali inattivi;
+    \item \textbf{AppcommConfig}: contiene i parametri di configurazione necessari per connettersi al backend Appwrite.
+\end{itemize}
+
+\subsection{Serializzazione e parsing}
+
+Le entità del modello implementano metodi di conversione bidirezionale tra rappresentazione tipizzata e formato JSON. 
+In particolare \texttt{fromJson()} consente di costruire oggetti a partire dai payload ricevuti dal backend mentre 
+\texttt{toJson()} permette la serializzazione per l'invio dei dati.
+
+Questo approccio centralizza la logica di parsing, evitando duplicazioni e garantendo coerenza tra i diversi componenti 
+del sistema.
+
+\subsection{Validazione}
+
+Le strutture principali includono metodi di validazione come \texttt{isValid()}, utilizzati per verificare la presenza
+e la correttezza dei campi obbligatori prima dell'utilizzo degli oggetti.
+
+Nel caso di parsing da JSON, se i dati non risultano validi, viene restituita un'istanza vuota. Questo consente ai
+moduli superiori di gestire esplicitamente i casi di errore senza propagare dati inconsistenti.
+
+\subsection{Gestione della sessione}
+
+Il tipo \texttt{SessionInfo} include il metodo \texttt{isExpired()}, che permette di verificare in modo immediato la
+validità temporale della sessione. Il tipo di autenticazione è modellato tramite l'enumerazione \texttt{AuthType}, che
+distingue tra sessioni anonime (guest) e autenticazione tramite email.
+
+\subsection{Integrazione con gli altri componenti}
+
+Il modello di dominio è utilizzato trasversalmente dai principali moduli del sistema; l'\gls{SDK} riceve dati in formato JSON 
+dal backend, il \texttt{RecoveryManager} converte tali dati in oggetti \texttt{model::Message}, la 
+\texttt{RecentMessageCache} memorizza solo messaggi validati ed i livelli applicativi lavorano esclusivamente con 
+strutture tipizzate.
+
+Questa architettura garantisce una separazione chiara tra livello di trasporto e logica applicativa, migliorando
+robustezza, leggibilità e manutenibilità del codice.
+
+\section{Appwrite \gls{SDK}}
+
+Il modulo \texttt{AppwriteSDK} costituisce il cuore tecnologico della libreria \texttt{appcomm}. Questo astrae l'API
+\gls{REST}\footnote{\url{https://appwrite.io/docs/apis/rest}} di Appwrite, permettendo al resto della libreria di interagire
+con il backend senza dover gestire manualmente la complessità del protocollo \gls{HTTP} o della gestione delle sessioni.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{appwritesdk.png}
+\caption{Struttura di classi di \texttt{AppwriteSDK}}
+\end{figure}
+
+L'architettura del modulo segue i principi di ereditarietà, con lo scopo principale di separare le responsabilità per
+quello che riguarda la parte che interessa al client, e quella che interessa al server.
+
+La scelta di utilizzare Qt, tramite \texttt{QNetworkAccessManager}\footnote{\url{https://doc.qt.io/qt-6/qnetworkaccessmanager.html}}
+è principalmente dovuta alla necessità del frontend di eseguire una build con WebAssembly, il quale non supporta librerie 
+di comunicazione come \texttt{Curl}.
+Inoltre l'utilizzo di tale libreria, permette la connessione e la comunicazione tramite \texttt{signals} e \texttt{slots},
+il che risulta consistente e comodo per il resto dell'implementazione e soprattutto per il testing del modulo.
+
+\subsection{Componenti principali}
+
+\begin{enumerate}
+    \item\texttt{ConnectionConfig}: Struttura che incapsula le credenziali e gli identificatori necessari per la 
+        comunicazione;
+
+    \item\texttt{BaseSDK}: Classe base astratta che gestisce l'istanza di \texttt{QNetworkAccessManager}, la gestione 
+        dei Cookie (con \texttt{QNetworkCookieJar}\footnote{\url{https://doc.qt.io/qt-6/qnetworkaccessmanager.html}}) e la 
+        logica comune di parsing delle risposte e degli errori. Qui vengono impiegati \texttt{signals} e \texttt{slots}
+        per la comunicazione.
+
+    \item\texttt{Client}: Specializzazione dedicata al frontend. Gestisce tutte le operazioni non-privilegiate, come
+        l'autenticazione anonima o tramite email e la creazione di documenti nel database.
+
+    \item\texttt{Server}: Specializzazione privilegiata per il backend. Utilizzando la chiave API esegue le operazioni
+        amministrative, come il provisioning del database, la creazione di attributes e la gestione degli utenti.
+
+\end{enumerate}
+
+\subsection{Comunicazione asincrona (con \texttt{signals} e \texttt{slots})}
+
+A differenza di un approccio sincrono, quindi bloccante, l'utilizzo del meccanismo di Qt \texttt{signals} e \texttt{slots}
+è stato scelto per garantire la latenza minima di rete. Quando viene inviata una richiesta alla \gls{REST} API, il controllo
+torna immediatamente all'applicazione; una volta ricevuta una risposta, viene emesso un segnale, tra \texttt{requestSuccess}
+o \texttt{requestError}. Tutto ciò è essenziale per WebAssembly, del quale il thread principale non può mai essere bloccato.
+
+\subsection{Gestione della sessione}
+
+L'\gls{SDK} è configurato per utilizzare un \texttt{QNetworkCookieJar}. Nel caso del client, permette ad Appwrite di iniettare
+un cookie di sessione dopo il login. Qt gestisce automaticamente la persistenza di quest'ultimo nelle richieste
+successive, simulando lo stato di autenticazione tipico di un browser senza dover gestire manualmente i token \gls{JWT} nel
+codice.
+
+\subsection{Dualità Server-Client}
+
+Sebbene il codice sia condiviso, l'\gls{SDK} implementa una distinzione netta tra la modalità \texttt{ADMIN} e \texttt{USER}.
+
+Il server agisce come supervisore; crea l'infrastruttura e gestisce l'integrità dei dati. Il client invece interagisce
+esclusivamente con i propri canali autorizzati. Questa separazione garantisce che le chiavi API amministrative non
+vengano mai compilate nel binario esposto pubblicamente.
+
+\subsection{Utilizzo}
+
+Per utilizzare il modulo, è dapprima necessario definire una \texttt{ConnectionConfig} e istanziare uno dei due
+componenti desiderati (\texttt{Client}/\texttt{Server}):
 
 \begin{minted}{cpp}
-// Esempio di inizializzazione
-float x = 0.5f;
-std::vector<float> input = {x, x, x}; // Input per il modello
-// Altri parametri...
+AppwriteSDK::ConnectionConfig config;
+config.endpoint = "https://cloud.appwrite.io/v1";
+config.projectId = "my-project-id";
+config.dbId = "chat-db";
+// Altri campi...
+
+QNetworkAccessManager* mgr = new QNetworkAccessManager(this);
+AppwriteSDK::Client* client = new AppwriteSDK::Client(mgr, this);
 \end{minted}
+
+Di seguito un esempio di flusso, dove viene effettuato un login e l'invio di un messaggio:
+
+\begin{minted}{cpp}
+// Connessione ai segnali
+connect(client &AppwriteSDK::Client::requestSuccess, this,
+[](const QJsonObject& data){
+    qDebug() << "Success: " << data;
+});
+
+// Login Asincrono
+client->createEmailSession(config, "user@example.com", "password123");
+
+// Invio messaggio
+QJsonObject msg;
+msg["payload"] = "Hello, World!";
+msg["channelId"] = "room-01";
+client->createDocument(config, msg);
+\end{minted}
+
+\subsection{Gestione degli errori}
+
+Incluso nell'\gls{SDK}, è presente un parser intelligente, che estrae i messaggi di errore restituiti da Appwrite (per esempio
+\textit{Invalid credentials} o \textit{Document not found} e li propaga attraverso il segnale \texttt{requestError}, 
+permettendo una gestione centralizzata dei guasti nel modulo superiore di logica di business.
+
+\section{Resilienza e controllo}
+
+Oltre alla gestione del trasporto dati tramite l'\gls{SDK}, la libreria \texttt{appcomm} integra dei componenti specializzati
+per garantire la continuità del servizio e la coerenza di stato tra client e server. 
+Nello specifico, questi moduli mitigano tre tipologie di problemi critici nei sistemi distribuiti:
+\begin{itemize}
+    \item \textbf{Perdita di messaggi per instabilità di rete}: Una caduta temporanea della connessione causerebbe la perdita
+    di eventi push. Il sistema mitiga questo problema tracciando l'ultimo messaggio e richiedendo attivamente il "delta" mancante
+    alla riconnessione.
+    
+    \item \textbf{Latenza e blocchi della UI}: L'attesa di scaricare i dati dal server ad ogni ricaricamento degraderebbe l'esperienza
+    utente. Il buffer locale espone immediatamente i dati recenti mentre il layer di rete si sincronizza in background.
+    
+    \item \textbf{Esaurimento delle quote API (Flood)}: Fasi di riconnessione o invii massivi potrebbero far scattare i blocchi anti-spam
+    di Appwrite (Error 429). Il sistema scagliona le richieste tramite controllo di flusso.
+\end{itemize}
+Questo garantisce che la logica di business sia separata dal trasporto, permettendo la gestione in modo robusto delle interruzioni.
+
+Questo garantisce che la logica di business sia separata dal trasporto, permettendo la gestione in modo robusto delle
+interruzioni di rete e dei limiti infrastrutturali.
+
+\subsection{Cache dei messaggi}
+
+È quindi presente un modulo, \texttt{RecentMessageCache}, il quale è responsabile della gestione di un buffer di memoria
+volatile che conserva i messaggi transitati più di recente.
+La sua funzione principale è ridurre la latenza d'accesso ai dati recenti e fornire una base per le operazioni quando
+è necessario recuperare un'eventuale perdita di messaggi.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.4\textwidth]{recentmessagecache.png}
+\caption{Struttura di \texttt{RecentMessageCache}}
+\end{figure}
+
+\newpage
+
+\subsubsection{Algoritmo di \textit{Eviction}}
+
+La cache è implementata seguendo una politica \gls{LRU} semplificata. Per massimizzare le prestazioni, vengono utilizzate due strutture dati coordinate.
+La scelta di utilizzare l'accoppiata Hash+Queue rispetto alla classe nativa \texttt{QCache} è dettata da motivazioni di ownership e controllo: 
+\texttt{QCache} è progettata per gestire puntatori a oggetti e applicare sfratti basati sul "costo" di memoria. Lavorando invece con oggetti 
+\texttt{model::Message} estremamente leggeri e condivisi implicitamente da Qt (Implicit Sharing), una combinazione esplicita risulta più efficiente
+e permette un controllo rigido e prevedibile dell'ordinamento strettamente cronologico.
+Le strutture utilizzate sono:
+
+\begin{enumerate}
+    \item\texttt{QHash<QString, model::Message>}\footnote{\url{https://doc.qt.io/qt-6/qhash.html}}: HashMap che
+        garantisce la ricerca con complessità $O(1)$ per l'estrazione rapida di un singolo messaggio tramite il suo ID.
+
+    \item\texttt{QQueue<QString>}\footnote{\url{https://doc.qt.io/qt-6/qqueue.html}}: mantiene l'ordine cronologico dei
+        messaggi (\gls{FIFO}).
+\end{enumerate}
+
+Quando la cache raggiunge la capacità massima assegnata (\texttt{m\_capacity}), l'elemento più vecchio viene rimosso
+(\textit{evicted}) per fare spazio ai nuovi dati, tenendo traccia degli effettivi ultimi $n$ messaggi.
+
+\subsubsection{Integrità dei dati e supporto alla resilienza}
+
+L'integrazione con \texttt{model::Message} permette alla cache di validare ogni inserimento tramite il metodo
+\texttt{msg.isValid()}. Questo assicura che solo dati strutturalmente corretti vengano memorizzati.
+
+Il metodo di gestione \texttt{getMessagesSince(QString messageId)} analizza la coda cronologica e restituisce tutti i
+messaggi successiv ad un determinato ID. Questa funzione è vitale per gestire brevi interruzioni di rete, permettendo
+al frontend di ricostruire la cronologia mancante, senza dover consultare il server remoto, in quanto possibilmente
+già ricevuti e presenti nel buffer parziale.
+
+\subsection{Gestione della recovery}\label{sec:recovery}
+
+Il modulo \texttt{RecoveryManager} agisce come orchestratore per il riallineamento dello stato del client con il backend
+Appwrite. Il suo scopo è colmare lacune informative causate da instabilità della rete o avvii a freddo dell'applicazione.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.4\textwidth]{recoverymanager.png}
+\caption{Struttura di \texttt{RecoveryManager}}
+\end{figure}
+
+\newpage
+
+\subsubsection{Strategie di recupero e \textit{Gap Detection}}
+
+Il modulo gestisce diverse modalità operative per garantire l'integrità dei dati; di seguito una breve descrizione:
+
+\begin{enumerate}
+    \item\textbf{Recupero delta (\texttt{requestFrom})}: Identifica i messaggi mancanti rispetto all'ultimo ID noto.
+        Se la cache non contiene l'intera sequenza, il manager effettua una query asincrona direttamente al backend 
+        Appwrite utilizzando i filtri temporali estratti dai metadati del messaggio.
+
+    \item\textbf{Sincronizzazione globale (\texttt{requestFullResync})}: Esegue una query per ottenere gli ultimi $n$
+        messaggi dalla collezione, garantendo un punto di recovery certo, pensato per scenari di desincronizzazione
+        critica.
+
+\end{enumerate}
+
+\subsubsection{Pipeline di trasformazione asincrona}
+
+Il manager funge da ponte tra il trasporto JSON ed il modello tipizzato. Quando l'\gls{SDK} riceve dati dal server, il
+\texttt{RecoveryManager} esegue il parsing tramite \texttt{model::Message::fromJson()}, valida i messaggi e popola
+la cache, prima di emettere il segnale \texttt{messagesRecovered} verso il frontend.
+
+\subsection{Controllo del \gls{Throughput}}
+
+La prevenzione del superamento delle quote API imposte dal server e la protezione dell'infrastruttura dai carichi
+eccessivi è di vitale importanza per qualsiasi servizio che voglia offrire un'esperienza di utilizzo decente.
+Per fare ciò è stato implementato un modulo di limitazione del traffico, basato sull'algoritmo 
+\textit{Token Bucket} \cite{token_bucket}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.3\textwidth]{ratelimiter.png}
+\caption{Struttura di \texttt{RateLimiter}}
+\end{figure}
+
+\subsubsection{Token Bucket \cite{token_bucket}} 
+
+Il sistema gestisce un "secchio" di token, che definisce la capacità massima di richieste simultanee, anche detta 
+\textit{burst size}. Un token viene consumato ad ogni richiesta e questi vengono rigenerati ad un ritmo costante,
+il quale è presente come stato \texttt{m\_refillRate}. Se il numero di token disponibili è zero, la richiesta viene
+negata, quindi effettivamente messa in attesa finché, una volta che i token sono di nuovo disponibili, potrà riprovare;
+tutto ciò viene svolto tramite il metodo \texttt{allowRequest()}.
+
+\subsubsection{Ottimizzazione delle risorse}
+
+L'implementazione adotta una strategia di refill passivo, detta \textit{lazy refill}: invece di utilizzare timer attivi
+che graverebbero sulla CPU, il calcolo della rigenerazione avviene \textit{on-demand} ogni volta che viene richiesto un
+accesso, misurando i millisecondi trascorsi dall'ultima operazione riuscita. Questo approccio garantisce un controllo
+preciso del traffico con un overhead computazionale trascurabile.
+
+\section{Gestione degli errori}
+
+Per gestire in modo uniforme i fallimenti all'interno del sistema, il progetto introduce un modello di errore
+centralizzato definito nel file \texttt{errormodel.h}. 
+Questo modulo consente di rappresentare e propagare gli errori in maniera coerente tra frontend, proxy e backend.
+
+L'obiettivo è evitare l'uso di codici di errore impliciti o messaggi non strutturati, fornendo invece una
+rappresentazione tipizzata e standardizzata delle condizioni di errore.
+
+\subsection{Classificazione degli errori}
+
+Gli errori sono classificati tramite l'enumerazione \texttt{ErrorCode}, che definisce un insieme finito di categorie:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Codice}            & \textbf{Descrizione}                     \\ \midrule
+\textbf{None}              & assenza di errore                        \\
+\textbf{AuthError}         & errore di autenticazione                 \\
+\textbf{NetworkError}      & problemi di rete                         \\
+\textbf{ParseError}        & errori durante il parsing dei dati       \\
+\textbf{ProtocolError}     & comportamento non conforme al protocollo \\
+\textbf{PermissionError}   & accesso negato                           \\
+\textbf{TimeoutError}      & timeout della richiesta                  \\
+\textbf{RateLimitExceeded} & superamento dei limiti di richiesta      \\
+\textbf{Unknown}           & errore non classificato                  \\
+\bottomrule
+\end{tabular}
+\caption{Codici di errore}
+\end{table}
+
+Questa classificazione permette di distinguere rapidamente la natura del problema e di gestirlo in modo appropriato nei
+diversi livelli dell'applicazione.
+
+\subsection{Struttura dell'errore}
+
+La struttura \texttt{AppcommError} rappresenta un errore completo all'interno del sistema. Essa include un codice di
+errore (\texttt{ErrorCode}), un messaggio descrittivo leggibile (\texttt{message}) ed un codice di stato \gls{HTTP} opzionale
+(\texttt{httpStatus}), utile quando l'errore deriva da operazioni \gls{REST}.
+
+Questa struttura consente di trasportare sia informazioni tecniche sia informazioni utili per il debug o la 
+visualizzazione lato utente.
+
+\subsection{Rilevazione e formattazione}
+
+Il metodo \texttt{hasError()} permette di verificare rapidamente se l'oggetto rappresenta un errore, controllando che
+il codice sia diverso da \texttt{ErrorCode::None}. Questo evita l'uso di controlli sparsi o condizioni implicite.
+
+La funzione \texttt{errorCodeToString()} fornisce una rappresentazione testuale del codice di errore, utile per logging
+e debugging.
+
+Il metodo \texttt{toString()} restituisce invece una stringa formattata che include il tipo di errore, il codice \gls{HTTP} 
+associato ed il messaggio descrittivo.
+
+Ad esempio, un errore può essere rappresentato come:
+
+\begin{minted}{text}
+Error[NetworkError] (500): Internal server error
+\end{minted}
+
+\subsection{Integrazione nel sistema}
+
+Il modello di errore è utilizzato trasversalmente nei diversi componenti del sistema;
+Mentre l'\gls{SDK} segnala errori di rete o autenticazione, il parsing dei dati invece utilizza \texttt{ParseError} in caso
+di payload non validi, il proxy può generare errori di protocollo o permessi ed i moduli applicativi possono reagire in
+base al tipo di errore ricevuto.
+
+L'uso di un modello centralizzato consente di evitare ambiguità e di uniformare la gestione degli errori in tutto il sistema,
+migliorando la robustezza e la leggibilità del codice.
+
+\subsection{Scelte progettuali}
+
+L'introduzione di un tipo dedicato per gli errori evita la propagazione di stringhe non strutturate o codici numerici non 
+documentati. Questo approccio rende esplicito il significato degli errori e facilita l'estensione futura del sistema con nuove categorie o metadati aggiuntivi.
+
+Inoltre, la separazione tra codice di errore, messaggio e stato \gls{HTTP} permette di gestire in modo flessibile sia errori 
+interni sia errori derivanti da servizi esterni.
+
+\section{Gestione dello stato del client}
+
+Per gestire il comportamento dinamico del client durante l'esecuzione, il progetto introduce un modello di stato definito nel 
+file \texttt{state.h}. Questo modulo rappresenta lo stato runtime del client, includendo informazioni sulla connessione, sulla 
+sessione e sul contesto di comunicazione attivo.
+
+L'obiettivo è fornire una rappresentazione centralizzata dello stato del client, che possa essere condivisa tra i diversi componenti
+e utilizzata per sincronizzare logica applicativa e interfaccia utente.
+
+\subsection{Struttura dello stato}
+
+Lo stato del client è rappresentato dalla struttura \texttt{ClientState}, che contiene le informazioni necessarie per descrivere il
+contesto corrente della comunicazione. 
+In particolare, essa include:
+
+\begin{itemize}
+    \item \textbf{lastReceivedSequence}: numero di sequenza dell'ultimo messaggio ricevuto, utilizzato per garantire l'ordine dei
+    messaggi e rilevare eventuali gap nella comunicazione, impostato di default a -1 per indicare che nessun messaggio è stato 
+    ancora ricevuto;
+    
+    \item \textbf{lastReceivedMessageId}: identificatore dell'ultimo messaggio ricevuto, utile per operazioni di recovery o 
+    deduplicazione;
+    
+    \item \textbf{activeChannelId}: identificatore del canale attualmente attivo, che definisce il contesto della comunicazione;
+    
+    \item \textbf{authenticated}: flag che indica se il client ha completato con successo il processo di autenticazione, 
+    impostato di default a false per indicare che l'utente non è autenticato.
+\end{itemize}
+
+Questa struttura rappresenta una fotografia dello stato corrente del client e viene aggiornata dinamicamente durante l'esecuzione.
+
+\subsection{Gestione dell'ordinamento e recovery}
+
+I campi \texttt{lastReceivedSequence} e \texttt{lastReceivedMessageId} sono fondamentali per garantire la correttezza del flusso
+dei messaggi.
+Il numero di sequenza permette di verificare l'ordine dei messaggi ricevuti, individuare eventuali messaggi mancanti (gap) e di
+supportare meccanismi di recovery basati su sequenze.
+
+L'identificatore del messaggio, invece, può essere utilizzato per prevenire duplicazioni e per mantenere coerenza tra client e backend.
+
+\subsection{Contesto di comunicazione}
+
+Il campo \texttt{activeChannelId} definisce il contesto corrente in cui il client opera. Questo consente di filtrare i messaggi
+rilevanti e di limitare le operazioni al canale attivo.
+
+Separare esplicitamente il canale attivo evita ambiguità e semplifica la gestione della comunicazione in presenza di più canali.
+
+\subsection{Stato di autenticazione}
+
+Il flag \texttt{authenticated} rappresenta lo stato di autenticazione del client. Questo valore è utilizzato per abilitare o
+disabilitare operazioni che richiedono una sessione valida.
+
+In particolare, consente di impedire l'invio o la ricezione di messaggi quando il client non è autenticato, garantendo coerenza
+con le politiche di sicurezza del sistema.
+
+\subsection{Stato della connessione}
+
+Lo stato della connessione è rappresentato dall'enumerazione \texttt{ConnectionState}, che descrive il ciclo di vita della
+connessione tra client e backend.
+
+Le possibili condizioni includono: (\ref{table:connection-states})
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Codice}                & \textbf{Descrizione}                             \\ \midrule
+    \textbf{Disconnected}      & assenza di errore                                \\
+    \textbf{Connecting}        & errore di autenticazione                         \\
+    \textbf{Connected}         & connessione attiva e funzionante;                \\
+    \textbf{Reconnecting}      & tentativo di ripristino dopo una disconnessione; \\
+    \textbf{Disconnecting}     & chiusura della connessione in corso;             \\
+    \textbf{Failed}   & errore durante il tentativo di connessione.               \\
+\bottomrule
+\end{tabular}
+\caption{Stati di connessione}\label{table:connection-states}
+\end{table}
+
+Questa rappresentazione esplicita permette di gestire in modo chiaro il comportamento del sistema in funzione dello stato della rete.
+
+\subsection{Integrazione con gli altri componenti}
+
+Il modello di stato è utilizzato da diversi moduli del sistema:
+
+\begin{itemize}
+    \item il \texttt{MessageProcessor} utilizza \texttt{lastReceivedSequence} per verificare duplicati e gap;
+    \item il \texttt{RecoveryManager} sfrutta le informazioni di stato per riallineare il client con il backend;
+    \item i componenti di rete aggiornano lo stato della connessione;
+    \item l'interfaccia utente può reagire ai cambiamenti di stato per abilitare o disabilitare funzionalità.
+\end{itemize}
+
+Questo approccio consente di mantenere una visione coerente e sincronizzata dello stato del sistema, migliorando la robustezza e la
+prevedibilità del comportamento del client.
+
+\subsection{Scelte progettuali}
+
+La separazione tra stato del client e logica operativa consente di ridurre l'accoppiamento tra i componenti e di semplificare la
+gestione della complessità.
+
+Centralizzare lo stato in una struttura dedicata permette inoltre di facilitare il debugging, rendere esplicite le dipendenze tra
+componenti e supportare estensioni future del sistema senza modifiche invasive.
+
+\section{Elaborazione dei messaggi in ingresso}
+
+Per gestire in modo controllato i messaggi ricevuti dal backend, il client introduce il componente \texttt{MessageProcessor}.
+Questa classe ha il compito di analizzare i messaggi in ingresso prima che vengano propagati alla façade Client dell'applicazione.
+
+L'obiettivo è garantire che tutti i messaggi validi, coerenti con il contesto corrente e non duplicati vengano accettati dal client.
+In questo modo, il componente contribuisce a mantenere la correttezza del flusso di comunicazione e a supportare i meccanismi di 
+recovery (vedi \ref{sec:recovery}).
+
+\subsection{Ruolo del componente}
+
+La classe \texttt{MessageProcessor} opera come filtro logico sui messaggi ricevuti. In particolare, essa verifica la validità 
+strutturale del messaggio, la coerenza con il canale attualmente attivo, l'assenza di duplicati e la presenza di eventuali gap nella
+sequenza dei messaggi.
+
+Solo i messaggi che superano tutti questi controlli vengono restituiti come validi al chiamante. La scelta di utilizzare un'unica 
+collezione globale \texttt{messages} sul backend e di delegare il filtraggio per canale (in parte alle query API e in parte al processore
+locale) presenta un vantaggio architetturale fondamentale: evita la proliferazione dinamica di collezioni su Appwrite (operazione
+complessa, lenta e soggetta a limiti di quota severi), garantendo uno schema del database fisso e scalabile.
+L'eventuale svantaggio è che il socket in tempo reale potrebbe ricevere pacchetti indesiderati se la stringa di sottoscrizione non è
+sufficientemente granulare; tuttavia questo viene compensato efficacemente proprio dal controllo rigoroso implementato a questo livello
+del client, che isola l'interfaccia utente da flussi di dati estranei.
+
+\subsection{Dipendenza dallo stato del client}
+
+Il processore mantiene un riferimento a un oggetto \texttt{ClientState}, da cui ricava il contesto runtime necessario per prendere 
+decisioni sui messaggi ricevuti. In particolare, vengono utilizzati:
+
+\begin{itemize}
+    \item \texttt{activeChannelId}, per verificare che il messaggio appartenga al canale attualmente selezionato;
+    \item \texttt{lastReceivedSequence}, per controllare l'ordine dei messaggi e individuare duplicati o gap.
+\end{itemize}
+
+Questo rende \texttt{MessageProcessor} strettamente integrato con il modello di stato del client, senza però incorporare direttamente
+la logica di connessione o di recovery.
+
+\subsection{Metodo \texttt{processIncoming()}}
+
+Il metodo principale della classe è \texttt{processIncoming()}, che riceve un oggetto \texttt{model::Message} e restituisce un valore di
+tipo \texttt{std::optional<model::Message>}.
+
+Questa scelta progettuale permette di esprimere in modo esplicito due possibili esiti:
+\begin{itemize}
+    \item presenza di un messaggio valido, che può essere elaborato dai moduli successivi;
+    \item assenza di risultato, nel caso in cui il messaggio venga scartato.
+\end{itemize}
+
+L'elaborazione avviene verificando la validità del messaggio tramite \texttt{message.isValid()}, successivamente controllando il canale
+attivo, scartando i messaggi che non appartengono al contesto corrente, poi rilevando i duplicati tramite \texttt{isDuplicate()}, dopo di
+che rilevando eventuali gap tramite \texttt{hasGap()} e infine aggiornando lo stato del client con l'ultima sequenza ricevuta.
+
+Se uno dei controlli fallisce, il metodo restituisce \texttt{std::nullopt}. In caso contrario, restituisce il messaggio originale.
+
+\subsection{Deduplicazione}
+
+La deduplicazione è affidata al metodo \texttt{isDuplicate()}, che confronta il numero di sequenza del messaggio in ingresso con il valore di
+\texttt{lastReceivedSequence} memorizzato nello stato del client.
+
+Un messaggio viene considerato duplicato se la sua sequenza è minore o uguale all'ultima sequenza già accettata. Questa scelta impedisce che 
+messaggi ricevuti più volte vengano propagati nuovamente all'applicazione.
+
+\subsection{Rilevazione di gap}
+
+Il metodo \texttt{hasGap()} verifica se esiste un salto nella sequenza dei messaggi ricevuti. Se non è ancora stato ricevuto alcun messaggio, 
+cioè se \texttt{lastReceivedSequence} è inizializzato a \texttt{-1}, il metodo restituisce \texttt{false}.
+
+Negli altri casi, viene rilevato un gap quando la sequenza del nuovo messaggio è maggiore di \texttt{lastReceivedSequence + 1}. Questo segnala 
+la possibile perdita di uno o più messaggi e costituisce il punto di aggancio per i meccanismi di recovery.
+
+%Scrivere parte della recovery
+
+\subsection{Aggiornamento dello stato}
+
+Quando un messaggio viene accettato, il processore aggiorna il campo \texttt{lastReceivedSequence} nello stato del client. In questo modo, i 
+messaggi successivi possono essere confrontati rispetto all'ultima sequenza valida già elaborata.
+
+Questo aggiornamento centralizzato garantisce coerenza tra il flusso dei messaggi ricevuti e lo stato runtime mantenuto dal client.
+
+\subsection{Reset del contesto}
+
+Il metodo \texttt{reset()} consente di reinizializzare il processore rispetto a un nuovo canale attivo. In particolare, esso:
+
+\begin{itemize}
+    \item aggiorna il valore di \texttt{activeChannelId};
+    \item reimposta \texttt{lastReceivedSequence} a \texttt{-1}.
+\end{itemize}
+
+Questa operazione è necessaria quando il client cambia canale, poiché la sequenza dei messaggi deve essere considerata nuovamente a partire da
+uno stato iniziale.
+
+\subsection{Scelte progettuali}
+
+La classe \texttt{MessageProcessor} separa la logica di validazione del flusso dei messaggi dalla logica di trasporto e dalla logica applicativa.
+Questo riduce l'accoppiamento tra i componenti e rende più semplice testare in modo isolato i casi di duplicazione, disallineamento e filtro per canale.
+
+L'uso combinato di \texttt{ClientState}, \texttt{model::Message} e \texttt{std::optional} rende inoltre il comportamento del componente esplicito, 
+prevedibile e facilmente estendibile con future strategie di recovery.
+
+\section{Comunicazione in tempo reale}
+
+Per supportare la ricezione immediata di eventi (ovvero le notifiche generate istantaneamente dal backend Appwrite quando un nuovo messaggio viene 
+salvato nel database), il sistema integra un modulo dedicato alla comunicazione \gls{WebSocket}. 
+La classe \texttt{Realtime} fornisce un'interfaccia semplificata per sottoscrivere i canali di eventi e reagire senza latenze artificiali.
+
+\subsection{Architettura del modulo Realtime}
+
+Il modulo \texttt{Realtime} si basa su \texttt{QWebSocket}, la libreria Qt per la gestione di connessioni \gls{WebSocket}. 
+Questa scelta permette di mantenere la compatibilità con WebAssembly e di integrarsi naturalmente con il sistema di 
+segnali e slot già utilizzato nel resto della libreria.
+
+La classe si occupa di stabilire una connessione \gls{WebSocket} con l'endpoint Appwrite, di inviare la richiesta di 
+sottoscrizione ai canali desiderati e di interpretare i messaggi JSON ricevuti dal server.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.4\textwidth]{realtime.png}
+\caption{Struttura di \texttt{Realtime}}
+\end{figure}
+
+\newpage{}
+
+\subsection{Sottoscrizione ai canali}
+
+Appwrite organizza gli eventi secondo un modello gerarchico. 
+\textit{Nota Terminologica:} Per evitare ambiguità, è importante distinguere i "Canali Logici" (le stanze di chat identificate dal 
+\texttt{channelId} nel nostro dominio) dai "Canali Realtime" (o \textit{Topics}) utilizzati dall'API di Appwrite per il multiplexing
+degli eventi.
+
+Il formato dei canali realtime di Appwrite segue la convenzione:
+\begin{minted}{text}
+databases.{databaseId}.collections.{collectionId}.documents.{documentId}
+\end{minted}
+
+È possibile sottoscriversi a più canali contemporaneamente, permettendo al client di ricevere notifiche da diverse
+risorse con una singola connessione \gls{WebSocket}.
+
+Il metodo \texttt{connect()} accetta una lista di canali e costruisce automaticamente l'URL \gls{WebSocket} a partire dalla
+configurazione fornita, sostituendo il protocollo \gls{HTTP} con WS (o \gls{HTTPS} con WSS per connessioni sicure).
+
+\subsection{Gestione degli eventi}
+
+Quando il backend Appwrite rileva un cambiamento in una risorsa sottoscritta, invia un messaggio JSON attraverso il
+\gls{WebSocket}. Il modulo \texttt{Realtime} intercetta questi messaggi tramite lo slot \texttt{onTextMessageReceived()},
+esegue il parsing JSON e propaga l'evento tramite il segnale \texttt{eventReceived()}.
+
+La struttura degli eventi include informazioni sul tipo di cambiamento (creazione, modifica, cancellazione), i canali
+interessati, il timestamp dell'evento e il payload contenente i dati aggiornati della risorsa.
+
+Questo approccio permette ai moduli superiori di reagire immediatamente ai cambiamenti senza dover implementare
+meccanismi di polling, riducendo la latenza e il carico sul server.
+
+\subsection{Gestione della connessione}
+
+Il modulo emette segnali distinti per ogni fase del ciclo di vita della connessione. Il segnale \texttt{connected()}
+viene emesso quando la connessione \gls{WebSocket} è stabilita con successo, mentre \texttt{disconnected()} segnala la
+chiusura della connessione.
+
+In caso di errore durante la connessione o la comunicazione, viene emesso il segnale \texttt{errorOccurred()}
+, contenente una descrizione dell'errore utile per il debug o per implementare logiche di riconnessione.
+
+\subsection{Integrazione con il sistema}
+
+Il modulo \texttt{Realtime} opera in modo indipendente dal resto della libreria, comunicando esclusivamente attraverso
+segnali Qt. Questo disaccoppiamento permette di sostituire facilmente il meccanismo di comunicazione in tempo reale
+o di integrare strategie di fallback basate su polling.
+
+Nel contesto del client, il modulo viene utilizzato per ricevere notifiche immediate di nuovi messaggi nei canali
+attivi, evitando la necessità di interrogare periodicamente il server per verificare la presenza di aggiornamenti.
+
+\section{Pulizia automatica dei dati}
+
+Per garantire l'igiene del database e rispettare le politiche di retention dei dati, il sistema server integra un
+modulo di garbage collection automatizzato. La classe \texttt{GarbageCollector} si occupa di eliminare messaggi
+obsoleti in base a politiche di \gls{TTL} configurabili.
+
+\subsection{Motivazione e contesto}
+
+Nel corso del tempo, il database di messaggi può accumulare un volume significativo di dati storici che non sono
+più rilevanti per le operazioni correnti. Mantenere indefinitamente tutti i messaggi comporta costi di storage crescenti
+e può degradare le prestazioni delle query.
+
+Il \texttt{GarbageCollector} risolve questo problema implementando una strategia di eliminazione basata su tempo,
+rimuovendo automaticamente i messaggi che superano una soglia di età definita dalla policy di persistenza.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.4\textwidth]{garbagecollector.png}
+\caption{Struttura di \texttt{GarbageCollector}}
+\end{figure}
+
+\subsection{Policy di persistenza}
+
+Il modulo opera sulla base di una \texttt{PersistencePolicy}, che specifica il numero di giorni oltre i quali un
+messaggio viene considerato obsoleto. Se il campo \texttt{messageTTL} della policy è impostato a zero o a un valore
+negativo, il garbage collector non esegue alcuna operazione.
+
+Questa flessibilità permette di adattare il comportamento del sistema a diverse esigenze operative, da ambienti di
+sviluppo dove si desidera conservare tutti i dati, a sistemi di produzione con vincoli di storage o requisiti di
+compliance.
+
+\subsection{Algoritmo di pulizia}
+
+L'operazione di pulizia procede in modo iterativo per evitare di sovraccaricare il server con richieste massive.
+Il processo si articola nelle seguenti fasi:
+
+\begin{enumerate}
+    \item Calcolo della data di cutoff sottraendo il TTL dal timestamp corrente;
+    \item Query al database per recuperare fino a 100 messaggi antecedenti la data di cutoff;
+    \item Accodamento degli identificatori dei documenti da eliminare;
+    \item Eliminazione sequenziale di ogni documento tramite l'\gls{SDK} server;
+    \item Ripetizione del processo finché non vengono più trovati messaggi obsoleti.
+\end{enumerate}
+
+Questo approccio batch garantisce che anche in presenza di volumi elevati di dati da eliminare, il sistema possa
+completare l'operazione senza timeout o esaurimento delle risorse.
+
+\subsection{Gestione asincrona}
+
+Il \texttt{GarbageCollector} opera in modo completamente asincrono, utilizzando segnali Qt per comunicare l'avanzamento
+e il completamento dell'operazione. Durante l'esecuzione, ogni eliminazione incrementa un contatore interno che tiene
+traccia del numero totale di messaggi rimossi.
+
+Al termine dell'operazione, viene emesso il segnale \texttt{cleanupComplete()} con il conteggio finale dei messaggi
+eliminati. In caso di errore durante la query o l'eliminazione, viene invece emesso \texttt{cleanupError()} con una
+descrizione dell'errore.
+
+\subsection{Privilegi e sicurezza}
+
+Il garbage collector richiede privilegi amministrativi per eliminare documenti dal database. Per questo motivo, utilizza
+l'istanza \texttt{appwritesdk::Server} che si autentica tramite API key, garantendo che solo il backend possa invocare
+operazioni di pulizia.
+
+Questa separazione dei ruoli protegge l'integrità dei dati, impedendo ai client di eliminare arbitrariamente messaggi
+dal database.
+
+\subsection{Integrazione nel ciclo di vita del server}
+
+Il garbage collector può essere invocato periodicamente dal server tramite timer o in risposta a eventi specifici, come
+il superamento di soglie di storage o in finestre di manutenzione programmate.
+
+La natura asincrona del modulo permette di eseguire la pulizia senza bloccare altre operazioni del server, mantenendo la
+reattività del sistema anche durante la rimozione di grandi quantità di dati.
+
+\newpage{}
+
+\section{API per Server}
+
+Il modulo \texttt{AppcommServer} è pensato per operare come orchestratore centrale per le operazioni amministrative del
+sistema. L'interfaccia pubblica è stata mantenuta minimale per nascondere la complessità degli stati interni, delegata
+ad una classe \texttt{Private}, secondo il pattern PIMPL\footnote{\url{https://en.cppreference.com/w/cpp/language/pimpl.html}}.
+
+Il flusso di operazioni del server si divide in tre fasi distinte, le quali sono coordinate da segnali e slot per gestire
+la natura asincrona delle risposte di rete.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.3\textwidth]{serverphases.png}
+\caption{Lifecycle di \texttt{AppcommServer}}
+\end{figure}
+
+Ogni metodo pubblico valida internamente lo stato dell'istanza; ad esempio le operazioni sui canali emettono un errore
+immediato nel caso il server non abbia completato con successo la fase di bootstrap.
+
+\subsection{Logica di Bootstrap}
+
+L'inizializzazione dell'infrastruttura rappresenta la fase più critica del modulo \texttt{AppcommServer}.
+A differenza di un database standard, il bootstrap per Appwrite richiede la creazione sequenziale di database, collezioni
+e attributi.
+Questa è quindi implementata come una catena di chiamate asincrone sequenziali, la quale, dato che Appwrite richiede che ogni
+risorsa sia dapprima creata per potervi aggiungere delle proprietà, viene gestita con una serie di passaggi obbligati:
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{proxy_sequence_bootstrap.png}
+\caption{UML Sequence, processo di Bootstrap}
+\label{fig:bootstrap_sequence}
+\end{figure}
+
+\begin{enumerate}
+    \item Viene inviata la richiesta iniziale per la creazione del database\footnote{Per istanze non-premium il limite è di
+    massimo un database}; nel caso il database già esista (codice errore \texttt{409}), il sistema lo rileva e prosegue 
+    automaticamente;
+    
+    \item Vengono poi create le collezioni per i messaggi, i membri ed i canali. (Sul backend, la nozione di "canale" viene
+    tradotta fisicamente in un contenitore di documenti all'interno della collezione \texttt{channels});
+    
+    \item Il server richiede la creazione della struttura (gli Attributes) all'interno di queste collezioni, uno alla volta,
+    attendendo la conferma da parte del server;
+    
+    \item Per ottimizzare la performance della recovery, vengono creati anche degli indici (Indexes) specifici, come ad esempio
+    quelli sul timestamp.
+\end{enumerate}
+
+Il segnale \texttt{initialized()} viene emesso solo al termine di questa sequenza, garantendo l'integrità dell'infrastruttura
+e la prontezza ad accogliere i dati, senza errori di schema.
+
+\subsection{Gestione dei canali e della membership}
+
+Questo componente funge anche da autorità centrale per la gestione degli spazi di comunicazione. Questa responsabilità
+è suddivisa tra la creazione fisica di risorse e la gestione di relazioni tra utenti.
+
+\subsubsection{Creazione e permessi}
+
+All'invocazione del metodo \texttt{createChannel()}, il server non si limita solamente alla creazione di un documento 
+(che andrà a popolare la collezione \texttt{channels} con i metadati di base come \texttt{channelId}, \texttt{name} e \texttt{createdAt}),
+bensì definisce delle regole d'accesso affinché i client possano interagire con il canale in modo sicuro.
+Questi permessi vengono configurati in modalità "broadcast", permettendo la lettura a tutti i membri autorizzati.
+
+\subsubsection{Gestione dei membri}
+
+Attraverso il modulo \texttt{MembershipService}, il server è in grado di gestire l'aggiunta e la rimozione degli utenti dai
+canali. L'operazione \texttt{addMember()} associa un utente, tramite il suo identificativo, ad un canale, sempre utilizzando
+l'ID di quest'ultimo, all'interno di una collezione dedicata. Ciò permette al sistema di filtrare correttamente i messaggi
+in tempo reale per gli utenti attualmente connessi.
+
+\subsubsection{Pulizia e manutenzione}
+
+Il server implementa altresì logiche di eliminazione a cascata: la rimozione di un canale comporta anche l'epurazione di tutti
+i dati associati, quindi i messaggi e i riferimenti di membership. Ciò garantisce l'integrità del database ed il rispetto
+delle politiche di persistenza.
+
+\subsection{Provisioning}
+
+Il bootstrap, quindi il provisioning delle strutture dati necessarie, rappresenta il cuore del Proof of Concept, validando la
+capacità della libreria di gestire sequenze complesse di inizializzazione.
+
+\noindent Viene eseguita dapprima una verifica dello stato remoto, dove il sistema verifica la presenza dell'infrastruttura, seguita,
+solamente se necessario e solo per i componenti necessari, la creazione sequenziale ed infine viene notificata la prontezza,
+sbloccando le funzionalità operative del \texttt{BackendService}.
+
+\section{API per Client}
+
+\subsection{Descrizione generale}
+
+La classe \texttt{AppcommClient} rappresenta la \textit{façade} di alto livello del lato client del sistema appcomm.  
+Essa fornisce un'interfaccia pubblica semplificata per i layer di presentazione (ad esempio QML o Qt Widgets, che nel nostro caso specifico è il contenuto di appfrontend), nascondendo la complessità dei componenti sottostanti tramite una classe \texttt{Private} secondo il pattern PIMPL\footnote{\url{https://en.cppreference.com/w/cpp/language/pimpl.html}}, come fatto per l'API dedicata al Server.
+
+\vspace{2cm}
+\noindent La classe si occupa di coordinare l'autenticazione dell'utente, la gestione del canale attivo, il caricamento iniziale dei
+messaggi dal database, la ricezione dei messaggi in tempo reale, la gestione del recupero di messaggi mancanti, e l'esposizione dello
+stato di connessione alla UI.
+
+\noindent L’implementazione segue un approccio a composizione, delegando responsabilità specifiche a componenti interni specializzati.
+
+\subsection{Componenti interni}
+
+\texttt{AppcommClient} utilizza i seguenti componenti:
+
+\begin{itemize}
+    \item \textbf{Client (Appwrite SDK)}: gestione delle richieste HTTP verso il backend
+    \item \textbf{Realtime}: gestione della connessione WebSocket e ricezione eventi
+    \item \textbf{MessageProcessor}: validazione, deduplicazione e rilevamento dei gap nei messaggi
+    \item \textbf{RecoveryManager}: recupero dei messaggi mancanti
+    \item \textbf{RecentMessageCache}: cache locale dei messaggi recenti
+    \item \textbf{RateLimiter}: limitazione delle richieste in uscita
+\end{itemize}
+
+\subsection{Flusso operativo}
+
+Il comportamento del client segue il seguente flusso:
+
+%\begin{figure}[h]
+%\centering
+%\includegraphics[width=0.8\textwidth]{client_operational_flow.png} % Placeholder per il diagramma
+%\caption{Sequence Diagram UML inizializzazione e sincronizzazione Client.}
+%\label{fig:client_operational_flow}
+%\end{figure}
+\todo{Client Sequence Diagram}
+
+\begin{enumerate}
+    \item Creazione dell’istanza con una configurazione valida
+    \item Autenticazione dell’utente (guest o email/password)
+    \item Recupero della membership dell’utente loggato con email dal database
+    \item Identificazione del canale associato all’utente
+    \item Caricamento dei messaggi esistenti ordinati per \texttt{sequenceNumber}
+    \item Connessione al sistema realtime per ricevere nuovi eventi
+    \item Invio e ricezione dei messaggi
+\end{enumerate}
+
+\subsection{Gestione dello stato}
+
+La classe mantiene due principali tipi di stato:
+
+\textbf{ConnectionState}: rappresenta lo stato della connessione realtime
+\begin{minted}{cpp}
+enum class ConnectionState {
+    Disconnected = 0, ///< No active connection
+    Disconnecting,    ///< Connection is being closed
+    Connected,        ///< Connection is established and active
+    Connecting,       ///< Connection attempt in progress
+    Reconnecting,     ///< Attempting to restore a lost connection
+    Failed            ///< Connection attempt failed
+};
+\end{minted}
+
+\textbf{ClientState}: contiene informazioni operative, tra cui:
+\begin{minted}{cpp}
+struct ClientState {
+    qint64 lastReceivedSequence = -1; ///< Sequence last message received
+    QString lastReceivedMessageId;    ///< ID of the last message received 
+    QString activeChannelId;          ///< Id of the currently active channel
+    bool authenticated = false;       ///< Whether client is authenticated
+};
+\end{minted}
+
+\subsection{Gestione dell’autenticazione}
+
+Il client supporta due modalità di autenticazione, la sessione anonima oppure la sessione autenticata con email e password.
+
+Per quanto riguarda la sessione anonima, di default da Appwrite i guest non hanno i permessi di read o write, quindi non potranno interagire con il client. Invece chi esegue il login direttamente con l'email e la password, avrà già il canale associato a lui.
+
+Dopo una risposta valida dal server; vengono salvate le informazioni di sessione, lo stato di autenticazione viene aggiornato
+e viene avviato automaticamente il caricamento della membership.
+
+\subsection{Gestione del canale}
+
+Il client mantiene un singolo canale attivo per volta.
+
+Quando viene chiamato \texttt{joinChannel()} il canale viene validato e salvato, lo stato del \texttt{MessageProcessor} viene
+resettato, viene emesso il segnale \texttt{joinedChannel} ed infine viene avviato il caricamento dei messaggi dal database.
+
+Quando viene chiamato \texttt{leaveChannel()} il canale attivo viene rimosso, viene emesso il segnale \texttt{leftChannel} e la
+connessione realtime viene chiusa se attiva.
+
+\subsection{Caricamento dei messaggi}
+
+I messaggi vengono caricati dal database tramite query filtrate per \texttt{channelId} e ordinate per \texttt{sequenceNumber} crescente.
+
+Ogni messaggio recuperato viene dapprima convertito in oggetto \texttt{Message}, viene poi processato dal 
+\texttt{MessageProcessor}, se valido, viene inserito nella cache, ed infine viene emesso tramite il segnale
+\texttt{messageReceived}.
+
+Se il client non è connesso al termine del caricamento, viene avviata automaticamente la connessione realtime.
+
+\subsection{Ricezione realtime}
+
+Gli eventi ricevuti tramite WebSocket vengono normalizzati per estrarre il payload reale, convertiti in oggetti \texttt{Message},
+filtrati tramite il \texttt{MessageProcessor}, salvati nella cache e poi emessi verso la UI.
+
+\subsection{Invio dei messaggi}
+
+L’invio di un messaggio richiede i seguenti prerequisiti; un utente autenticato, un canale attivo, disponibilità del rate limiter,
+e configurazione della collection di input.
+
+Il messaggio viene:
+\begin{itemize}
+    \item arricchito con identificatore univoco e timestamp
+    \item convertito in formato JSON
+    \item salvato nella collection di messaggi in ingresso
+\end{itemize}
+
+Il backend sarà responsabile della trasformazione nel messaggio finale.
+
+\subsection{Gestione del recupero}
+
+In presenza di gap nei \texttt{sequenceNumber}, il \texttt{RecoveryManager} viene attivato automaticamente dalla classe \texttt{AppcommClient}.
+Quando il \texttt{MessageProcessor} restituisce esito negativo alla verifica \texttt{hasGap()}, il client invoca il manager passando
+l'ID dell'ultimo messaggio valido ricevuto, così da richiedere in background il blocco di messaggi mancante e ricucire la cronologia.
+
+I messaggi recuperati seguono lo stesso flusso:
+\begin{center}
+Validazione $\xrightarrow{}$ deduplicazione $\xrightarrow{}$ inserimento in cache $\xrightarrow{}$ emissione verso la UI.
+\end{center}
+
+\subsection{Gestione degli errori}
+
+Gli errori provenienti da richieste HTTP, oppure connessione realtime o anche validazioni locali vengono propagati tramite 
+il segnale:
+\begin{center}
+\texttt{errorOccurred(QString)}
+\end{center}
+
+\subsection{Limitazioni attuali}
+
+L’implementazione corrente presenta alcune semplificazioni progettuali:
+
+\begin{itemize}
+    \item è supportata una sola richiesta logica alla volta (tramite \texttt{PendingRequest})
+    \item si assume una singola membership valida per utente
+    \item il filtro per canale viene applicato lato client sui messaggi ricevuti
+\end{itemize}
+
+Queste scelte semplificano il design, mantenendo il comportamento prevedibile e coerente con i requisiti del progetto.
+
+\section{Conclusione}
+
+Il capitolo ha mostrato che l'implementazione non è una sequenza di componenti isolati, ma un sistema coerente in cui il
+dominio, trasporto, stato, errori e resilienza collaborano secondo responsabilità chiaramente separate. Questa decomposizione
+riduce l'accoppiamento, facilità il testing e permette di intervenire su singole parti senza introdurre regressioni trasversali.
+
+Dal punto di vista operativo la combinazione tra \gls{SDK} asincrono, processamento dei messaggi, recovery, realtime e policy di
+pulizia automatica realizza un'infrastruttura robusta rispetto a disconnessioni, duplicazioni e carichi variabili.
+Parallelamente il layer server espone primitive amministrative sufficienti per governare il provisioning, canali e membership,
+mantenendo centralizzate le operazioni privilegiate.
+\todo{A proposito del frontend...}
+
+Nel complesso, le scelte implementative traducono i principi architetturali in un artefatto software (ri)utilizzabile.
+Questo costituisce la base su cui il capitolo successivo presenta il Proof of Concept, ossia la validazione pratica del modello
+attraverso un flusso end-to-end.
+
+\chapter{Proof of Concept}
+
+Questo capitolo descrive l'implementazione del software di test e dimostrazione, utilizzato per validare l'architettura ed il
+funzionamento della libreria \texttt{appcomm}, come per fornire un esempio per una futura integrazione in qualsiasi altro sistema.
+
+Il \textit{Proof of Concept} è un'applicazione standalone, che simula il comportamento di un server di provisioning e gestione, con
+un client che invia e riceve messaggi attraverso l'infrastruttura.
+
+La finalità del PoC non è coprire tutti i casi di utilizzo in produzione, ma bensì di dimostrare in modo riproducibile che i
+meccanismi fondamentali progettati nei capitoli precedenti funzionino in un contesto reale; bootstrap automatico dell'ambiente
+Appwrite, gestione amministrativa delle entità, pubblicazione e ricezione dei messaggi, integrazione con il canale realtime e
+comportamento di risposta del backend in modalità "echo".
+
+\todo{A proposito del frontend...}
+
+In questa prospettiva, il PoC agisce come banco di prova; collega la teoria architetturale alla pratica esecutiva e rende osservabili
+i punti critici del sistema, come la coerenza della configurazione, l'ordine dei messaggi e la correttezza del provisioning iniziale.
+
+\newpage
+
+\section{Backend}
+
+Il backend di un sistema che comunica tramite la libreria \texttt{appcomm} non ha tante responsabilità quante ne avrebbe in un
+architettura classica; infatti non ha nessun bisogno di gestire un'istanza di database, né di un sistema di autenticazione o di
+altri complessi componenti che si trovano tradizionalmente nei backend.
+Questi compiti sono infatti delegati al componente \textit{BaaS} (\ref{sec:baas}) hostato su Appwrite e controllato
+dalla libreria.
+
+Le responsabilità del backend sono dapprima il provisioning della struttura necessaria per contenere i dati, su Appwrite e la
+fornitura di un'interfaccia per gestione amministrativa dei dati e degli utenti sulla piattaforma.
+
+\subsection{Requisiti di validazione}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lp{12cm}l@{}}
+\toprule
+\textbf{ID}   & \textbf{Descrizione}                                                  & \textbf{Note}\\ \midrule
+\texttt{R-13} & \textit{Backend} permette di richiedere i messaggi di un canale       & - \\
+\texttt{R-14} & \textit{Backend} fornisce un servizio di "echo" subscribe + republish & - \\
+\texttt{R-15} & \textit{Backend} gestisce la configurazione dell'istanza di Appwrite  & - \\
+\texttt{R-16} & \textit{Backend} gestisce le sessioni aperte                          & - \\
+\texttt{R-17} & \textit{Backend} gestisce il lifecycle dei canali                     & - \\
+\texttt{R-18} & \textit{Backend} gestisce la membership di utenti nei canali          & - \\
+\texttt{R-19} & \textit{Backend} gestisce la creazione e cancellamento di utenti      & - \\
+\bottomrule
+\end{tabular}
+\caption{Requisiti di validazione \texttt{Backend}}
+\end{table}
+
+\subsection{Architettura del sistema}
+
+Il PoC è strutturato per separare la configurazione statica dalla logica operativa, facilitando il test di diversi scenari di
+deployment.
+È infatti presente un modulo \texttt{BackendConfig}, il quale è dedicato alla gestione dei parametri di ambiente e delle
+credenziali \gls{SDK}. Carica in modo sicuro l'\texttt{endpoint}, il \texttt{project-id} e l'\texttt{api-key} necessari per
+l'autenticazione privilegiata.
+È altresì presente il modulo \texttt{BackendService}, il quale agisce come il controller principale dell'applicazione,
+interfacciandosi tra la logica di business ed il server Appwrite, usando come tramite la libreria.
+È infine presente una classe che si occupa di garantire che l'ambiente remoto sia configurato correttamente prima di ogni
+operazione.
+
+\subsection{Assegnazione del numero di sequenza}
+
+\todo{Explain inbox/outbox system}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{proxy_sequence_pending.png}
+\caption{Sequence Diagram del sistema Inbox/Outbox}
+\label{fig:client_operational_flow}
+\end{figure}
 
 \chapter{Test e validazione}
 
+Questo capitolo presenta la validazione del progetto in modo analitico, con l'obbiettivo di dimostrare non solo che i componenti
+funzionino, ma anche \textit{perché} ciascun gruppo di test è rilevante rispetto all'architettura proposta. La libreria 
+\texttt{appcomm} è composta da moduli con responsabilità diverse (modelli, logica client, orchestrazione server, integrazione
+Appwrite, gestione realtime e recovery): per questo motivo, la strategia di test è stata organizzata in suites tematiche, ognuna
+focalizzata su un comportamento osservabile e verificabile in modo ripetibile.
+
+Il framework usato è \texttt{QTest}, con orchestrazione \texttt{ctest}. In ambiente locale ed in integrazione continua viene
+eseguita la stessa pipeline di istruzioni; viene dapprima configurato CMake con \texttt{BUILD\_TESTING=ON}, viene avviata
+la build dei target di test e al completamento vengono eseguiti tutti i binari di test \texttt{tst\_*}. Questa scelta garantisce
+coerenza tra ambiente di sviluppo e l'ambiente CI, riducendo il rischio di discrepanze tra risultati ottenuti in laboratorio e
+in repository.
+
+L'analisi seguente è costruita per moduli: per ogni suite vengono esplicitati intenti tecnici e interesse per il lettore. In 
+particolare, i test sono significativi quando verificano proprietà che impattano direttamente l'affidabilità del sistema, come
+coerenza dei dati serializzati, correttezza dei vincoli di sequenza dei messaggi, gestione dei limiti di frequenza e stabilità del 
+provisioning su backend reale.
+
+\newpage
+
+\section{Analisi delle suites di test}
+
+\subsection{Moduli di dominio e consistenza dati}
+
+\texttt{tst\_models} verifica la validazione dei principali DTO (utente, canale, messaggio, sessione, membership, configurazione)
+e la correttezza dei round-trip JSON. L'interesse di questa suite è alto perché previene errori strutturali a monte della pipeline 
+applicativa: se i modelli non sono coerenti, i moduli superiori diventano fragili.
+
+\texttt{tst\_errormodel} valida la semantica degli errori applicativi (\texttt{hasError()}, serializzazione testuale, mappatura dei
+codici), garantendo che logging e propagazione degli errori siano uniformi.
+
+\subsection{Moduli di controllo del flusso}
+
+\texttt{tst\_ratelimiter} verifica il comportamento del token bucket (capacità, refill, disponibilità token), cioè il meccanismo che
+protegge il sistema da burst non controllati.
+
+\texttt{tst\_recentmessagecache} e \texttt{tst\_messageprocessor} validano deduplicazione, filtro per contesto e gestione della
+sequenza dei messaggi, aspetti essenziali per evitare doppie elaborazioni e inconsistenze nel client.
+
+\texttt{tst\_recoverymanager} e \texttt{tst\_messagequeryservice} verificano la logica di recupero storico, con particolare attenzione
+alla ricostruzione dei gap e alla query dei messaggi mancanti.
+
+\subsection{Moduli applicativi}
+
+\texttt{tst\_appcommclient} copre la coerenza del comportamento del client nel ciclo di vita operativo (configurazione, inizializzazione,
+gestione canale e messaggi).
+
+\texttt{tst\_appcommserver} analizza la facciata server: provisioning logico, gestione canali, utenti, membership e operazioni di 
+broadcasting. Questa suite è centrale perché esercita i casi d'uso amministrativi che abilitano l'intero sistema di comunicazione.  
+
+\subsection{Integrazione con infrastruttura reale}
+
+\texttt{tst\_appwritesdk} è il test di integrazione più significativo: valida end-to-end il flusso incrementale su Appwrite reale
+(create/list/delete su utente, database, collezione, attributi, documenti e indice), inclusa la fase di cleanup. Richiede 
+\texttt{APPWRITE\_ENDPOINT}, \texttt{APPWRITE\_PROJECT\_ID}, \texttt{APPWRITE\_API\_KEY}.
+
+\texttt{tst\_realtime} e \texttt{tst\_garbagecollector} coprono in parte la componente realtime/cleanup; alcuni casi restano condizionati
+dalla disponibilità di mocking specifico, per mantenere il test deterministico.
+
 \section{Risultati}
+
+L'esecuzione della campagna di test, produce 13 suites registrate da CTest:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lp{8cm}lll@{}}
+\toprule
+\textbf{ID}   & \textbf{Nome}                     & \textbf{Requisito}     & \textbf{Esito}   \\ \midrule
+\texttt{T-01} & \texttt{tst\_appwritesdk}         & \texttt{R-01}          & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-02} & \texttt{tst\_models}              & \texttt{R-02/03/07/08} & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-03} & \texttt{tst\_messageprocessor}    & \texttt{R-04}          & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-04} & \texttt{tst\_recoverymanager}     & \texttt{R-05}          & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-05} & \texttt{tst\_recentmessagecache}  & \texttt{R-06}          & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-06} & \texttt{tst\_errormodel}          & \texttt{R-08}          & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-07} & \texttt{tst\_realtime}            & \texttt{R-09}          & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-08} & \texttt{tst\_ratelimiter}         & \texttt{R-09}          & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-09} & \texttt{tst\_appcommserver}       & \texttt{R-10}          & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-10} & \texttt{tst\_appcommclient}       & \texttt{R-10}          & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-11} & \texttt{tst\_messagequeryservice} & \texttt{R-11}          & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-12} & \texttt{tst\_membershipservice}   & \texttt{R-11}          & \color{ForestGreen}\textit{Passato} \\
+\texttt{T-13} & \texttt{tst\_garbagecollector}    & \texttt{R-12}          & \color{ForestGreen}\textit{Passato} \\
+\bottomrule
+\end{tabular}
+\caption{Risultati delle test suites}
+\end{table}
+
+L'esito complessivo dell'ultima esecuzione è positivo, con tutte le suites registrate completate con successo.
+Il risultato è rilevante in quanto include sia test puramente logici, sia test che validano l'integrazione in un istanza di Appwrite
+realmente esistente, confermando che le astrazioni implementate dalla libreria sono operative anche oltre il contesto unitario.
+
+\section{Conclusioni}
+
+La validazione mostra come l'architettura proposta sia supportata da un set di test articolato per responsabilità e allineamento alle
+aree tecniche più critiche del progetto. Le suites sui modelli e sul processamento garantiscono consistenza del dato e correttezza del
+flusso; le suites client/server verificano i percorsi operativi principali mentre il test di integrazione su Appwrite fornisce una prova
+concreta di funzionamento end-to-end.
+
+Dal punto di vista metodologico, il valore della campagna non sta solamente nel numero di test, bensì anche nella qualità del loro
+posizionamento; i controlli sono concentrati nei punti in cui un difetto avrebbe maggior impatto sistematico.
+Questo rende i risultati utili sia come evidenza di correttezza attuale, sia come base di regressione per sviluppi futuri del progetto.
 
 \chapter{Risultati}
 
+Questo capitolo illustra e analizza i risultati ottenuti a seguito dell'implementazione del Proof of Concept e dell'esecuzione delle
+test suites descritte nel capitolo precedente. L'obbiettivo principale di questa fase è valutare in modo oggettivo l'efficacia della
+libreria \texttt{appcomm} rispetto ai requisiti funzionali e architetturali delineati all'inizio del progetto. L'analisi che segue
+non si limita a confermare il superamento dei test logici, ma esplora il comportamento del sistema nel suo complesso, osservando
+l'interazione tra il frontend, il middleware e il backend in condizioni operative reali.
+
+La valutazione si concentra su tre assi principali: la correttezza architetturale, l'affidabilità della comunicazione e le
+prestazioni del sistema. Verranno discussi gli esiti relativi al provisioning automatico dell'infrastruttura, dimostrando come il
+backend sia in grado di auto-configurare il database e le collezioni necessarie senza intervento manuale. Successivamente verrà
+analizzata la reattività del sistema in tempo reale, valutando l'impatto della latenza introdotta dal paradigma BaaS, rispetto a
+soluzioni tradizionali. Infine si esaminerà la robustezza del meccanismo di recovery durante scenari di disconnessione o perdita
+di pacchetti, verificando la capacità del sistema di mantenere uno stato coerente. Attraverso questa disamina il capitolo funge
+da ponte tra la validazione puramente tecnica e la valutazione dell'usabilità della soluzione per future integrazioni.
+
+\newpage
+
+\section{Valutazione architetturale}
+
+L'implementazione del Proof of Concept ha confermato la validità dell'architettura proposta. L'utilizzo di Appwrite come proxy
+intermedio ha permesso di stabilire una comunicazione bidirezionale tra il client ed il backend, aggirando completamente le
+restrizioni imposte dalle tradizionali reti private, senza la necessità di esporre porte o aprire servizi che siano
+potenziali vettori di insicurezze.
+
+\section{Validazione del Proof of Concept}
+
+Il PoC ha dimostrato con successo l'interoperabilità tra un frontend compilato per il web, ed un backend nativo, condividento la
+medesima base di codice per la logica di comunicazione. In particolare si è osservato che:
+\begin{itemize}
+\item La capacità del backend di configurare autonomamente l'ambiente Appwrite (creazione di database, collezioni e indici) riduce
+drasticamente i tempi di deployment, soddisfacendo il requisito di "bootstrap", delineato in fase di analisi.
+\item L'integrazione di un WebSocket ha garantito i tempi di latenza minimi nella ricezione dei messaggi, confermando che
+l'approccio \textit{push-based} di Appwrite è una valida alternativa al polling HTTP tradizionale.
+\end{itemize}
+
+\section{Prestazioni e limiti riscontrati}
+
+Sebbene il sistema risponda in modo eccellente in scenari di traffico normale, i test hanno evidenziato che la delega del traffico
+ad un servizio BaaS esterno introduce una latenza di base inevitabile rispetto ad una connessione socket diretta in rete locale.
+Tuttavia l'implementazione del Rate Limiter ha dimostrato di poter mitigare efficacemente i picchi di richieste, proteggendo
+il backend e garantendo il rispetto delle quote API imposte dal server Appwrite.
+
 \section{Manuale d'uso}
+
+Il manuale d'uso è riportato nei rispettivi allegati, in coda al documento, così da poter essere utilizzato come guida rapida
+durante l'installazione, la configurazione e la gestione quotidiana del sistema.
+Sono presenti la guida utente per il backend user (\ref{chp:backendguide}) e per il frontend user (\ref{chp:frontendguide}).
 
 \chapter{Conclusioni}
 
+Giunti al termine di questo percorso di progettazione, sviluppo e validazione, il presente capitolo ha lo scopo di tirare le somme
+sull'intero lavoro di semestre. Il progetto ha affrontato una delle problematiche più ricorrenti e complesse nello sviluppo di
+applicazioni distribuite moderne: la necessità di instaurare una comunicazione bidirezionale sicura e affidabile tra nodi operanti
+in reti private, superando rigide policy di sicurezza di firewall e NAT. Invece di ricorrere a complessi tunnel VPN oppure a
+configurazioni di rete fragili, si è scelto di esplorare e validare un approccio basato sull'utilizzo di una piattaforma
+Backend-as-a-Service come middleware di comunicazione.
+
+Nelle prossime sezioni verranno sintetizzazi i traguardi raggiunti, confrontando gli esiti ottenuti con gli obbiettivi originari
+prefissati nella fase di analisi dei requisiti.
+Si rifletterà sul valore architetturale del paradigma adottato, che sposta la complessità dell'infrastruttura verso un layer di cloud
+gestito, alleggerendo le responsabilità del server applicativo.
+Verranno inoltre discusse le implicazioni tecnologiche derivanti dall'utilizzo congiunto di C++, del framework Qt e della compilazione
+WebAssembly, una sinergia che ha garantito un'altissima riusabilità del codice.
+Infine, partendo dai limiti e dalle osservazioni emerse durante lo sviluppo, verranno delineati i possibili sviluppi futuri che
+potrebbero estendere ulteriormente le capacità e la sicurezza della libreria realizzata.
+
+\newpage
+
+\section{Sintesi del lavoro}
+
+Spostando la complessità infrastrutturale su Appwrite, si è ottenuto un sistema dove il backend può operare in totale sicurezza
+dall'interno di una rete privata aggirando i firewall. La libreria è stata strutturata con un'architettura fortemente modulare che
+separa le responsabilità tra il core di comunicazione (\texttt{appcomm}), l'applicazione client con interfaccia Qt/QML (frontend) 
+e l'applicazione server headless (backend).
+
+La scelta di utilizzare C++ e Qt, unita a WebAssembly per il deployment su browser, si è rivelata estremamente efficace, garantendo
+una completa compatibilità cross-platform per Linux, macOS e Windows. Lo sviluppo ha portato alla realizzazione di un SDK di basso
+livello per Appwrite stabile e funzionante, capace di astrarre le richieste HTTP, la gestione delle sessioni (sia anonime che tramite
+email), le operazioni CRUD sui documenti e la gestione amministrativa degli utenti. 
+L'integrazione del frontend è stata inoltre agevolata dall'uso di macro come \texttt{Q\_ENUM} per abilitare dinamicamente le funzionalità 
+dell'interfaccia utente QML.
+
 \section{Sviluppi futuri}
+
+Dal momento che l'architettura di base, comprensiva di astrazione dei canali, meccanismi di recovery, comunicazione realtime e
+orchestrazione del backend, ha raggiunto uno stato di maturità ed è stata pienamente validata, le future direzioni di sviluppo si
+concentrano sull'espansione delle funzionalità, sulla sicurezza avanzata e sull'ottimizzazione delle performance in ambienti vincolati.
+
+I prossimi passi per l'evoluzione del framework appcomm includono:
+
+\begin{itemize}
+\item Attualmente, la sicurezza del sistema è garantita dal protocollo TLS in transito e dai rigorosi controlli di accesso (Document-Level
+Security) offerti da Appwrite. Tuttavia, i payload JSON transitano in chiaro attraverso il middleware. L'implementazione di uno strato di
+crittografia asimmetrica (ad esempio tramite curve ellittiche, ECC) integrato nativamente nella libreria C++ permetterebbe di cifrare i
+messaggi sul client prima dell'invio. In questo scenario, Appwrite agirebbe come un relay puramente Zero-Knowledge, impossibilitato a decifrare
+il contenuto dei dati instradati.
+
+\item Sebbene il sistema integri già un modulo RecentMessageCache in memoria per far fronte a brevi disconnessioni, un'evoluzione significativa
+prevederebbe la persistenza dello stato a lungo termine. Sfruttando le astrazioni di Qt (ad esempio QtSql mappato su IndexedDB per il target
+WebAssembly), la libreria potrebbe salvare i messaggi in locale, garantendo la consultazione della cronologia in assenza di rete e implementando
+una coda di sincronizzazione automatica non appena il dispositivo torna online.
+
+\item L'attuale implementazione è focalizzata sullo scambio rapido di payload JSON testuali strutturati. Estendere l'SDK per supportare le API
+Storage di Appwrite abiliterebbe lo scambio di allegati e file binari. Questa evoluzione richiederebbe l'implementazione di meccanismi di
+chunking e upload asincrono in C++, per garantire che il caricamento di file di grandi dimensioni non blocchi il thread principale, specialmente
+cruciale nel contesto del Single Thread di WebAssembly.
+
+\item Allo stato attuale, la gestione della serializzazione JSON, il parsing e il meccanismo di limitazione del traffico avvengono sul thread
+principale dell'applicazione. In un'ottica di scalabilità verso scenari ad altissima frequenza di messaggi, la libreria potrebbe essere ottimizzata
+spostando il carico computazionale del parsing e della cifratura su thread separati (utilizzando QtConcurrent) o demandando l'onere ai Web Workers
+nel caso specifico del frontend compilato in WebAssembly, migliorando la fluidità della UI.
+\end{itemize}
+
+\section{Considerazioni finali}
+
+In conclusione, il progetto Proxy ha dimostrato come l'integrazione di tecnologie apparentemente distanti; il calcolo nativo in C++, la flessibilità
+del framework Qt e la modernità dei servizi Backend-as-a-Service come Appwrite, possa convergere in una soluzione funzionale.
+La sfida iniziale di garantire una comunicazione bidirezionale fluida attraverso reti isolate è stata superata non solo attraverso l'implementazione
+tecnica della libreria \texttt{appcomm}, ma anche attraverso la definizione di un'architettura capace di scalare e adattarsi a diversi scenari d'uso,
+dal desktop al web tramite WebAssembly.
+
+Il successo del Proof of Concept e la solidità dell'infrastruttura di test e integrazione continua confermano che l'approccio adottato è pronto per
+evolversi da un prototipo accademico a uno strumento di sviluppo professionale.
+Al di là dei risultati tecnici, questo lavoro ha rappresentato un importante percorso di crescita nella gestione di sistemi distribuiti e nella
+progettazione di API asincrone, lasciando in eredità un framework solido su cui costruire le prossime innovazioni nel campo delle comunicazioni
+cross-network.
 
 \blankpage
 \pagenumbering{Roman}
 \printglossary[title=Glossario, toctitle=Glossario]
 
 \blankpage
-\printbibliography[heading=bibintoc, title=Bibliografia]
+\printbibliography[heading=bibintoc, title=Sitografia]
 
+\blankpage
+
+\appendix
+\chapter{Guida utente - Backend}\label{chp:backendguide}
+
+La presente guida descrive l'utilizzo dell'eseguibile binaria \texttt{backend}, il quale fornisce funzioni amministrative per
+Appwrite, come un servizio "echo" per il Proof of Concept.
+
+\section{Prerequisiti}
+
+\begin{itemize}
+    \item progetto compilato con target backend disponibile;
+    \item istanza Appwrite raggiungibile;
+    \item API key Appwrite con privilegi amministrativi (database, collections, documents, users).
+\end{itemize}
+
+\section{Configurazione iniziale}
+
+Il backend salva la configurazione nel file:
+\begin{minted}{text}
+~/.proxy-backend-config.json
+\end{minted}
+
+\noindent È possibile cambiare percorso con la variabile d'ambiente:
+\begin{minted}{bash}
+export PROXY_BACKEND_CONFIG_PATH="/path/to/backend-config.json"
+\end{minted}
+
+\noindent Configurazione (crea/valida anche la struttura su Appwrite):
+\begin{minted}{bash}
+backend configure <endpoint> <projectId> <apiKey> <databaseId> \
+                  [messagesCollection]                         \ 
+                  [membersCollection]                          \
+                  [channelsCollection]                         \
+                  [sessionsCollection]
+\end{minted}
+
+\noindent Esempio:
+\noindent \begin{minted}{bash}
+backend configure https://cloud.appwrite.io/v1 my-project my-api-key proxydb
+\end{minted}
+
+\section{Avvio del servizio}
+
+\noindent Per avviare il servizio long-running (echo server):
+\begin{minted}{bash}
+backend start
+\end{minted}
+
+\noindent Alias equivalenti:
+\begin{minted}{bash}
+backend serve
+backend echo-service
+\end{minted}
+
+\section{Comandi amministrativi}
+
+\subsection{Utenti}
+\begin{minted}{bash}
+backend users list
+backend users add <email> <password> [name]
+backend users remove <userId>
+\end{minted}
+
+\subsection{Canali}
+\begin{minted}{bash}
+backend channels list
+backend channels add <name>
+backend channels remove <channelId>
+\end{minted}
+
+\subsection{Membri del canale}
+\begin{minted}{bash}
+backend members list <channelId>
+backend members add <channelId> <userId> [displayName]
+backend members remove <channelId> <userId>
+\end{minted}
+
+\subsection{Sessioni}
+\begin{minted}{bash}
+backend sessions list
+backend sessions add <channelId> <userId> [userId ...]
+backend sessions close <sessionId>
+\end{minted}
+
+\subsection{Messaggi}
+\begin{minted}{bash}
+backend messages list <channelId> [limit]
+backend messages find <channelId> <messageId> [limit]
+backend messages add <channelId> <senderId> <payloadJsonOrText>
+backend messages remove <messageId>
+\end{minted}
+
+\noindent Nota: quando \texttt{payloadJsonOrText} non è JSON valido, il backend lo salva come testo nel campo \texttt{text}.
+
+\section{Flusso operativo consigliato}
+
+\begin{enumerate}
+    \item Eseguire \texttt{backend configure ...} una sola volta per ambiente.
+    \item Creare utenti (\texttt{users add}) e canali (\texttt{channels add}).
+    \item Associare utenti ai canali (\texttt{members add}).
+    \item Aprire una sessione logica (\texttt{sessions add}) e pubblicare messaggi (\texttt{messages add}).
+    \item Avviare \texttt{backend start} quando si vuole il comportamento di echo automatico.
+\end{enumerate}
+
+\section{Output e gestione errori}
+
+\begin{itemize}
+    \item i risultati delle operazioni vengono stampati su \texttt{stdout} in formato JSON;
+    \item gli errori vengono stampati su \texttt{stderr} con codice di uscita diverso da zero;
+    \item se la configurazione non esiste, il comando richiede esplicitamente di eseguire \texttt{backend configure}.
+\end{itemize}
+
+\blankpage
+
+\chapter{Guida utente - Frontend}\label{chp:frontendguide}
+
+La presente guida descrive l'utilizzo...
 \end{document}

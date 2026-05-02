@@ -1,0 +1,48 @@
+name: CI Build appcomm
+
+on:
+  push:
+    branches: [ main, dev]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-linux:
+    name: Build & Test appcomm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.10.2'
+          host: 'linux'
+          target: 'desktop'
+          modules: 'qtwebsockets'
+      
+      - name: Install build essentials
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake g++
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTING=ON
+
+      - name: Build appcomm
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Run tests
+        env:
+          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+        run: |
+          ctest --test-dir build/test --output-on-failure

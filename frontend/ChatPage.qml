@@ -1,0 +1,118 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import App 1.0
+
+Page {
+    signal logoutFinished()
+
+    Timer {
+        id: logoutNavigationTimer
+        interval: 2000
+        repeat: false
+
+        onTriggered: {
+            logoutFinished()
+        }
+    }
+
+    header: ToolBar {
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 8
+
+            Label {
+                text: "AppComm Chat"
+                font.pixelSize: 20
+                Layout.fillWidth: true
+            }
+
+            Label {
+                text: "Topic: " + AppController.currentTopic
+            }
+
+            Label {
+                text: "State: " + AppController.connectionState
+            }
+
+            Button {
+                text: logoutNavigationTimer.running ? "Logging out..." : "Logout"
+                enabled: !logoutNavigationTimer.running
+
+                onClicked: {
+                    AppController.logout()
+                    logoutNavigationTimer.restart()
+                }
+            }
+        }
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.margins: 12
+        spacing: 10
+
+        GroupBox {
+            title: "Messages"
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            ListView {
+                id: messageListView
+                anchors.fill: parent
+                anchors.margins: 8
+                clip: true
+                spacing: 8
+                model: AppController.messagesModel
+                delegate: MessageDelegate { }
+
+                function scrollToBottom() {
+                    Qt.callLater(function() {
+                        messageListView.positionViewAtEnd()
+                    })
+                }
+
+                onCountChanged: {
+                    scrollToBottom()
+                }
+
+                onContentHeightChanged: {
+                    scrollToBottom()
+                }
+            }
+        }
+
+        GroupBox {
+            title: "Send message"
+            Layout.fillWidth: true
+
+            RowLayout {
+                anchors.fill: parent
+                spacing: 8
+
+                TextField {
+                    id: messageField
+                    placeholderText: "Write a message"
+                    Layout.fillWidth: true
+                    enabled: AppController.currentTopic !== ""
+
+                    onAccepted: {
+                        sendButton.clicked()
+                    }
+                }
+
+                Button {
+                    id: sendButton
+                    text: "Send"
+                    enabled: AppController.currentTopic !== "" &&
+                             messageField.text.trim().length > 0
+
+                    onClicked: {
+                        AppController.sendMessage(messageField.text)
+                        messageField.clear()
+                    }
+                }
+            }
+        }
+    }
+}
