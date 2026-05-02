@@ -25,6 +25,14 @@ DemoController::DemoController(const appcomm::model::AppCommConfig &config,
 
     connect(m_client.get(), &appcomm::client::AppcommClient::errorOccurred,
             this, &DemoController::onErrorOccurred);
+
+#ifdef __EMSCRIPTEN__
+    m_messagePollingTimer.setInterval(3000);
+    m_messagePollingTimer.setSingleShot(false);
+
+    connect(&m_messagePollingTimer, &QTimer::timeout,
+            this, &DemoController::pollTopicMessages);
+#endif
 }
 
 QString DemoController::connectionState() const
@@ -123,10 +131,18 @@ void DemoController::sendMessage(const QString &text)
 
     clearError();
     m_client->sendMessage(payload);
+
+#ifdef __EMSCRIPTEN__
+    QTimer::singleShot(1200, this, &DemoController::pollTopicMessages);
+#endif
 }
 
 void DemoController::logout()
 {
+#ifdef __EMSCRIPTEN__
+    stopMessagePolling();
+#endif
+
     m_client->logout();
 
     m_loginMode = LoginMode::None;
@@ -169,6 +185,10 @@ void DemoController::onJoinedTopic(const QString &topicId)
     setCurrentTopic(topicId);
     setBusy(false);
 
+#ifdef __EMSCRIPTEN__
+    startMessagePolling();
+#endif
+
     if (m_loginMode == LoginMode::Email && !m_chatOpened) {
         m_chatOpened = true;
         emit loginSucceeded();
@@ -195,7 +215,11 @@ void DemoController::onErrorOccurred(const QString &error)
 {
     setBusy(false);
 
-    if (m_loginMode == LoginMode::Guest &&
+    if (m_loginMode == LoginMode::None) {
+        return;
+    }
+
+    const bool isGuestAccessDenied =
         error.contains("Guest access denied", Qt::CaseInsensitive) ||
         /*
          * Se avessimo un'implementazione per il Guest con i permessi
@@ -203,13 +227,41 @@ void DemoController::onErrorOccurred(const QString &error)
          * con i Guest che non hanno un canale assegnato, ma nel nostro caso
          * non la abbiamo, quindi non crea conflitti.
          */
-        error.contains("No membership found", Qt::CaseInsensitive)) {
+        error.contains("No membership found", Qt::CaseInsensitive);
+
+    if (m_loginMode == LoginMode::Guest && isGuestAccessDenied) {
+        clearError();
         emit guestAccessDenied();
         return;
     }
 
     setErrorMessage(error);
 }
+
+#ifdef __EMSCRIPTEN__
+void DemoController::pollTopicMessages()
+{
+    if (!m_authenticated || m_currentTopic.trimmed().isEmpty()) {
+        return;
+    }
+
+    m_client->loadTopicMessages();
+}
+
+void DemoController::startMessagePolling()
+{
+    if (!m_messagePollingTimer.isActive()) {
+        m_messagePollingTimer.start();
+    }
+}
+
+void DemoController::stopMessagePolling()
+{
+    if (m_messagePollingTimer.isActive()) {
+        m_messagePollingTimer.stop();
+    }
+}
+#endif
 
 void DemoController::setConnectionState(const QString &state)
 {

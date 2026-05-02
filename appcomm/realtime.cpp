@@ -14,9 +14,12 @@ using namespace appcomm;
 
 Realtime::Realtime(const appwritesdk::ConnectionConfig &config, QObject *parent)
     : IRealtime(parent)
+#ifndef APPCOMM_NO_WEBSOCKETS
     , m_webSocket(new QWebSocket(QString(), QWebSocketProtocol::VersionLatest, this))
+#endif
     , m_config(config)
 {
+#ifndef APPCOMM_NO_WEBSOCKETS
     QObject::connect(m_webSocket, &QWebSocket::connected,
                      this, &Realtime::onConnected);
 
@@ -28,10 +31,15 @@ Realtime::Realtime(const appwritesdk::ConnectionConfig &config, QObject *parent)
 
     QObject::connect(m_webSocket, &QWebSocket::errorOccurred,
                      this, &Realtime::onErrorOccurred);
+#endif
 }
 
 void Realtime::connectToTopics(const QStringList &topics)
 {
+#ifdef APPCOMM_NO_WEBSOCKETS
+    Q_UNUSED(topics);
+    emit connected();
+#else
     QString endpoint = m_config.endpoint;
 
     if (endpoint.startsWith("https://")) {
@@ -52,11 +60,16 @@ void Realtime::connectToTopics(const QStringList &topics)
     }
 
     m_webSocket->open(QUrl(urlStr));
+#endif
 }
 
 void Realtime::disconnectFromServer()
 {
+#ifdef APPCOMM_NO_WEBSOCKETS
+    emit disconnected();
+#else
     m_webSocket->close();
+#endif
 }
 
 void Realtime::onConnected()
@@ -69,6 +82,7 @@ void Realtime::onDisconnected()
     emit disconnected();
 }
 
+#ifndef APPCOMM_NO_WEBSOCKETS
 void Realtime::onTextMessageReceived(const QString &msg)
 {
     const QJsonDocument doc = QJsonDocument::fromJson(msg.toUtf8());
@@ -86,3 +100,4 @@ void Realtime::onErrorOccurred(QAbstractSocket::SocketError error)
     Q_UNUSED(error);
     emit errorOccurred(m_webSocket->errorString());
 }
+#endif

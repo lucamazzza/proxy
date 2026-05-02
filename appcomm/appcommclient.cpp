@@ -123,7 +123,8 @@ public:
         None,
         Login,
         LoadMembership,
-        LoadMessages
+        LoadMessages,
+        SendMessage
     };
 
     model::AppCommConfig m_appConfig;
@@ -466,6 +467,7 @@ void AppcommClient::sendMessage(const QJsonObject &payload)
     const appwritesdk::ConnectionConfig config =
         d->configForCollection(d->m_appConfig.incomingMessagesCollectionId);
 
+    d->m_pendingRequest = Private::PendingRequest::SendMessage;
     d->m_client->createDocument(config, msg.toJson());
 }
 
@@ -516,6 +518,10 @@ void AppcommClient::loadTopicMessages(int limit)
 
     if (d->m_client == nullptr) {
         emit errorOccurred("Cannot load messages: client dependency is missing.");
+        return;
+    }
+
+    if (d->m_pendingRequest != Private::PendingRequest::None) {
         return;
     }
 
@@ -575,6 +581,11 @@ void AppcommClient::onRequestSuccess(const QJsonObject &data)
         emit authenticationStateChanged();
 
         loadMembership();
+        return;
+    }
+
+    if (d->m_pendingRequest == Private::PendingRequest::SendMessage) {
+        d->m_pendingRequest = Private::PendingRequest::None;
         return;
     }
 

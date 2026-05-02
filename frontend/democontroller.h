@@ -5,6 +5,10 @@
 #include <QString>
 #include <memory>
 
+#ifdef __EMSCRIPTEN__
+#include <QTimer>
+#endif
+
 #include "../appcomm/appcommclient.h"
 #include "../appcomm/model.h"
 #include "messagelistmodel.h"
@@ -57,6 +61,10 @@ private slots:
     void onMessageReceived(const appcomm::model::Message &message);
     void onErrorOccurred(const QString &error);
 
+#ifdef __EMSCRIPTEN__
+    void pollTopicMessages();
+#endif
+
 private:
     enum class LoginMode {
         None = 0,
@@ -74,6 +82,11 @@ private:
     QString extractMessageText(const appcomm::model::Message &message) const;
     void addSystemMessage(const QString &text);
 
+#ifdef __EMSCRIPTEN__
+    void startMessagePolling();
+    void stopMessagePolling();
+#endif
+
 private:
     std::unique_ptr<appcomm::client::AppcommClient> m_client;
 
@@ -89,6 +102,10 @@ private:
     LoginMode m_loginMode = LoginMode::None;
 
     MessageListModel m_messagesModel;
+
+#ifdef __EMSCRIPTEN__
+    QTimer m_messagePollingTimer;
+#endif
 };
 
 #endif // DEMOCONTROLLER_H

@@ -4,7 +4,10 @@
 #include <QObject>
 #include <QJsonObject>
 #include <QStringList>
+
+#ifndef APPCOMM_NO_WEBSOCKETS
 #include <QtWebSockets/QtWebSockets>
+#endif
 
 #include "appwritesdk.h"
 
@@ -55,11 +58,16 @@ public:
 private slots:
     void onConnected();
     void onDisconnected();
+
+#ifndef APPCOMM_NO_WEBSOCKETS
     void onTextMessageReceived(const QString &msg);
     void onErrorOccurred(QAbstractSocket::SocketError error);
+#endif
 
 private:
+#ifndef APPCOMM_NO_WEBSOCKETS
     QWebSocket *m_webSocket;
+#endif
     appwritesdk::ConnectionConfig m_config;
 };
 

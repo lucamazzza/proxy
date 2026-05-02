@@ -12,8 +12,11 @@ find_package(Qt6 REQUIRED COMPONENTS
     Core
     Qml
     Network
-    WebSockets
 )
+
+if(NOT EMSCRIPTEN)
+    find_package(Qt6 REQUIRED COMPONENTS WebSockets)
+endif()
 
 qt_policy(SET QTP0001 NEW)
 
