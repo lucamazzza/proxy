@@ -1009,6 +1009,8 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
 
         client.joinTopic("topic-1");
+        emit sdk.requestSuccess(QJsonObject{{"documents", QJsonArray()}});
+
         client.loadTopicMessages(12);
 
         QCOMPARE(sdk.lastQueries.at(2).toString(),
@@ -1026,6 +1028,8 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
 
         client.joinTopic("topic-1");
+        emit sdk.requestSuccess(QJsonObject{{"documents", QJsonArray()}});
+
         client.loadTopicMessages(0);
 
         QCOMPARE(sdk.lastQueries.at(2).toString(),
