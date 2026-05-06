@@ -52,6 +52,7 @@ private:
     bool isBootstrapLimitError(const BackendRequestResult &result) const;
     bool shouldRetryIndexCreation(const BackendRequestResult &result) const;
     bool isDatabaseLimitReached(const BackendRequestResult &result) const;
+    bool canUseRequestedDatabase(QString *errorMessage);
     bool adoptExistingDatabase(QString *errorMessage);
     appwritesdk::ConnectionConfig configForCollection(const QString &collectionId) const;
     bool ensureCollection(const QString &collectionId,

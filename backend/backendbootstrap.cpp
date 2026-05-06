@@ -118,8 +118,17 @@ bool BackendBootstrapper::adoptExistingDatabase(QString *errorMessage) {
     }
     const QJsonArray databases = listResult.data.value("databases").toArray();
     if (databases.isEmpty()) {
+        QString probeError;
+        if (canUseRequestedDatabase(&probeError)) {
+            return true;
+        }
         if (errorMessage) {
-            *errorMessage = "No existing database found to reuse";
+            if (!probeError.isEmpty()) {
+                *errorMessage = QString("No existing database found to reuse, and requested database ID '%1' is not usable: %2")
+                                    .arg(m_config.databaseId, probeError);
+            } else {
+                *errorMessage = "No existing database found to reuse";
+            }
         }
         return false;
     }
@@ -138,6 +147,20 @@ bool BackendBootstrapper::adoptExistingDatabase(QString *errorMessage) {
         return false;
     }
     m_config.databaseId = existingDatabaseId;
+    return true;
+}
+
+bool BackendBootstrapper::canUseRequestedDatabase(QString *errorMessage) {
+    const appwritesdk::ConnectionConfig sdkConfig = configForCollection(m_config.messagesCollectionId);
+    const BackendRequestResult probeResult = m_requestRunner([&]() {
+        m_server->listCollections(sdkConfig);
+    }, 30000);
+    if (!probeResult.success) {
+        if (errorMessage) {
+            *errorMessage = toError("listCollections", probeResult);
+        }
+        return false;
+    }
     return true;
 }
 
