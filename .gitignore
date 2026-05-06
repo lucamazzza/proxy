@@ -113,6 +113,8 @@ _*
 config.json
 backend/config.json
 *.local.json
+.proxy-frontend-config.json
+.proxy-backend-config.json
 
 # Environment files  
 .env

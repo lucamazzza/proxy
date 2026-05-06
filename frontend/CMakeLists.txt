@@ -19,6 +19,8 @@ qt_policy(SET QTP0001 NEW)
 
 qt_add_executable(appfrontend
     main.cpp
+    frontendconfig.cpp
+    frontendconfig.h
     democontroller.cpp
     democontroller.h
     messagelistmodel.cpp
@@ -41,7 +43,7 @@ set_target_properties(appfrontend PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
+    WIN32_EXECUTABLE FALSE
 )
 
 target_include_directories(appfrontend PRIVATE

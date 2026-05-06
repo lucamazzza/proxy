@@ -58,7 +58,31 @@ Backend writes config to `~/.proxy-backend-config.json` (or `PROXY_BACKEND_CONFI
 
 ### Run the frontend demo
 
-Set your Appwrite values in `frontend/main.cpp` (`endpoint`, `projectId`, `databaseId`, and collection IDs), then run:
+Create the frontend config on the machine that runs the frontend.  
+You can set `PROXY_FRONTEND_CONFIG_PATH` to choose a different file, which is useful when running multiple frontend instances against different Appwrite projects.
+
+```bash
+./build/frontend/appfrontend configure \
+  https://<your-appwrite-endpoint>/v1 \
+  <projectId> \
+  <databaseId> \
+  messages members pendingmessages
+```
+
+By default this writes `~/.proxy-frontend-config.json`.
+
+```json
+{
+  "endpoint": "https://fra.cloud.appwrite.io/v1",
+  "projectId": "<projectId>",
+  "databaseId": "<databaseId>",
+  "messagesCollectionId": "messages",
+  "membersCollectionId": "members",
+  "incomingMessagesCollectionId": "pendingmessages"
+}
+```
+
+Then run:
 
 ```bash
 ./build/frontend/appfrontend
@@ -78,7 +102,7 @@ ctest --test-dir build/test --output-on-failure
 - **Backend config issues:** verify `~/.proxy-backend-config.json` exists and has valid values, or set `PROXY_BACKEND_CONFIG_PATH`.
 - **Auth/permission failures:** check Appwrite project ID, API key scopes, and collection/document permissions.
 - **No realtime messages:** verify WebSocket connectivity and that topic/membership documents are correctly set for the user.
-- **Frontend cannot connect:** confirm `frontend/main.cpp` uses the same endpoint/project/database/collection IDs as backend setup.
+- **Frontend cannot connect:** verify `~/.proxy-frontend-config.json` exists and points to the intended endpoint/project/database/collection IDs, or set `PROXY_FRONTEND_CONFIG_PATH`.
 
 ## Credits
 
