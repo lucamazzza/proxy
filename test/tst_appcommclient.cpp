@@ -463,7 +463,7 @@ private slots:
         QCOMPARE(sdk.listDocumentsCalls, 0);
     }
 
-    void requestError_forGuestPermissionDeniedResetsPendingRequestAndEmitsGuestDeniedError()
+    void requestError_forLoginPermissionDeniedResetsPendingRequestAndEmitsOriginalError()
     {
         FakeDependencies deps;
         FakeClientSdk &sdk = deps.clientSdk();
@@ -478,8 +478,7 @@ private slots:
         emit sdk.requestError(401, "Unauthorized");
 
         QCOMPARE(errorSpy.count(), 1);
-        QCOMPARE(errorSpy.first().at(0).toString(),
-                 QString("Guest access denied: missing Appwrite permissions."));
+        QCOMPARE(errorSpy.first().at(0).toString(), QString("Unauthorized"));
 
         emit sdk.requestSuccess(sessionResponse());
         QCOMPARE(client.isAuthenticated(), false);
