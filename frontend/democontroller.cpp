@@ -4,7 +4,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
-#include <QDebug>
 
 DemoController::DemoController(const appcomm::model::AppCommConfig &config,
                                QObject *parent)
@@ -64,7 +63,6 @@ MessageListModel* DemoController::messagesModel()
 
 void DemoController::loginAsGuest()
 {
-    qDebug() << "[DemoController] loginAsGuest called";
     clearError();
 
     m_loginMode = LoginMode::Guest;
@@ -77,7 +75,6 @@ void DemoController::loginAsGuest()
 
 void DemoController::loginWithEmail(const QString &email, const QString &password)
 {
-    qDebug() << "[DemoController] loginWithEmail called";
     const QString trimmedEmail = email.trimmed();
 
     if (trimmedEmail.isEmpty()) {

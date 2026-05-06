@@ -10,7 +10,9 @@
  */
 
 #include "appwritesdk.h"
+#include <QByteArrayList>
 #include <QJsonDocument>
+#include <QNetworkCookie>
 #include <QRegularExpression>
 #include <QUrlQuery>
 #include <QUrl>
@@ -68,6 +70,29 @@ BaseSDK::BaseSDK(QNetworkAccessManager *mgr, QObject *parent)
     if (!m_network->cookieJar()) {
         m_network->setCookieJar(new QNetworkCookieJar(m_network));
     }
+}
+
+AuthContext BaseSDK::authContext(const ConnectionConfig &config) const
+{
+    AuthContext context;
+    context.fallbackCookies = m_fallbackCookies;
+    context.appwriteSession = m_appwriteSession;
+
+    if (m_network != nullptr && m_network->cookieJar() != nullptr) {
+        QList<QNetworkCookie> cookies =
+            m_network->cookieJar()->cookiesForUrl(QUrl(config.endpoint));
+
+        QByteArrayList cookiePairs;
+        cookiePairs.reserve(cookies.size());
+
+        for (const QNetworkCookie &cookie : cookies) {
+            cookiePairs.append(cookie.name() + "=" + cookie.value());
+        }
+
+        context.cookieHeader = cookiePairs.join("; ");
+    }
+
+    return context;
 }
 
 void BaseSDK::onResponseFinished() {
@@ -149,6 +174,11 @@ QNetworkRequest BaseSDK::createBaseRequest(const ConnectionConfig &config,
     return req;
 }
 
+AuthContext Client::authContext(const ConnectionConfig &config) const
+{
+    return BaseSDK::authContext(config);
+}
+
 void Client::createAnonymousSession(const ConnectionConfig &config) {
     QNetworkRequest req = createBaseRequest(config, "account/sessions/anonymous", APPCOMM_USER);
     QNetworkReply *reply = m_network->post(req, QByteArray());
@@ -213,8 +243,6 @@ void Client::listDocuments(const ConnectionConfig &config, const QJsonArray &que
     }
 
     req.setUrl(url);
-
-    qDebug() << "[Client] listDocuments URL:" << url.toString();
 
     QNetworkReply *reply = m_network->get(req);
     connect(reply, &QNetworkReply::finished, this, &Client::onResponseFinished);

@@ -574,6 +574,10 @@ void AppcommClient::onRequestSuccess(const QJsonObject &data)
         d->m_clientState.authenticated = true;
         emit authenticationStateChanged();
 
+        if (d->m_realtime != nullptr) {
+            d->m_realtime->setAuthContext(d->m_client->authContext(d->m_baseConfig));
+        }
+
         loadMembership();
         return;
     }

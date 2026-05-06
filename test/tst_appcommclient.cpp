@@ -43,6 +43,13 @@ public:
     QString lastDocumentId;
     QJsonObject lastData;
     QJsonArray lastQueries;
+    appwritesdk::AuthContext currentAuthContext;
+
+    appwritesdk::AuthContext authContext(const appwritesdk::ConnectionConfig &config) const override
+    {
+        Q_UNUSED(config);
+        return currentAuthContext;
+    }
 
     void createAnonymousSession(const appwritesdk::ConnectionConfig &config) override
     {
@@ -134,7 +141,9 @@ class FakeRealtime : public IRealtime
 public:
     int connectToTopicsCalls = 0;
     int disconnectFromServerCalls = 0;
+    int setAuthContextCalls = 0;
     QStringList lastChannels;
+    appwritesdk::AuthContext lastAuthContext;
 
     explicit FakeRealtime(QObject *parent = nullptr)
         : IRealtime(parent)
@@ -145,6 +154,12 @@ public:
     {
         connectToTopicsCalls++;
         lastChannels = channels;
+    }
+
+    void setAuthContext(const appwritesdk::AuthContext &authContext) override
+    {
+        setAuthContextCalls++;
+        lastAuthContext = authContext;
     }
 
     void disconnectFromServer() override
@@ -406,6 +421,10 @@ private slots:
         AppcommClient client(validConfig(), deps.take());
         QSignalSpy authSpy(&client, &AppcommClient::authenticationStateChanged);
 
+        sdk.currentAuthContext.fallbackCookies = "fallback-cookie";
+        sdk.currentAuthContext.appwriteSession = "session-token";
+        sdk.currentAuthContext.cookieHeader = "a_session_project=session-secret";
+
         client.createGuestSession();
         emit sdk.requestSuccess(sessionResponse("session-1", "user-1", "anonymous"));
 
@@ -414,6 +433,10 @@ private slots:
         QCOMPARE(client.sessionInfo().userId, QString("user-1"));
         QCOMPARE(client.sessionInfo().authType, model::AuthType::Guest);
         QCOMPARE(authSpy.count(), 1);
+        QCOMPARE(realtime.setAuthContextCalls, 1);
+        QCOMPARE(realtime.lastAuthContext.fallbackCookies, QByteArray("fallback-cookie"));
+        QCOMPARE(realtime.lastAuthContext.appwriteSession, QByteArray("session-token"));
+        QCOMPARE(realtime.lastAuthContext.cookieHeader, QByteArray("a_session_project=session-secret"));
 
         QCOMPARE(sdk.listDocumentsCalls, 1);
         QCOMPARE(sdk.lastConfig.collectionId, QString("members"));

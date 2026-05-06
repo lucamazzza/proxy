@@ -45,9 +45,23 @@ struct ConnectionConfig {
     QString collectionId; ///< Collection identifier
 };
 
+struct AuthContext {
+    QByteArray fallbackCookies;
+    QByteArray appwriteSession;
+    QByteArray cookieHeader;
+
+    bool isEmpty() const {
+        return fallbackCookies.isEmpty()
+               && appwriteSession.isEmpty()
+               && cookieHeader.isEmpty();
+    }
+};
+
 class IClientSdk {
 public:
     virtual ~IClientSdk() = default;
+
+    virtual AuthContext authContext(const ConnectionConfig &config) const = 0;
 
     virtual void createAnonymousSession(const ConnectionConfig &config) = 0;
 
@@ -95,6 +109,8 @@ public:
      * @param parent Parent QObject for memory management
      */
     explicit BaseSDK(QNetworkAccessManager *mgr, QObject *parent = nullptr);
+
+    AuthContext authContext(const ConnectionConfig &config) const;
 
 signals:
 
@@ -163,6 +179,8 @@ class Client : public BaseSDK, public IClientSdk {
     Q_OBJECT
 public:
     using BaseSDK::BaseSDK;
+
+    AuthContext authContext(const ConnectionConfig &config) const override;
 
     /*!
      * @brief Creates an anonymous user session.

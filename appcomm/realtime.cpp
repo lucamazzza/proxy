@@ -8,6 +8,7 @@
 #include "realtime.h"
 
 #include <QJsonDocument>
+#include <QNetworkRequest>
 #include <QUrl>
 
 using namespace appcomm;
@@ -51,12 +52,32 @@ void Realtime::connectToTopics(const QStringList &topics)
         urlStr.append(QString("&channels[]=%1").arg(topic));
     }
 
-    m_webSocket->open(QUrl(urlStr));
+    QNetworkRequest request{QUrl(urlStr)};
+    request.setRawHeader("X-Appwrite-Project", m_config.projectId.toUtf8());
+
+    if (!m_authContext.fallbackCookies.isEmpty()) {
+        request.setRawHeader("X-Fallback-Cookies", m_authContext.fallbackCookies);
+    }
+
+    if (!m_authContext.appwriteSession.isEmpty()) {
+        request.setRawHeader("X-Appwrite-Session", m_authContext.appwriteSession);
+    }
+
+    if (!m_authContext.cookieHeader.isEmpty()) {
+        request.setRawHeader("Cookie", m_authContext.cookieHeader);
+    }
+
+    m_webSocket->open(request);
 }
 
 void Realtime::disconnectFromServer()
 {
     m_webSocket->close();
+}
+
+void Realtime::setAuthContext(const appwritesdk::AuthContext &authContext)
+{
+    m_authContext = authContext;
 }
 
 void Realtime::onConnected()

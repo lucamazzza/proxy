@@ -28,6 +28,7 @@ public:
 
     ~IRealtime() override = default;
 
+    virtual void setAuthContext(const appwritesdk::AuthContext &authContext) = 0;
     virtual void connectToTopics(const QStringList &topics) = 0;
     virtual void disconnectFromServer() = 0;
 
@@ -51,6 +52,7 @@ public:
 
     void connectToTopics(const QStringList &topics) override;
     void disconnectFromServer() override;
+    void setAuthContext(const appwritesdk::AuthContext &authContext) override;
 
 private slots:
     void onConnected();
@@ -61,6 +63,7 @@ private slots:
 private:
     QWebSocket *m_webSocket;
     appwritesdk::ConnectionConfig m_config;
+    appwritesdk::AuthContext m_authContext;
 };
 
 } // namespace appcomm
