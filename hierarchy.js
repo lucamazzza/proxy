@@ -2,6 +2,7 @@ var hierarchy =
 [
     [ "appcomm::model::AppCommConfig", "structappcomm_1_1model_1_1AppCommConfig.html", null ],
     [ "appcomm::errormodel::AppCommError", "structappcomm_1_1errormodel_1_1AppCommError.html", null ],
+    [ "appwritesdk::AuthContext", "structappwritesdk_1_1AuthContext.html", null ],
     [ "appcomm::client::ClientState", "structappcomm_1_1client_1_1ClientState.html", null ],
     [ "appwritesdk::ConnectionConfig", "structappwritesdk_1_1ConnectionConfig.html", null ],
     [ "appcomm::client::AppcommClient::Dependencies", "structappcomm_1_1client_1_1AppcommClient_1_1Dependencies.html", null ],

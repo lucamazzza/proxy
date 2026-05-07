@@ -35,6 +35,7 @@ var annotated_dup =
     ] ],
     [ "appwritesdk", "namespaceappwritesdk.html", [
       [ "ConnectionConfig", "structappwritesdk_1_1ConnectionConfig.html", "structappwritesdk_1_1ConnectionConfig" ],
+      [ "AuthContext", "structappwritesdk_1_1AuthContext.html", null ],
       [ "IClientSdk", "classappwritesdk_1_1IClientSdk.html", null ],
       [ "BaseSDK", "classappwritesdk_1_1BaseSDK.html", "classappwritesdk_1_1BaseSDK" ],
       [ "Client", "classappwritesdk_1_1Client.html", "classappwritesdk_1_1Client" ],

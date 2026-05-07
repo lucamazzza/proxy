@@ -23,9 +23,10 @@ var searchData=
   ['appwritesdk_20',['appwritesdk',['../namespaceappwritesdk.html',1,'']]],
   ['appwritesdk_2ecpp_21',['appwritesdk.cpp',['../appwritesdk_8cpp.html',1,'']]],
   ['appwritesdk_2eh_22',['appwritesdk.h',['../appwritesdk_8h.html',1,'']]],
-  ['authenticated_23',['authenticated',['../classappcomm_1_1client_1_1AppcommClient.html#ad7f4243e9c256876fad4d79b48914ce9',1,'appcomm::client::AppcommClient::authenticated'],['../structappcomm_1_1client_1_1ClientState.html#a70b5b6ac250f3aa738d5e5c3dadd9291',1,'appcomm::client::ClientState::authenticated']]],
-  ['autherror_24',['AuthError',['../namespaceappcomm_1_1errormodel.html#a82e92fbd3ba42b52cdad8691d7f4a73ea160a82716f983dcebb45a0934c17d563',1,'appcomm::errormodel']]],
-  ['authtype_25',['AuthType',['../namespaceappcomm_1_1model.html#a69a35d79880d46ed8158f4c20a95fd3f',1,'appcomm::model']]],
-  ['authtype_26',['authType',['../structappcomm_1_1model_1_1SessionInfo.html#aa72f7837fb6c58700d3d6d1582046994',1,'appcomm::model::SessionInfo']]],
-  ['availabletokens_27',['availableTokens',['../classappcomm_1_1client_1_1RateLimiter.html#a1f20cb84beebebd2473b92699f4eda07',1,'appcomm::client::RateLimiter']]]
+  ['authcontext_23',['AuthContext',['../structappwritesdk_1_1AuthContext.html',1,'appwritesdk']]],
+  ['authenticated_24',['authenticated',['../classappcomm_1_1client_1_1AppcommClient.html#ad7f4243e9c256876fad4d79b48914ce9',1,'appcomm::client::AppcommClient::authenticated'],['../structappcomm_1_1client_1_1ClientState.html#a70b5b6ac250f3aa738d5e5c3dadd9291',1,'appcomm::client::ClientState::authenticated']]],
+  ['autherror_25',['AuthError',['../namespaceappcomm_1_1errormodel.html#a82e92fbd3ba42b52cdad8691d7f4a73ea160a82716f983dcebb45a0934c17d563',1,'appcomm::errormodel']]],
+  ['authtype_26',['AuthType',['../namespaceappcomm_1_1model.html#a69a35d79880d46ed8158f4c20a95fd3f',1,'appcomm::model']]],
+  ['authtype_27',['authType',['../structappcomm_1_1model_1_1SessionInfo.html#aa72f7837fb6c58700d3d6d1582046994',1,'appcomm::model::SessionInfo']]],
+  ['availabletokens_28',['availableTokens',['../classappcomm_1_1client_1_1RateLimiter.html#a1f20cb84beebebd2473b92699f4eda07',1,'appcomm::client::RateLimiter']]]
 ];
