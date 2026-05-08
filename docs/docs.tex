@@ -2135,6 +2135,64 @@ l'invio e la ricezione di messaggi e il logout.
 \noindent Per poter accedere correttamente alla schermata di chat, l'utente deve essere associato a un topic. In caso contrario il
 client non è in grado di determinare il contesto della conversazione e l'accesso alla chat non viene completato.
 
+\section{Configurazione iniziale}
+
+Il frontend salva la configurazione nel file:
+\begin{minted}{text}
+~/.proxy-frontend-config.json
+\end{minted}
+
+\noindent È possibile cambiare percorso con la variabile d'ambiente:
+\begin{minted}{bash}
+export PROXY_FRONTEND_CONFIG_PATH="/path/to/frontend-config.json"
+\end{minted}
+
+\noindent Configurazione:
+\begin{minted}{bash}
+appfrontend configure <endpoint> <projectId> <databaseId> \
+                      [messagesCollection]                 \
+                      [membersCollection]                  \
+                      [incomingMessagesCollection]
+\end{minted}
+
+\newpage
+
+\noindent I parametri richiesti sono:
+\begin{description}
+    \item[\texttt{endpoint}] endpoint Appwrite, ad esempio \texttt{https://fra.cloud.appwrite.io/v1};
+
+    \item[\texttt{projectId}] identificativo del progetto Appwrite;
+
+    \item[\texttt{databaseId}] identificativo del database Appwrite;
+
+    \item[\texttt{messagesCollection}] collection contenente i messaggi finali.
+    Se non viene specificata, viene usato il valore predefinito \texttt{messages};
+
+    \item[\texttt{membersCollection}] collection contenente le associazioni tra utenti e canali.
+    Se non viene specificata, viene usato il valore predefinito \texttt{members};
+
+    \item[\texttt{incomingMessagesCollection}] collection usata per i messaggi in ingresso.
+    Se non viene specificata, viene usato il valore predefinito \texttt{pendingmessages}.
+\end{description}
+
+\noindent Esempio:
+\begin{minted}{bash}
+appfrontend configure https://fra.cloud.appwrite.io/v1 my-project proxydb \
+                      messages members pendingmessages
+\end{minted}
+
+\noindent Il comando genera un file JSON con una struttura simile alla seguente:
+\begin{minted}{json}
+{
+    "endpoint": "https://fra.cloud.appwrite.io/v1",
+    "projectId": "my-project",
+    "databaseId": "proxydb",
+    "messagesCollectionId": "messages",
+    "membersCollectionId": "members",
+    "incomingMessagesCollectionId": "pendingmessages"
+}
+\end{minted}
+
 \section{Avvio dell'applicazione}
 
 \noindent Dopo la compilazione del progetto, il frontend può essere avviato eseguendo il relativo binario generato dalla build Qt.
